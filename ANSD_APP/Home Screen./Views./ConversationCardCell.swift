@@ -28,30 +28,48 @@ class RoutineTableViewCell: UITableViewCell {
 
     func setupDesign() {
         // 1. Icon Styling
-        iconImageView.contentMode = .scaleAspectFit
-        // This is required for the constraints above to look right
+        iconImageView.contentMode = .scaleToFill
         iconImageView.layer.cornerRadius = 10
+        iconImageView.backgroundColor = .systemGray6 // Added a light background so color pops
+        iconImageView.contentMode = .center // Keeps icon centered in box
         iconImageView.clipsToBounds = true
-        iconImageView.tintColor = .systemBlue // Matches your screenshot
         
         // 2. Text Styling
         titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = .label // Black
+        titleLabel.textColor = .label
         
         timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
-        timeLabel.textColor = .secondaryLabel // Gray
+        timeLabel.textColor = .secondaryLabel
         
         // 3. Selection Style
-        self.selectionStyle = .default // Keeps the gray tap effect
+        self.selectionStyle = .default
     }
 
     func configure(with item: RoutineConversation) {
         titleLabel.text = item.conversationTopic
         timeLabel.text = item.timeRange
         
-        // Image Configuration
+        // --- 1. IMAGE CONFIGURATION ---
         let config = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
-        iconImageView.image = UIImage(systemName: item.iconName, withConfiguration: config)
+        
+        // ★ CRITICAL FIX: .alwaysTemplate forces the image to ignore its native color
+        // and paint itself with the tintColor we set below.
+        if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
+            iconImageView.image = image.withRenderingMode(.alwaysTemplate)
+        }
+        
+        // --- 2. DYNAMIC COLOR LOGIC ---
+        // This sets the color based on the category (Office, Family, etc.)
+        switch item.categoryTitle {
+        case "Office":
+            iconImageView.tintColor = .systemBlue
+        case "Family":
+            iconImageView.tintColor = .systemPink
+        case "Friends":
+            iconImageView.tintColor = .systemGreen
+        default:
+            iconImageView.tintColor = .systemGray6
+        }
     }
     
     @objc private func infoButtonTapped() {
