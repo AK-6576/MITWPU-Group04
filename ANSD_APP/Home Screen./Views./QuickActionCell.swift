@@ -15,15 +15,20 @@ class QuickActionCell: UITableViewCell {
     @IBOutlet weak var iconImageView: UIImageView!
     
     // MARK: - Actions Closure
-    // This allows the HomeViewController to know when the button is clicked
+    // This allows the Controller to know when the (i) button is clicked
     var onInfoTapped: (() -> Void)?
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Optional: Make the image look like a rounded button
+        setupDesign()
+    }
+    
+    func setupDesign() {
+        // Uniform Design
         iconImageView.layer.cornerRadius = 10
         iconImageView.backgroundColor = .systemGray6
-        iconImageView.contentMode = .center // Keeps the symbol centered inside the gray box
+        iconImageView.contentMode = .center
+        iconImageView.clipsToBounds = true
     }
 
     func configure(with item: RoutineConversation) {
@@ -31,21 +36,39 @@ class QuickActionCell: UITableViewCell {
         titleLabel.text = item.conversationTopic
         subtitleLabel.text = item.timeRange
         
-        // 2. Set Image (SF Symbol)
+        // 2. Set Image with Template Mode
+        // .alwaysTemplate is required for the tintColor to take effect
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
-        iconImageView.image = UIImage(systemName: item.iconName, withConfiguration: config)
+        if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
+            iconImageView.image = image.withRenderingMode(.alwaysTemplate)
+        }
         
-        // 3. Style the Image View
-        iconImageView.contentMode = .center
-        iconImageView.tintColor = .systemBlue
-        iconImageView.backgroundColor = .systemGray6
-        iconImageView.layer.cornerRadius = 10
+        // 3. Robust Color Logic
+        // Clean the string (lowercase + trim spaces) to ensure matching works
+        let category = item.categoryTitle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        
+        // Debugging: Check console to see what category is detected
+        print("QuickAction Item: \(item.conversationTopic) | Category: '\(category)'")
+        
+        switch category {
+        case "office", "work", "business":
+            iconImageView.tintColor = .systemBlue
+            
+        case "family", "home", "personal":
+            iconImageView.tintColor = .systemPink
+            
+        case "friends", "social", "hangout":
+            iconImageView.tintColor = .systemGreen
+            
+        default:
+            // Use Dark Gray so icons are visible if the name doesn't match
+            iconImageView.tintColor = .systemGray
+        }
     }
     
-    // MARK: - IBAction (The missing link causing the crash)
-    // Connect this to the (i) button in your Storyboard!
+    // MARK: - IBAction
+    // Connect this to the (i) button in Storyboard
     @IBAction func didTapInfoButton(_ sender: UIButton) {
-        // Trigger the closure so the View Controller can show the popup
         onInfoTapped?()
     }
 }

@@ -50,7 +50,7 @@ class RoutineTableViewCell: UITableViewCell {
         timeLabel.text = item.timeRange
         
         // --- 1. IMAGE CONFIGURATION ---
-        let config = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
+        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
         
         // ★ CRITICAL FIX: .alwaysTemplate forces the image to ignore its native color
         // and paint itself with the tintColor we set below.
