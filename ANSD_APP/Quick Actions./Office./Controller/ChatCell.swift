@@ -19,13 +19,10 @@ class OutgoingCell: UICollectionViewCell {
             messageLabel.textColor = .white
             bubbleView.layer.cornerRadius = 16
             bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-            
-        // width constraint is configured in layoutSubviews()
         }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Derive width from the current window's screen to avoid UIScreen.main deprecation
         let screenWidth: CGFloat
         if let screen = window?.windowScene?.screen {
             screenWidth = screen.bounds.width
@@ -69,14 +66,11 @@ class IncomingCell: UICollectionViewCell {
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
-        
-        // width constraint is configured in layoutSubviews()
     }
     @objc func handleTap() { onLabelTapped?() }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Derive width from the current window's screen to avoid UIScreen.main deprecation
         let screenWidth: CGFloat
         if let screen = window?.windowScene?.screen {
             screenWidth = screen.bounds.width

@@ -9,28 +9,21 @@ import UIKit
 
 class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
-    // MARK: - Outlets
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var pauseButton: UIButton!
     @IBOutlet weak var micButton: UIButton!
     @IBOutlet weak var endButton: UIButton!
     
-    // MARK: - Variables
-    var sessionTitle: String = "Breakfast" // Received from Selection Screen
-    
+    var sessionTitle: String = "Breakfast"
     var messages: [ChatMessage1] = []
-    let fullConversation = ChatData1.fullConversation // Ensure ChatData contains the Marvel/Doomsday chat
-    
+    let fullConversation = ChatData1.fullConversation
     var currentMessageIndex = 0
     var isPaused = false
     var otherPersonName = "Person 1"
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         self.title = sessionTitle
-        
         collectionView.dataSource = self
         collectionView.delegate = self
         
@@ -44,7 +37,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         processNextMessage()
     }
     
-    // MARK: - Animation Logic
     func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -55,17 +47,14 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             
             let message = self.fullConversation[self.currentMessageIndex]
             self.messages.append(message)
-            
             let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
             self.collectionView.insertItems(at: [indexPath])
             self.scrollToBottom()
-            
             self.currentMessageIndex += 1
             self.processNextMessage()
         }
     }
     
-    // MARK: - CollectionView DataSource
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
@@ -77,7 +66,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell1
             cell.messageLabel.text = message.text
             
-            // Logic for multiple speakers if needed, or default mapping
             if message.sender == "Person 1" {
                 cell.nameLabel.text = self.otherPersonName
             } else {
@@ -95,7 +83,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
-    // MARK: - Rename Alert
     func showRenameAlert() {
         if !isPaused { togglePauseState() }
         
@@ -118,7 +105,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         self.present(alert, animated: true)
     }
     
-    // MARK: - Button Actions
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         togglePauseState()
     }
@@ -128,7 +114,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         let config = UIImage.SymbolConfiguration(scale: .small)
         let imgName = isPaused ? "play.fill" : "pause.fill"
         pauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
-        
         if !isPaused { processNextMessage() }
     }
     
@@ -136,22 +121,14 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         if !isPaused { togglePauseState() }
         
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
-        
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-            
-            // Ensure this matches your storyboard filename
             let storyboard = UIStoryboard(name: "RoutineConvo 2", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
                let summaryVC = summaryNav.topViewController as? FamilySummaryViewController {
                 
-                // 1. Pass the Session Title
                 summaryVC.conversationTitle = self.sessionTitle
-                
-                // 2. Pass the Chat History (for the Transcript)
                 summaryVC.chatHistory = self.messages
-                
-                // 3. Pass the Participants Data (Marvel Context)
                 summaryVC.participantsData = [
                     FamilyParticipantData(
                         name: "Marie Parker",
@@ -166,22 +143,17 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                         summary: "I confirmed I would be down shortly and accepted Dad's offer for a ride to save money on an Uber. I also jokingly reminded them to save pancakes for Anna."
                     )
                 ]
-
                 
-                // 4. TRANSITION FIX: Slide up from Bottom
                 summaryNav.modalPresentationStyle = .pageSheet
-                
                 self.present(summaryNav, animated: true, completion: nil)
             }
         }
         
         actionSheet.addAction(endAction)
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        
         self.present(actionSheet, animated: true)
     }
     
-    // MARK: - Layout Helpers
     func scrollToBottom() {
         guard messages.count > 0 else { return }
         collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
