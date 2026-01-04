@@ -118,9 +118,6 @@ class HomeViewController: UIViewController {
             }
             
             if let profileVC = destinationVC {
-                // ★ CRITICAL: Set the delegate
-                profileVC.delegate = self
-                
                 // Pass current data so the profile screen knows what to show
                 profileVC.incomingName = usernameLabel?.text
                 profileVC.incomingImage = profileIconButton?.image(for: .normal)
@@ -191,6 +188,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 return cell
             }
         }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
@@ -201,6 +199,81 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             let item = routineConversations[indexPath.row]
             performSegue(withIdentifier: "pastConvoCell", sender: item)
         }
+    }
+    
+    // MARK: - Swipe Actions (Quick Actions Section Only)
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        
+        // 1. Only allow swipes in Section 0
+        if indexPath.section != 0 {
+            return nil
+        }
+        
+        let item = self.quickActions[indexPath.row]
+        
+        // --- DELETE ACTION ---
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (action, view, completionHandler) in
+            guard let self = self else { return }
+            
+            // Remove from Data Source
+            self.quickActions.remove(at: indexPath.row)
+            
+            // Remove from TableView
+            tableView.deleteRows(at: [indexPath], with: .fade)
+            
+            // TODO: Update your actual Repository here if needed
+            // QuickActionsRepository.delete(item)
+            
+            completionHandler(true)
+        }
+        deleteAction.backgroundColor = .systemRed
+        deleteAction.image = UIImage(systemName: "trash")
+        
+        // --- RENAME ACTION ---
+        let renameAction = UIContextualAction(style: .normal, title: "Rename") { [weak self] (action, view, completionHandler) in
+            self?.showRenameAlert(for: item, at: indexPath)
+            completionHandler(true)
+        }
+        renameAction.backgroundColor = .systemOrange
+        renameAction.image = UIImage(systemName: "pencil")
+        
+        // --- INFO ACTION ---
+        let infoAction = UIContextualAction(style: .normal, title: "Info") { [weak self] (action, view, completionHandler) in
+            self?.presentInfoScreen(for: item)
+            completionHandler(true)
+        }
+        infoAction.backgroundColor = .systemBlue
+        infoAction.image = UIImage(systemName: "info.circle")
+        
+        // Combine actions
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction, infoAction])
+        config.performsFirstActionWithFullSwipe = false
+        
+        return config
+    }
+    
+    // Helper for Rename
+    func showRenameAlert(for item: RoutineConversation, at indexPath: IndexPath) {
+        let alert = UIAlertController(title: "Rename Action", message: nil, preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.text = item.conversationTopic
+        }
+        
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            // Update Local Data
+            var updatedItem = item
+            updatedItem.conversationTopic = newName
+            self.quickActions[indexPath.row] = updatedItem
+            
+            // Update Row UI
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+        
+        alert.addAction(saveAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
     }
     
     // MARK: - Info Screen Logic
@@ -258,37 +331,5 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 60
-    }
-}
-
-// MARK: - Profile Delegate
-extension HomeViewController: ProfileUpdateDelegate {
-
-    func didUpdateProfile(firstName: String, image: UIImage?) {
-        print("✅ Home received update: \(firstName)")
-        
-        // 1. Update Name
-        usernameLabel?.text = firstName
-        
-        // 2. Update Image
-        if let newImage = image {
-            // Prevents blue tint
-            profileIconButton?.setImage(newImage.withRenderingMode(.alwaysOriginal), for: .normal)
-            
-            // Prevents stretching
-            profileIconButton?.imageView?.contentMode = .scaleAspectFill
-            profileIconButton?.contentVerticalAlignment = .fill
-            profileIconButton?.contentHorizontalAlignment = .fill
-            
-            // Ensures circle
-            profileIconButton?.layer.cornerRadius = (profileIconButton?.frame.height ?? 35) / 2
-            profileIconButton?.clipsToBounds = true
-        }
-        
-        // 3. Save Data (Persistence)
-        UserDefaults.standard.set(firstName, forKey: "savedUserName")
-        if let image = image, let data = image.jpegData(compressionQuality: 0.8) {
-            UserDefaults.standard.set(data, forKey: "savedUserImage")
-        }
     }
 }
