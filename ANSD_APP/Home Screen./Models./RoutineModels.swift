@@ -17,7 +17,7 @@ struct RoutineConversation: Codable, Identifiable {
     let iconName: String
     let categoryTitle: String
     let status: String
-    let conversationTopic: String
+    var conversationTopic: String
     let topicImage: String
     let timeRange: String
     let description: String?
