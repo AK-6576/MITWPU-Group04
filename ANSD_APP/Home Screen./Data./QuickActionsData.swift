@@ -7,13 +7,10 @@
 
 import Foundation
 
-// 2. The Repository with the integrated data
 class QuickActionsRepository {
     
     static func getAllActions() -> [RoutineConversation] {
         return [
-            // --- SECTION 1: QUICK ACTIONS (First 4 items usually) ---
-            
             RoutineConversation(
                 id: "1",
                 iconName: "captions.bubble.fill",
@@ -50,7 +47,6 @@ class QuickActionsRepository {
                 date: nil,
                 timeImage: "clock"
             ),
-            
             RoutineConversation(
                 id: "conv_2",
                 iconName: "person.3.fill",
