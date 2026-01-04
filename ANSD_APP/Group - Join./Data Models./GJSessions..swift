@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 struct GJSessionModel {
     let title: String
     let subtitle: String

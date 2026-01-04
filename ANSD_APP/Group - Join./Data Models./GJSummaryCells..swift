@@ -7,24 +7,20 @@
 
 import UIKit
 
-// MARK: - Protocols
 protocol GJNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: GJNotesCardCell)
 }
 
-// MARK: - Styling Helper
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
     card.backgroundColor = .white
-
     card.layer.shadowColor = UIColor.black.cgColor
     card.layer.shadowOpacity = 0.05
     card.layer.shadowOffset = CGSize(width: 0, height: 2)
     card.layer.shadowRadius = 4
 }
 
-// MARK: - Headers
 class GJSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
@@ -47,13 +43,9 @@ class GJParticipantsSummaryHeaderCell: UITableViewCell {
     }
 }
 
-// MARK: - 1. Conversation Card (Read-Only Title)
 class GJSummaryCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
-    
     @IBOutlet weak var titleLabel: UILabel!
-    
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     
@@ -64,9 +56,7 @@ class GJSummaryCardCell: UITableViewCell {
     }
 }
 
-// MARK: - 2. Participant Card (Display Label)
 class GJParticipantCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var detailsLabel: UILabel!
@@ -75,7 +65,6 @@ class GJParticipantCardCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
-        
         avatarImageView.layer.cornerRadius = 4
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
@@ -86,7 +75,6 @@ class GJParticipantCardCell: UITableViewCell {
     }
 }
 
-// MARK: - 3. Notes Card
 class GJNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
@@ -98,13 +86,11 @@ class GJNotesCardCell: UITableViewCell, UITextViewDelegate {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
-        
         notesTextView.delegate = self
         notesTextView.text = placeholderText
         notesTextView.textColor = .lightGray
         notesTextView.font = UIFont.systemFont(ofSize: 15)
         notesTextView.isScrollEnabled = false
-        
         notesTextView.textContainerInset = .zero
         notesTextView.textContainer.lineFragmentPadding = 0
     }

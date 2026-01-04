@@ -12,19 +12,18 @@ class GJOutgoingCell: UICollectionViewCell {
     @IBOutlet weak var GJmessageLabel: UILabel!
     
     override func awakeFromNib() {
-            super.awakeFromNib()
-            
-            GJbubbleView.backgroundColor = .systemBlue
-            GJmessageLabel.textColor = .white
-            GJbubbleView.layer.cornerRadius = 16
-            GJbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-            
+        super.awakeFromNib()
+        GJbubbleView.backgroundColor = .systemBlue
+        GJmessageLabel.textColor = .white
+        GJbubbleView.layer.cornerRadius = 16
+        GJbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32).isActive = true
         }
-        }
     }
+}
 
 class GJIncomingCell: UICollectionViewCell {
     @IBOutlet weak var GJnameLabel: UILabel!
@@ -35,17 +34,10 @@ class GJIncomingCell: UICollectionViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        
         GJbubbleView.backgroundColor = .systemGray5
         GJmessageLabel.textColor = .black
-        
         GJbubbleView.layer.cornerRadius = 16
-        GJbubbleView.layer.maskedCorners = [
-            .layerMinXMinYCorner,
-            .layerMaxXMinYCorner,
-            .layerMaxXMaxYCorner
-        ]
-        
+        GJbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         GJnameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         GJnameLabel.addGestureRecognizer(tap)
@@ -55,5 +47,8 @@ class GJIncomingCell: UICollectionViewCell {
             contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32).isActive = true
         }
     }
-    @objc func handleTap() { onLabelTapped?() }
+    
+    @objc func handleTap() {
+        onLabelTapped?()
+    }
 }

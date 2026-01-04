@@ -15,24 +15,19 @@ class GJSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
     
     var conversationTitle = "Session"
     var participantsData: [GJParticipantData] = []
-    
     var chatHistory: [GJChatMessage] = []
     var guestName: String = "Person 1"
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         view.backgroundColor = .systemGroupedBackground
-        
         GJtableView.delegate = self
         GJtableView.dataSource = self
         GJtableView.separatorStyle = .none
         GJtableView.backgroundColor = .clear
-        
         GJtableView.rowHeight = UITableView.automaticDimension
         GJtableView.estimatedRowHeight = 120
-
+        
         if let shareBtn = GJoptionsButton {
             shareBtn.target = self
             shareBtn.action = #selector(shareTapped)
@@ -49,36 +44,26 @@ class GJSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         view.endEditing(true)
     }
     
-    // MARK: - Actions
-    
-    // 1. TOP RIGHT: Direct Share
     @objc func shareTapped() {
         shareAsPDF()
     }
     
-    // 2. TOP LEFT: Exit to Home Screen
     @IBAction func backTapped(_ sender: Any) {
         if let navController = self.view.window?.rootViewController as? UINavigationController {
-            // Reset background stack to Home
             navController.popToRootViewController(animated: false)
-            // Dismiss the Summary Modal
             navController.dismiss(animated: true, completion: nil)
         } else {
-            // Fallback
             self.view.window?.rootViewController?.dismiss(animated: true, completion: nil)
         }
     }
-
-    // MARK: - PDF Logic
+    
     func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
-        
         pdfContent += "--- SUMMARY ---\n\n"
         for person in participantsData {
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
         }
         
-        // Add Transcript for Group Join if available
         if !chatHistory.isEmpty {
             pdfContent += "--- TRANSCRIPT ---\n\n"
             for msg in chatHistory {
@@ -87,30 +72,23 @@ class GJSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
         
         if let pdfURL = createPDF(from: pdfContent) {
-            
-            // Native Share Sheet
             let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
-            
             self.present(activityVC, animated: true)
         }
     }
     
-    // MARK: - PDF Generator Helper
     func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-        
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         
         let data = renderer.pdfData { (context) in
             context.beginPage()
-            
             let attributes = [
                 NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12),
                 NSAttributedString.Key.paragraphStyle: NSMutableParagraphStyle()
             ]
-            
             let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
             text.draw(in: textRect, withAttributes: attributes)
         }
@@ -128,7 +106,6 @@ class GJSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
-    // MARK: - Table View Data Source
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
@@ -139,45 +116,37 @@ class GJSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
         switch indexPath.section {
         case 0:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GJSummarySectionHeaderCell
             cell.headerLabel.text = "Conversation Summary"
             cell.headerIcon.image = UIImage(systemName: "list.bullet.clipboard")
             return cell
-            
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! GJSummaryCardCell
             cell.titleLabel.text = conversationTitle
             return cell
-            
         case 2:
             return tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell", for: indexPath)
-            
         case 3:
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell", for: indexPath) as! GJParticipantCardCell
             let data = participantsData[indexPath.row]
             cell.configure(with: data)
             return cell
-            
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GJSummarySectionHeaderCell
             cell.headerLabel.text = "Notes"
             cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
-            
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! GJNotesCardCell
             cell.delegate = self
             return cell
-            
         default:
             return UITableViewCell()
         }
     }
     
-    // MARK: - Notes Delegate
     func didUpdateText(in cell: GJNotesCardCell) {
         GJtableView.performBatchUpdates(nil, completion: nil)
         if let indexPath = GJtableView.indexPath(for: cell) {

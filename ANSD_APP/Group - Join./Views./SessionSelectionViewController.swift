@@ -11,7 +11,6 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
 
     @IBOutlet weak var GJtableView: UITableView!
     
-    // MARK: - Data
     let sessions: [GJSessionModel] = [
         GJSessionModel(title: "UI/UX Design Session", subtitle: "Reed Richards"),
         GJSessionModel(title: "Project Alpha X7", subtitle: "Bruce Wayne"),
@@ -19,7 +18,6 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GJSessionModel(title: "Assignment Completion", subtitle: "Peter Parker")
     ]
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
@@ -32,22 +30,20 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GJtableView.tableFooterView = UIView()
     }
 
-    // MARK: - Navigation (THE FIX)
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToChat" {
             if let chatVC = segue.destination as? GroupJoinViewController {
                 chatVC.modalPresentationStyle = .fullScreen
-                
                 if let sessionData = sender as? GJSessionModel {
                     chatVC.sessionTitle = sessionData.title
                 }
             }
         }
     }
-
-    // MARK: - TableView Methods
     
-    func numberOfSections(in tableView: UITableView) -> Int { return 1 }
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
@@ -73,13 +69,9 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         return cell
     }
     
-    // MARK: - Selection Logic (THE FIX)
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
         let selectedSession = sessions[indexPath.row]
-        
         performSegue(withIdentifier: "goToChat", sender: selectedSession)
-        
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }

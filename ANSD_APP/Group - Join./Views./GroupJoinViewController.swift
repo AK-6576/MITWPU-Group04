@@ -9,28 +9,21 @@ import UIKit
 
 class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
-    // MARK: - Outlets
     @IBOutlet weak var GJcollectionView: UICollectionView!
     @IBOutlet weak var GJpauseButton: UIButton!
     @IBOutlet weak var GJmicButton: UIButton!
     @IBOutlet weak var GJendButton: UIButton!
     
-    // MARK: - Variables
     var sessionTitle: String = "Conversation"
-    
     var messages: [GJChatMessage] = []
     let fullConversation = GJChatData.fullConversation
-    
     var currentMessageIndex = 0
     var isPaused = false
     var otherPersonName = "Person 1"
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         self.title = sessionTitle
-        
         GJcollectionView.dataSource = self
         GJcollectionView.delegate = self
         
@@ -44,7 +37,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         processNextMessage()
     }
     
-    // MARK: - Animation Logic
     func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -55,17 +47,14 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             
             let message = self.fullConversation[self.currentMessageIndex]
             self.messages.append(message)
-            
             let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
             self.GJcollectionView.insertItems(at: [indexPath])
             self.scrollToBottom()
-            
             self.currentMessageIndex += 1
             self.processNextMessage()
         }
     }
     
-    // MARK: - CollectionView DataSource
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
@@ -94,7 +83,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    // MARK: - Rename Alert
     func showRenameAlert() {
         if !isPaused { togglePauseState() }
         
@@ -117,7 +105,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         self.present(alert, animated: true)
     }
     
-    // MARK: - Button Actions
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         togglePauseState()
     }
@@ -127,55 +114,46 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         let config = UIImage.SymbolConfiguration(scale: .small)
         let imgName = isPaused ? "play.fill" : "pause.fill"
         GJpauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
-        
         if !isPaused { processNextMessage() }
     }
     
     @IBAction func didTapStopButton(_ sender: UIButton) {
         if !isPaused { togglePauseState() }
+        
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
+            let storyboard = UIStoryboard(name: "Group-Join.", bundle: nil)
+            
+            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
+               let summaryVC = summaryNav.topViewController as? GJSummaryViewController {
                 
-                let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+                summaryVC.conversationTitle = self.sessionTitle
+                summaryVC.chatHistory = self.messages
+                summaryVC.participantsData = [
+                    GJParticipantData(
+                        name: "Peter Parker",
+                        summary: "Peter has finished his assignment and is informing his friends about the same. He has a family outing at 4 PM and cannot help."
+                    ),
+                    GJParticipantData(
+                        name: "Bruce Banner",
+                        summary: "Bruce is having fun at Steve's misfortune and he hasn't started doing it as well. He is very relaxed about the whole thing."
+                    ),
+                    GJParticipantData(
+                        name: "Steve Parker",
+                        summary: "Steve is being smug about the whole thing and is scolding his friends for not having done the assignment in the past 3 weeks."
+                    )
+                ]
                 
-                let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-                    
-                    let storyboard = UIStoryboard(name: "Group-Join.", bundle: nil)
-                    
-                    if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
-                       let summaryVC = summaryNav.topViewController as? GJSummaryViewController {
-                        
-                        summaryVC.conversationTitle = self.sessionTitle
-                        
-
-                        summaryVC.chatHistory = self.messages
-                        
-                        summaryVC.participantsData = [
-                            GJParticipantData(
-                                name: "Peter Parker",
-                                summary: "Peter has finished his assignment and is informing his friends about the same. He has a family outing at 4 PM and cannot help."
-                            ),
-                            GJParticipantData(
-                                name: "Bruce Banner",
-                                summary: "Bruce is having fun at Steve’s misfortune and he hasn’t started doing it as well. He is very relaxed about the whole thing."
-                            ),
-                            GJParticipantData(
-                                name: "Steve Parker",
-                                summary: "Steve is being smug about the whole thing and is scolding his friends for not having done the assignment in the past 3 weeks."
-                            )
-                        ]
-                        
-                        summaryNav.modalPresentationStyle = .pageSheet
-                        
-                        self.present(summaryNav, animated: true, completion: nil)
-                    }
-                }
-                
-                actionSheet.addAction(endAction)
-                actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-                
-                self.present(actionSheet, animated: true)
+                summaryNav.modalPresentationStyle = .pageSheet
+                self.present(summaryNav, animated: true, completion: nil)
+            }
+        }
+        
+        actionSheet.addAction(endAction)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        self.present(actionSheet, animated: true)
     }
     
-    // MARK: - Layout Helpers
     func scrollToBottom() {
         guard messages.count > 0 else { return }
         GJcollectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
