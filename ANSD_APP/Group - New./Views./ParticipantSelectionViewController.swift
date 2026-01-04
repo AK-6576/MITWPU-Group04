@@ -11,7 +11,6 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
 
     @IBOutlet weak var tableView: UITableView!
     
-    // MARK: - Data
     let contacts = [
         "Steve Rogers", "Bucky Barnes", "Tony Stark",
         "Natasha Romanoff", "Bruce Banner", "Peter Parker",
@@ -22,30 +21,22 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     var selectedIndices: Set<Int> = []
     var onPeopleAdded: (([String]) -> Void)?
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         tableView.delegate = self
         tableView.dataSource = self
         tableView.tableFooterView = UIView()
-        
         setupNavigationBar()
     }
     
     func setupNavigationBar() {
         if onPeopleAdded != nil {
             self.title = "Add Participants"
-            
             navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(closeTapped))
-        }
-        
-        else {
+        } else {
             self.title = "Connect"
         }
     }
-    
-    // MARK: - Actions
     
     @objc func closeTapped() {
         self.dismiss(animated: true, completion: nil)
@@ -56,14 +47,11 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
             let selectedNames = selectedIndices.map { contacts[$0] }
             callback(selectedNames)
             self.dismiss(animated: true, completion: nil)
-        }
-        
-        else {
+        } else {
             performSegue(withIdentifier: "goToChat", sender: self)
         }
     }
 
-    // MARK: - Navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToChat" {
             if let chatVC = segue.destination as? GroupNewViewController {
@@ -72,7 +60,6 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         }
     }
 
-    // MARK: - TableView Methods
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return contacts.count
     }
@@ -80,7 +67,6 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
         let name = contacts[indexPath.row]
-        
         cell.textLabel?.text = name
         cell.textLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
         

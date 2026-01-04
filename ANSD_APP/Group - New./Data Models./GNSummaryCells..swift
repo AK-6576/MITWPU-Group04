@@ -7,7 +7,6 @@
 
 import UIKit
 
-// MARK: - Protocols
 protocol GNNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: GNNotesCardCell)
 }
@@ -16,7 +15,6 @@ protocol GNSummaryCardDelegate: AnyObject {
     func didChangeTitle(text: String)
 }
 
-// MARK: - Styling Helper
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
@@ -27,24 +25,30 @@ private func styleCard(view: UIView?) {
     card.layer.shadowRadius = 4
 }
 
-// MARK: - Headers
 class GNSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
-    override func awakeFromNib() { super.awakeFromNib(); backgroundColor = .clear; contentView.backgroundColor = .clear }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
 class GNParticipantsSummaryHeaderCell: UITableViewCell {
     @IBOutlet weak var participantIcon: UIImageView!
     @IBOutlet weak var participantLabel: UILabel!
-    override func awakeFromNib() { super.awakeFromNib(); backgroundColor = .clear; contentView.backgroundColor = .clear }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
-// MARK: - 1. Conversation Card (Title Only)
 class GNSummaryCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
-    
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
@@ -62,9 +66,7 @@ class GNSummaryCardCell: UITableViewCell {
     }
 }
 
-// MARK: - 2. Participant Card (Display Label)
 class GNParticipantCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var detailsLabel: UILabel!
@@ -83,7 +85,6 @@ class GNParticipantCardCell: UITableViewCell {
     }
 }
 
-// MARK: - 3. Notes Card
 class GNNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
@@ -105,12 +106,20 @@ class GNNotesCardCell: UITableViewCell, UITextViewDelegate {
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
-        if textView.text == placeholderText { textView.text = nil; textView.textColor = UIColor.label }
+        if textView.text == placeholderText {
+            textView.text = nil
+            textView.textColor = UIColor.label
+        }
     }
     
     func textViewDidEndEditing(_ textView: UITextView) {
-        if textView.text.isEmpty { textView.text = placeholderText; textView.textColor = .lightGray }
+        if textView.text.isEmpty {
+            textView.text = placeholderText
+            textView.textColor = .lightGray
+        }
     }
     
-    func textViewDidChange(_ textView: UITextView) { delegate?.didUpdateText(in: self) }
+    func textViewDidChange(_ textView: UITextView) {
+        delegate?.didUpdateText(in: self)
+    }
 }

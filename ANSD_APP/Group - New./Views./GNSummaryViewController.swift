@@ -16,17 +16,13 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
     var conversationTitle = "New Conversation"
     var participantsData: [GNParticipantData] = []
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         view.backgroundColor = .systemGroupedBackground
-        
         tableView.delegate = self
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
-        
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 120
         
@@ -46,9 +42,6 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         view.endEditing(true)
     }
     
-    // MARK: - Actions
-    
-    // --- 3. DIRECT PDF SHARE ---
     @objc func shareTapped() {
         shareAsPDF()
     }
@@ -61,8 +54,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
             self.view.window?.rootViewController?.dismiss(animated: true, completion: nil)
         }
     }
-
-    // MARK: - Logic: Share PDF
+    
     func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         for person in participantsData {
@@ -71,27 +63,22 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         
         if let pdfURL = createPDF(from: pdfContent) {
             let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
-            
             self.present(activityVC, animated: true)
         }
     }
     
-    // MARK: - PDF Generator Helper
     func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-        
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         
         let data = renderer.pdfData { (context) in
             context.beginPage()
-            
             let attributes = [
                 NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12),
                 NSAttributedString.Key.paragraphStyle: NSMutableParagraphStyle()
             ]
-            
             let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
             text.draw(in: textRect, withAttributes: attributes)
         }
@@ -109,7 +96,6 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
-    // MARK: - Table View Data Source
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
@@ -120,45 +106,36 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
         switch indexPath.section {
         case 0:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GNSummarySectionHeaderCell
             return cell
-            
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! GNSummaryCardCell
             cell.titleTextField.text = conversationTitle
             cell.delegate = self
             return cell
-            
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell", for: indexPath) as! GNParticipantsSummaryHeaderCell
             return cell
-            
         case 3:
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell", for: indexPath) as! GNParticipantCardCell
             let data = participantsData[indexPath.row]
             cell.configure(with: data)
             return cell
-            
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GNSummarySectionHeaderCell
             cell.headerLabel.text = "Notes"
             cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
-            
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! GNNotesCardCell
             cell.delegate = self
             return cell
-            
         default:
             return UITableViewCell()
         }
     }
-    
-    // MARK: - Delegates
     
     func didUpdateText(in cell: GNNotesCardCell) {
         tableView.performBatchUpdates(nil, completion: nil)
@@ -166,6 +143,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
             tableView.scrollToRow(at: indexPath, at: .bottom, animated: false)
         }
     }
+    
     func didChangeTitle(text: String) {
         conversationTitle = text
     }
