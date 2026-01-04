@@ -1117,7 +1117,7 @@
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="oSb-cS-V0D" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2110" y="85"/>
+            <point key="canvasLocation" x="2037" y="268"/>
         </scene>
         <!--MeetSelectionViewController-->
         <scene sceneID="YV0-tX-3ra">
@@ -1139,7 +1139,7 @@
             </objects>
             <point key="canvasLocation" x="2473" y="-455"/>
         </scene>
-        <!--Quick Actions View Controller-->
+        <!--Quick Actions-->
         <scene sceneID="TTX-AR-SNk">
             <objects>
                 <tableViewController storyboardIdentifier="QuickActionsScren" id="CdC-RP-GEa" customClass="QuickActionsViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
@@ -1199,7 +1199,9 @@
                             <outlet property="delegate" destination="CdC-RP-GEa" id="cLT-r6-TsV"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" id="N1L-ga-OPk"/>
+                    <navigationItem key="navigationItem" title="Quick Actions" id="N1L-ga-OPk">
+                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="f86-x2-RIU"/>
+                    </navigationItem>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F8T-D9-LtR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -1213,7 +1215,7 @@
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="GJr-3Y-5N4" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2361" y="85"/>
+            <point key="canvasLocation" x="2034" y="342"/>
         </scene>
         <!--viewConvo-->
         <scene sceneID="3ip-YL-OMA">

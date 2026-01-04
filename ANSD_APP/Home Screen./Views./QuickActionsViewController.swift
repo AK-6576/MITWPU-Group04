@@ -13,8 +13,6 @@ class QuickActionsViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         actionsList = QuickActionsRepository.getAllActions()
-        title = "Quick Actions"
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(didTapAddButton))
         tableView.tableHeaderView = UIView()
     }
     
