@@ -674,17 +674,9 @@
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="w3p-9D-U2C">
-                                                    <rect key="frame" x="293" y="10" width="48" height="35"/>
-                                                    <state key="normal" title="Button"/>
-                                                    <buttonConfiguration key="configuration" style="plain" image="chevron.down" catalog="system"/>
-                                                </button>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstAttribute="trailing" secondItem="w3p-9D-U2C" secondAttribute="trailing" constant="12" id="1gd-DX-CYQ"/>
-                                                <constraint firstAttribute="bottom" secondItem="w3p-9D-U2C" secondAttribute="bottom" constant="10" id="7Mm-PF-C4F"/>
                                                 <constraint firstAttribute="bottom" secondItem="zIe-wI-p5d" secondAttribute="bottom" constant="13.666666666666629" id="WRi-SZ-zEa"/>
-                                                <constraint firstItem="w3p-9D-U2C" firstAttribute="top" secondItem="DdT-cX-w80" secondAttribute="top" constant="10" id="aNb-59-qaF"/>
                                                 <constraint firstItem="zIe-wI-p5d" firstAttribute="top" secondItem="DdT-cX-w80" secondAttribute="top" constant="15" id="kIJ-VW-OUe"/>
                                                 <constraint firstItem="zIe-wI-p5d" firstAttribute="leading" secondItem="DdT-cX-w80" secondAttribute="leading" constant="16" id="lFV-bk-wZ2"/>
                                             </constraints>
@@ -703,18 +695,10 @@
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="nYR-UE-6dW">
-                                                    <rect key="frame" x="293" y="10" width="48" height="35"/>
-                                                    <state key="normal" title="Button"/>
-                                                    <buttonConfiguration key="configuration" style="plain" image="chevron.down" catalog="system"/>
-                                                </button>
                                             </subviews>
                                             <constraints>
                                                 <constraint firstItem="haw-ed-Dsh" firstAttribute="top" secondItem="ApI-bE-qVA" secondAttribute="top" constant="15" id="5u6-g1-r7m"/>
-                                                <constraint firstAttribute="trailing" secondItem="nYR-UE-6dW" secondAttribute="trailing" constant="12" id="IcX-Jj-HKB"/>
                                                 <constraint firstItem="haw-ed-Dsh" firstAttribute="leading" secondItem="ApI-bE-qVA" secondAttribute="leading" constant="16" id="MiZ-x4-r8F"/>
-                                                <constraint firstAttribute="bottom" secondItem="nYR-UE-6dW" secondAttribute="bottom" constant="10" id="psn-pS-pUt"/>
-                                                <constraint firstItem="nYR-UE-6dW" firstAttribute="top" secondItem="ApI-bE-qVA" secondAttribute="top" constant="10" id="tiw-BH-e0I"/>
                                                 <constraint firstAttribute="bottom" secondItem="haw-ed-Dsh" secondAttribute="bottom" constant="13.666666666666629" id="vxd-YK-OUf"/>
                                             </constraints>
                                         </tableViewCellContentView>
@@ -735,8 +719,8 @@
                         </barButtonItem>
                     </navigationItem>
                     <connections>
-                        <outlet property="categoryButton" destination="nYR-UE-6dW" id="IWJ-tx-khF"/>
-                        <outlet property="dayButton" destination="w3p-9D-U2C" id="hDn-4C-KbL"/>
+                        <outlet property="categoryCell" destination="pas-uC-D0W" id="orR-XI-p0v"/>
+                        <outlet property="daysCell" destination="TcV-60-gXs" id="dDo-lL-aHS"/>
                         <outlet property="nameTextField" destination="mrG-PM-2sp" id="87Y-au-J4t"/>
                         <outlet property="participantsLabel" destination="Cmx-OL-Mi0" id="DUg-OM-gWz"/>
                         <outlet property="saveButton" destination="Jeg-Hk-ybB" id="YmJ-eI-ozx"/>
@@ -1257,7 +1241,6 @@
     </scenes>
     <resources>
         <image name="app.fill" catalog="system" width="128" height="114"/>
-        <image name="chevron.down" catalog="system" width="128" height="70"/>
         <image name="chevron.right" catalog="system" width="97" height="128"/>
         <image name="person.bubble" catalog="system" width="128" height="110"/>
         <image name="person.circle" catalog="system" width="128" height="123"/>
