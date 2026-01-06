@@ -99,8 +99,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             .systemPurple,
             .systemTeal,
             .systemIndigo,
-            .systemPink,
-            .systemGreen,
             .brown
         ]
         let index = abs(name.hashValue) % colors.count
