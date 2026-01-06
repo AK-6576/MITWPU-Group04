@@ -7,6 +7,20 @@
 
 import Foundation
 
+// MARK: - 1. Add the Message Data Structure (Required for chat history)
+// This structure must match what your UICollectionView cells are expecting.
+struct Message: Codable {
+    let text: String
+    let senderName: String
+    let isIncoming: Bool // true = Incoming (Gray), false = Outgoing (Blue)
+    
+    // An ID is useful for tracking messages, especially if they are retrieved from a database/API
+    let id: String
+    
+    // If your source data (like PCChatData) uses different key names,
+    // you might need a CodingKeys enum here for JSON decoding.
+}
+
 // MARK: - Main Response
 struct ConversationsResponse: Codable {
 
@@ -32,8 +46,8 @@ struct ConversationsResponse: Codable {
 // MARK: - Conversation
 struct Conversation: Codable, Identifiable {
     let id: String
-    var title: String        // Changed to var
-    var description: String  // Changed to var
+    var title: String
+    var description: String
     var date: String
     var startTime: String
     var endTime: String
@@ -44,23 +58,31 @@ struct Conversation: Codable, Identifiable {
     // NEW: For pinning functionality (defaults to false if not in JSON)
     var isPinned: Bool = false
 
+    // MARK: - 2. Add the messages property
+    // This holds the actual chat transcript. It is optional (?) because not all
+    // conversation entries (like those in previousMonths) might need to load the full chat history immediately.
+    var messages: [Message]?
+
     enum CodingKeys: String, CodingKey {
         case id
         case title
         case description
         case date
-        case startTime = "start_time"
-        case endTime = "end_time"
         case category
         case icon
         case info
+        
+        // Match JSON keys
+        case startTime = "start_time"
+        case endTime = "end_time"
+        case messages // Ensure your conversation JSON includes this key for the chat transcript
     }
 }
 
 // MARK: - Previous Month
 struct PreviousMonth: Codable {
     let month: String
-    var conversations: [Conversation] // Changed to var
+    var conversations: [Conversation]
 }
 
 // MARK: - Loader

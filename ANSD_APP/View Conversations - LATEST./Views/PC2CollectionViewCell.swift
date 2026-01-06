@@ -1,0 +1,72 @@
+//
+//  PC2CollectionViewCell.swift
+//  ANSD_APP
+//
+//  Created by SDC-USER on 06/01/26.
+//
+
+import UIKit
+
+class PC2IncomingViewCell: UICollectionViewCell {
+    
+    @IBOutlet var bubbleView: UIView!
+    
+    @IBOutlet var nameLabel: UILabel!
+    
+    @IBOutlet var messageLabel: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+
+        bubbleView.layer.cornerRadius = 16
+        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        bubbleView.backgroundColor = .systemGray5
+        
+        // Dynamic sizing logic
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+             let screenWidth = windowScene.screen.bounds.width
+             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
+    }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
+    }
+}
+
+
+class PCOutgoing2Cell: UICollectionViewCell {
+    @IBOutlet weak var PCmessageLabel: UILabel!
+    
+    @IBOutlet var pcBubbleView: UIView!
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        
+        pcBubbleView.layer.cornerRadius = 16
+        pcBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        pcBubbleView.backgroundColor = .systemBlue
+        PCmessageLabel.textColor = .white
+        
+        // Dynamic sizing logic
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+             let screenWidth = windowScene.screen.bounds.width
+             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
+    }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
+    }
+}

@@ -9,7 +9,7 @@ import UIKit
 
 class ConversationCollectionViewCell: UICollectionViewCell {
     
-    @IBOutlet weak var containerView: UIView!
+   
     
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
