@@ -28,7 +28,7 @@ class QuickActionCell: UITableViewCell {
 
     func configure(with item: RoutineConversation) {
         titleLabel.text = item.conversationTopic
-        subtitleLabel.text = item.timeRange
+        subtitleLabel.text = item.startTime
         
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
         if let image = UIImage(systemName: item.iconName, withConfiguration: config) {

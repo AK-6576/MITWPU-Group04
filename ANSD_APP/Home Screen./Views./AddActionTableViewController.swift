@@ -4,7 +4,7 @@ protocol AddActionDelegate: AnyObject {
     func didCreateNewAction(_ action: RoutineConversation)
 }
 
-class AddActionTableViewController: UITableViewController {
+class AddActionTableViewController: UITableViewController, ParticipantsSelectionDelegate {
 
     // MARK: - Outlets
     @IBOutlet weak var nameTextField: UITextField!
@@ -19,7 +19,7 @@ class AddActionTableViewController: UITableViewController {
     // References to our code-generated buttons
     private var dayPopupButton: UIButton?
     private var categoryPopupButton: UIButton?
-
+    
     // MARK: - Variables
     weak var delegate: AddActionDelegate?
     
@@ -170,56 +170,89 @@ class AddActionTableViewController: UITableViewController {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
-
-    // MARK: - Table View Delegate
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        if indexPath.section == 1 {
-            performSegue(withIdentifier: "showParticipantsModal", sender: self)
+    
+    // MARK: - Table View Delegate (Uncomment and update this)
+        override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            tableView.deselectRow(at: indexPath, animated: true)
+            
+            // Assuming "Participants" is the 2nd cell in a static table (Section 0, Row 1)
+            // Adjust the indexPath condition to match your Storyboard exactly.
+            // If it is Section 1 in your design, keep `indexPath.section == 1`.
+            
+            // Example: If Participants is the 2nd row in the 1st section
+            if indexPath.section == 0 && indexPath.row == 1 {
+                openParticipantsModal()
+            }
         }
-    }
+        
+        // MARK: - Logic: Open Modal
+        func openParticipantsModal() {
+            let pickerVC = ParticipantsViewController()
+                    pickerVC.delegate = self
+                    
+                    // FIX 2: Use 'initialSelectedNames' instead of 'selectedNames'
+                    pickerVC.initialSelectedNames = self.selectedParticipants
+                    
+                    let nav = UINavigationController(rootViewController: pickerVC)
+                    if let sheet = nav.sheetPresentationController {
+                        sheet.detents = [.medium(), .large()]
+                        sheet.prefersGrabberVisible = true
+                    }
+                    present(nav, animated: true)
+        }
 
+        // MARK: - Participant Delegate Methods
+        func didSelectParticipants(_ names: [String]) {
+            self.selectedParticipants = names
+                    if names.isEmpty {
+                        participantsLabel.text = "None"
+                    } else {
+                        participantsLabel.text = names.joined(separator: ", ")
+                    }
+                    participantsLabel.textColor = names.isEmpty ? .secondaryLabel : .label
+        }
+    
     // MARK: - Save Action
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
         guard let name = nameTextField.text, !name.isEmpty else { return }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        let timeString = formatter.string(from: startTimePicker.date)
-        
-        let sortedDays = allDaysOrdered.filter { selectedDays.contains($0) }
-        let dateString = sortedDays.joined(separator: ", ")
-        
-        let iconName: String
-        switch selectedCategory.lowercased() {
-        case "friends": iconName = "person.2.fill"
-        case "family": iconName = "house.fill"
-        case "medical", "health": iconName = "cross.case.fill"
-        default: iconName = "briefcase.fill"
-        }
-        
-        let newAction = RoutineConversation(
-            id: UUID().uuidString,
-            iconName: iconName,
-            categoryTitle: selectedCategory,
-            status: "Scheduled",
-            conversationTopic: name,
-            topicImage: "mic.circle.fill",
-            timeRange: timeString,
-            description: selectedParticipants.isEmpty ? "No participants" : "With: \(selectedParticipants.joined(separator: ", "))",
-            date: dateString,
-            timeImage: "clock"
-        )
-        
-        delegate?.didCreateNewAction(newAction)
-        navigationController?.popViewController(animated: true)
+                
+                let formatter = DateFormatter()
+                formatter.dateFormat = "h:mm a"
+                let timeString = formatter.string(from: startTimePicker.date)
+                
+                let sortedDays = allDaysOrdered.filter { selectedDays.contains($0) }
+                let dateString = sortedDays.joined(separator: ", ")
+                
+                let iconName: String
+                switch selectedCategory.lowercased() {
+                case "friends": iconName = "person.2.fill"
+                case "family": iconName = "house.fill"
+                case "medical", "health": iconName = "cross.case.fill"
+                default: iconName = "briefcase.fill"
+                }
+                
+                let newAction = RoutineConversation(
+                    id: UUID().uuidString,
+                    iconName: iconName,
+                    categoryTitle: selectedCategory,
+                    status: "Scheduled",
+                    conversationTopic: name,
+                    topicImage: "mic.circle.fill",
+                    startTime: timeString,
+                    description: selectedParticipants.isEmpty ? "No participants" : "With: \(selectedParticipants.joined(separator: ", "))",
+                    date: dateString,
+                    timeImage: "clock"
+                )
+                
+                delegate?.didCreateNewAction(newAction)
+                navigationController?.popViewController(animated: true)
     }
     
     // MARK: - Utilities
-    func setupKeyboardDismissal() {
-        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        tap.cancelsTouchesInView = false; view.addGestureRecognizer(tap)
+        func setupKeyboardDismissal() {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+            tap.cancelsTouchesInView = false; view.addGestureRecognizer(tap)
+        }
+        @objc func dismissKeyboard() { view.endEditing(true) }
+        @objc func textDidChange(_ sender: UITextField) { saveButton.isEnabled = !(sender.text?.isEmpty ?? true) }
     }
-    @objc func dismissKeyboard() { view.endEditing(true) }
-    @objc func textDidChange(_ sender: UITextField) { saveButton.isEnabled = !(sender.text?.isEmpty ?? true) }
-}

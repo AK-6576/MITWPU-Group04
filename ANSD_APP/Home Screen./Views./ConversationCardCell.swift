@@ -36,7 +36,7 @@ class RoutineTableViewCell: UITableViewCell {
 
     func configure(with item: RoutineConversation) {
         titleLabel.text = item.conversationTopic
-        timeLabel.text = item.timeRange
+        timeLabel.text = item.startTime
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
         
         if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
@@ -112,7 +112,7 @@ class ConversationCardCell: UITableViewCell {
         }
         
         fullString.append(NSAttributedString(attachment: clock))
-        fullString.append(NSAttributedString(string: " \(item.timeRange)"))
+        fullString.append(NSAttributedString(string: " \(item.startTime)"))
         fullString.append(divider)
         fullString.append(NSAttributedString(attachment: tag))
         fullString.append(NSAttributedString(string: " \(item.categoryTitle)"))
