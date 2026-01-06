@@ -46,7 +46,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         self.categoryLabel.text = capitalizedCategory
         
         self.dateLabel.text = conversation.date
-        self.timeLabel.text = "\(conversation.startTime) - \(conversation.endTime)"
+        self.timeLabel.text = "\(conversation.startTime) "
         
         self.calendarIcon.image = UIImage(systemName: "calendar")
         self.clockIcon.image = UIImage(systemName: "clock")
@@ -91,7 +91,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         self.calendarIcon.accessibilityLabel = "Date: \(conversation.date)"
         
         self.clockIcon.isAccessibilityElement = true
-        self.clockIcon.accessibilityLabel = "Time from \(conversation.startTime) to \(conversation.endTime)"
+        self.clockIcon.accessibilityLabel = " \(conversation.startTime) to \(conversation.endTime)"
         
         self.categoryIcon.isAccessibilityElement = true
         self.categoryIcon.accessibilityLabel = "Category: \(categoryAccessibilityName)"
