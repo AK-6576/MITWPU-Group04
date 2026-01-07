@@ -23,6 +23,7 @@ class GNOutgoingCell: UICollectionViewCell {
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
+    
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -38,6 +39,7 @@ class GNIncomingCell: UICollectionViewCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
+    @IBOutlet weak var profileImageView: UIImageView!
     
     var onLabelTapped: (() -> Void)?
     
@@ -46,16 +48,28 @@ class GNIncomingCell: UICollectionViewCell {
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
         bubbleView.layer.cornerRadius = 16
+        // Incoming style: Bubble points to top-left or bottom-left depending on preference
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
+        
+        // NEW: Style the Profile Image
+        // Ensure you have set Width/Height constraints (e.g., 40x40) in Storyboard
+        if let profileImg = profileImageView {
+            profileImg.layer.cornerRadius = profileImg.frame.height / 2
+            profileImg.clipsToBounds = true
+            profileImg.contentMode = .scaleAspectFill
+            profileImg.backgroundColor = .systemGray4 // Placeholder color
+        }
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
+    
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()

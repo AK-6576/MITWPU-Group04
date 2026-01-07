@@ -15,6 +15,7 @@ protocol GNSummaryCardDelegate: AnyObject {
     func didChangeTitle(text: String)
 }
 
+// Helper to apply common shadow/corner styling
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
@@ -75,13 +76,25 @@ class GNParticipantCardCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
+        
+        // Image Styling: Rounded Square (set to height/2 if you want a perfect circle)
         avatarImageView.layer.cornerRadius = 4
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
+        avatarImageView.contentMode = .scaleAspectFill
     }
-    
+
     func configure(with data: GNParticipantData) {
+        // Sets the summary text
         detailsLabel.text = data.summary
+        
+        // Sets the profile image if found
+        if let image = UIImage(named: data.imageName) {
+            avatarImageView.image = image
+        } else {
+            // Fallback
+            avatarImageView.image = UIImage(systemName: "person.crop.circle")
+        }
     }
 }
 
@@ -96,6 +109,7 @@ class GNNotesCardCell: UITableViewCell, UITextViewDelegate {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
+        
         notesTextView.delegate = self
         notesTextView.text = placeholderText
         notesTextView.textColor = .lightGray

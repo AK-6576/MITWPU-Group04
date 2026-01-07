@@ -11,10 +11,23 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
 
     @IBOutlet weak var tableView: UITableView!
     
-    let contacts = [
-        "Steve Rogers", "Bucky Barnes", "Tony Stark",
-        "Natasha Romanoff", "Bruce Banner", "Peter Parker",
-        "Wanda Maximoff", "Vision"
+    // 1. Model: Define a struct to hold both Name and Image Name
+    struct Contact {
+        let name: String
+        let imageName: String
+    }
+    
+    // 2. Data Source: Update the list with image filenames
+    // Ensure these image names match exactly what is in your Assets folder
+    let contacts: [Contact] = [
+        Contact(name: "Steve Rogers", imageName: "steve_rogers"),
+        Contact(name: "Bucky Barnes", imageName: "bucky_barnes"),
+        Contact(name: "Tony Stark", imageName: "tony_stark"),
+        Contact(name: "Natasha Romanoff", imageName: "nat_rom"),
+        Contact(name: "Bruce Banner", imageName: "bruce_banner"),
+        Contact(name: "Peter Parker", imageName: "peter_parker"),
+        Contact(name: "Wanda Maximoff", imageName: "wanda_max"),
+        Contact(name: "Vision", imageName: "vis")
     ]
     
     var unavailableContacts: Set<String> = []
@@ -44,7 +57,8 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
 
     @IBAction func doneTapped(_ sender: Any) {
         if let callback = onPeopleAdded {
-            let selectedNames = selectedIndices.map { contacts[$0] }
+            // Map the selected indices back to a list of Name Strings for the callback
+            let selectedNames = selectedIndices.map { contacts[$0].name }
             callback(selectedNames)
             self.dismiss(animated: true, completion: nil)
         } else {
@@ -60,31 +74,49 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         }
     }
 
+    // MARK: - TableView Data Source
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return contacts.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
-        let name = contacts[indexPath.row]
-        cell.textLabel?.text = name
-        cell.textLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+        // IMPORTANT: Ensure your Prototype Cell Class in Storyboard is set to "ContactCell"
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath) as! ContactCell
         
-        if unavailableContacts.contains(name) {
-            cell.textLabel?.textColor = .systemGray3
+        let contact = contacts[indexPath.row]
+        
+        // Configure Custom UI Elements
+        cell.nameLabel.text = contact.name
+        
+        if let image = UIImage(named: contact.imageName) {
+            cell.profileImageView.image = image
+        } else {
+            cell.profileImageView.image = UIImage(systemName: "person.circle.fill")
+        }
+        
+        // Handle Unavailable State
+        if unavailableContacts.contains(contact.name) {
+            cell.nameLabel.textColor = .systemGray3
             cell.isUserInteractionEnabled = false
             cell.accessoryType = .none
-            cell.textLabel?.text = "\(name) (Unavailable)"
+            cell.nameLabel.text = "\(contact.name) (Unavailable)"
+            cell.profileImageView.alpha = 0.5 // Dim the image
         } else {
+            // Reset state for reusable cells
             cell.isUserInteractionEnabled = true
+            cell.profileImageView.alpha = 1.0
+            
+            // Handle Selection State
             if selectedIndices.contains(indexPath.row) {
-                cell.textLabel?.textColor = .systemBlue
+                cell.nameLabel.textColor = .systemBlue
                 cell.accessoryType = .checkmark
             } else {
-                cell.textLabel?.textColor = .label
+                cell.nameLabel.textColor = .label
                 cell.accessoryType = .none
             }
         }
+        
         cell.selectionStyle = .none
         return cell
     }
@@ -95,6 +127,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         } else {
             selectedIndices.insert(indexPath.row)
         }
+        // Efficiently reload just the tapped row to update the checkmark
         tableView.reloadRows(at: [indexPath], with: .automatic)
     }
 }

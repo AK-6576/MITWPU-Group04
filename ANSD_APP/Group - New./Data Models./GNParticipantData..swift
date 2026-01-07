@@ -10,4 +10,5 @@ import Foundation
 struct GNParticipantData {
     var name: String
     var summary: String
+    var imageName: String
 }
