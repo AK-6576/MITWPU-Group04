@@ -7,18 +7,13 @@
 
 import Foundation
 
-// MARK: - 1. Add the Message Data Structure (Required for chat history)
-// This structure must match what your UICollectionView cells are expecting.
+// MARK: - 1.struct 
 struct Message: Codable {
-    let text: String
+    var text: String
     let senderName: String
-    let isIncoming: Bool // true = Incoming (Gray), false = Outgoing (Blue)
-    
-    // An ID is useful for tracking messages, especially if they are retrieved from a database/API
+    let isIncoming: Bool
+    var isHighlighted: Bool = false
     let id: String
-    
-    // If your source data (like PCChatData) uses different key names,
-    // you might need a CodingKeys enum here for JSON decoding.
 }
 
 // MARK: - Main Response
@@ -44,7 +39,7 @@ struct ConversationsResponse: Codable {
 }
 
 // MARK: - Conversation
-struct Conversation: Codable, Identifiable {
+struct Conversation: Codable, Identifiable  {
     let id: String
     var title: String
     var description: String
@@ -54,7 +49,7 @@ struct Conversation: Codable, Identifiable {
     var category: String
     var icon: String
     var info: Bool?
-    
+ 
     // NEW: For pinning functionality (defaults to false if not in JSON)
     var isPinned: Bool = false
 
@@ -71,7 +66,7 @@ struct Conversation: Codable, Identifiable {
         case category
         case icon
         case info
-        
+       
         // Match JSON keys
         case startTime = "start_time"
         case endTime = "end_time"

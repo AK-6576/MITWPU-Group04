@@ -24,7 +24,7 @@ class chatHistory2ViewController: UIViewController {
         // MARK: - Properties
         let emptyChatLabel = UILabel()
         var histconversationData: Conversation?
-        
+         var isHighlightModeActive = false
         // Summary Data
         var conversationTitle = "Conversation Summary"
         var participantsData: [QCParticipantData] = []
@@ -44,7 +44,8 @@ class chatHistory2ViewController: UIViewController {
             
             updateContainerViews()
         }
-        
+    
+
         // MARK: - Setup Methods
         private func setupNavigation() {
             if let convoData = histconversationData {
@@ -91,6 +92,7 @@ class chatHistory2ViewController: UIViewController {
         @IBAction func chatNsumSegmentedController(_ sender: UISegmentedControl) {
             view.endEditing(true) // Dismiss keyboard when switching
             updateContainerViews()
+            setupMenu()
         }
         
         private func updateContainerViews() {
@@ -129,13 +131,52 @@ class chatHistory2ViewController: UIViewController {
                 emptyChatLabel.centerYAnchor.constraint(equalTo: chatContainerView.centerYAnchor)
             ])
         }
+    func setupChatContainerView(){
+            chatContainerView.layer.cornerRadius = 20
+            chatContainerView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        // collection view corner radius is set in cchat logic below
+        }
+    // MARK: - Menu Button setup
+    func setupMenu() {
+        let isChatSelected = (segmentedControl.selectedSegmentIndex == 0)
         
-        func setupMenu() {
-            let exportAction = UIAction(title: "Share Summary PDF", image: UIImage(systemName: "doc.plaintext")) { _ in
-                self.shareAsPDF()
-            }
+        // Define Actions
+        let highlightAction = UIAction(title: "Highlight Text", image: UIImage(systemName: "highlighter")) { _ in
+         self.isHighlightModeActive.toggle()
+            self.collectionView.reloadData() // Refresh to show checkboxes or change colors
+        }
+        
+        let editAction = UIAction(title: "Edit Text", image: UIImage(systemName: "pencil")) { _ in
+            // Add your edit logic here
+        }
+        
+        let exportAction = UIAction(title: "Share Summary PDF", image: UIImage(systemName: "doc.plaintext")) { _ in
+            self.shareAsPDF()
+        }
+
+        // Build Menu based on segment
+        if isChatSelected {
+            menuButton.menu = UIMenu(title: "", children: [highlightAction, editAction, exportAction])
+        } else {
+            // Summary segment: Only Export
             menuButton.menu = UIMenu(title: "", children: [exportAction])
         }
+    }
+    func showEditAlert(for indexPath: IndexPath) {
+        let message = transcript[indexPath.row]
+        let alert = UIAlertController(title: "Edit Message", message: nil, preferredStyle: .alert)
+        alert.addTextField { $0.text = message.text }
+        
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
+            if let newText = alert.textFields?.first?.text {
+                // Update your data source here
+                // self.histconversationData?.messages[indexPath.row].text = newText
+                self.collectionView.reloadItems(at: [indexPath])
+            }
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
     }
 
     // MARK: - Collection View (Chat Logic)
@@ -160,7 +201,20 @@ class chatHistory2ViewController: UIViewController {
         }
         
         func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+            collectionView.layer.cornerRadius = 20
             return CGSize(width: collectionView.bounds.width, height: 100)
+            
+        }
+        func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+            return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+                let highlight = UIAction(title: "Highlight", image: UIImage(systemName: "highlighter")) { _ in
+                    // logic to highlight this specific index
+                }
+                let edit = UIAction(title: "Edit", image: UIImage(systemName: "pencil")) { _ in
+                    self.showEditAlert(for: indexPath)
+                }
+                return UIMenu(title: "", children: [highlight, edit])
+            }
         }
     }
 
@@ -235,4 +289,7 @@ class chatHistory2ViewController: UIViewController {
             let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
             present(activityVC, animated: true)
         }
+        
+   
+        
     }
