@@ -20,10 +20,6 @@ class HomeViewController: UIViewController {
         setupTableView()
         loadQuickActionsData()
         navigationItem.hidesBackButton = true
-        
-        if let savedName = UserDefaults.standard.string(forKey: "savedUserName") {
-            usernameLabel.text = savedName
-        }
     }
     
     func setupTableView() {
@@ -203,10 +199,13 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func presentInfoScreen(for item: RoutineConversation) {
+        let message = randomInfoMessage(for: item)
+
         let alert = UIAlertController(title: item.conversationTopic,
-                                      message: item.description ?? "No details available.",
+                                      message: message,
                                       preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alert.addAction(okAction)
         present(alert, animated: true)
     }
     
@@ -242,5 +241,100 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 60
+    }
+}
+extension HomeViewController {
+    func randomInfoMessage(for item: RoutineConversation) -> String {
+        // Try to build a pretty date string
+        let prettyDate: String? = {
+            guard let dateString = item.date else { return nil }
+            let input = DateFormatter()
+            input.dateFormat = "yyyy-MM-dd"
+            input.locale = Locale.current
+            input.timeZone = TimeZone.current
+
+            let output = DateFormatter()
+            output.dateStyle = .medium
+            output.timeStyle = .none
+
+            if let date = input.date(from: dateString) {
+                return output.string(from: date)
+            }
+            return nil
+        }()
+
+        // Generate random end time
+        let endTime = randomEndTimeString(from: item.startTime) ?? "TBD"
+
+        // Base line describing the room
+        let aboutLine = "This room is all about \(item.conversationTopic)."
+
+        // Build a few rich templates
+        var templates: [String] = []
+
+        if let prettyDate = prettyDate {
+            templates.append("""
+            \(aboutLine)
+            \(item.startTime) – \(endTime) on \(prettyDate).
+            Status: \(item.status) in the \(item.categoryTitle) category.
+            """)
+            templates.append("""
+            Welcome to "\(item.conversationTopic)" 🎙
+            \(prettyDate) • \(item.startTime) → \(endTime)
+            A quick space for your \(item.categoryTitle.lowercased()) updates.
+            """)
+            templates.append("""
+            "\(item.conversationTopic)" is your dedicated \(item.categoryTitle.lowercased()) room.
+            Kick-off: \(prettyDate), \(item.startTime) – \(endTime)
+            Come prepared with key points and updates.
+            """)
+        } else {
+            templates.append("""
+            \(aboutLine)
+            \(item.startTime) – \(endTime)
+            Currently \(item.status.lowercased()) in the \(item.categoryTitle) category.
+            Tap again any time to jump back in.
+            """)
+            templates.append("""
+            "\(item.conversationTopic)" keeps your \(item.categoryTitle.lowercased()) moments organized.
+            Status: \(item.status) • \(item.startTime) → \(endTime)
+            Perfect for quick catch-ups and follow-throughs.
+            """)
+        }
+
+        // If the model already has a description, prepend it sometimes
+        if let desc = item.description, !desc.isEmpty {
+            templates.append("""
+            \(aboutLine)
+            \(desc)
+            \(item.startTime) – \(endTime) • \(item.status) • \(item.categoryTitle)
+            """)
+        }
+
+        return templates.randomElement() ?? "This room keeps your conversation organized."
+    }
+}
+
+extension HomeViewController {
+    /// Returns a random end time 15–120 minutes after the given start time string.
+    /// Expects startTime in "hh:mm a" format, e.g. "09:30 AM".
+    func randomEndTimeString(from startTime: String) -> String? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "hh:mm a"
+        formatter.locale = Locale.current
+
+        guard let startDate = formatter.date(from: startTime) else {
+            return nil
+        }
+
+        // Random duration: 15–120 minutes
+        let randomMinutes = Int.random(in: 15...120)
+        let endDate = Calendar.current.date(
+            byAdding: .minute,
+            value: randomMinutes,
+            to: startDate
+        ) ?? startDate
+
+        return formatter.string(from: endDate)
     }
 }

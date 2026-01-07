@@ -73,17 +73,11 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCIncomingCell", for: indexPath) as! QCIncomingCell
             cell.messageLabel.text = message.text
             
-            // 1. Determine the display name
-            let displayName: String
             if message.sender == "Person 1" {
-                displayName = self.otherPersonName
+                cell.nameLabel.text = self.otherPersonName
             } else {
-                displayName = message.sender
+                cell.nameLabel.text = message.sender
             }
-            
-
-            cell.nameLabel.text = displayName
-            cell.nameLabel.font = UIFont.boldSystemFont(ofSize: cell.nameLabel.font.pointSize)
             
             cell.onLabelTapped = { [weak self] in
                 self?.showRenameAlert()
@@ -95,7 +89,7 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
             return cell
         }
     }
-
+    
     // MARK: - Rename Alert
     func showRenameAlert() {
         if !isPaused { togglePauseState() }
@@ -135,13 +129,13 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     
     @IBAction func didTapStopButton(_ sender: UIButton) {
         if !isPaused { togglePauseState() }
-               
+                
                 let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
-               
+                
                 let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-                   
+                    
                     let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
-                   
+                    
                     if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
                        let summaryVC = summaryNav.topViewController as? SummaryViewController {
                         
@@ -158,15 +152,15 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
                         ]
 
                         summaryNav.modalPresentationStyle = .pageSheet
-               
+                
                         
                         self.present(summaryNav, animated: true, completion: nil)
                     }
                 }
-               
+                
                 actionSheet.addAction(endAction)
                 actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-               
+                
                 self.present(actionSheet, animated: true)
     }
 
@@ -178,6 +172,6 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width - 32, height: 100)
+        return CGSize(width: collectionView.bounds.width, height: 100)
     }
 }

@@ -19,7 +19,7 @@ struct RoutineConversation: Codable, Identifiable {
     let status: String
     var conversationTopic: String
     let topicImage: String
-    let timeRange: String
+    let startTime: String
     let description: String?
     let date: String?
     let timeImage: String

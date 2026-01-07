@@ -1,25 +1,35 @@
-//
-//  QuickActionsViewController.swift
-//  ANSD_APP
-//
-//  Created by Dhiraj Bodake on 16/12/25.
-//
-
 import UIKit
 
 class QuickActionsViewController: UITableViewController {
+    
     var actionsList: [RoutineConversation] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
         actionsList = QuickActionsRepository.getAllActions()
+        
+        // Cosmetic: remove empty cell lines at bottom
         tableView.tableHeaderView = UIView()
+        
+        // MARK: - FIX IS HERE
+        // I removed the code that was adding the button manually.
+        // Since you added the button in the Storyboard and connected the Segue,
+        // you do NOT need to add it here in code.
     }
     
-    @objc func didTapAddButton() {
-        print("Add button tapped")
+    // MARK: - Navigation (Segue)
+    // 1. This function is called automatically when you tap the "+" button in Storyboard
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        // 2. Check if the destination is the correct controller
+        if let addVC = segue.destination as? AddActionTableViewController {
+            
+            // 3. Set the delegate so we get the data back!
+            addVC.delegate = self
+        }
     }
-
+    
+    // MARK: - TableView Data Source
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return actionsList.count
     }
@@ -43,13 +53,19 @@ class QuickActionsViewController: UITableViewController {
         return cell
     }
     
+    // MARK: - Swipe Actions
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let item = self.actionsList[indexPath.row]
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (action, view, completionHandler) in
             guard let self = self else { return }
+            
             self.actionsList.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)
+            
+            // TODO: Call your repository to delete permanently
+            // QuickActionsRepository.delete(item)
+            
             completionHandler(true)
         }
         deleteAction.backgroundColor = .systemRed
@@ -74,6 +90,7 @@ class QuickActionsViewController: UITableViewController {
         return configuration
     }
     
+    // MARK: - Helper Methods
     func showActionDetails(for item: RoutineConversation) {
         let message = item.description ?? "Status: \(item.status)"
         let alert = UIAlertController(title: item.conversationTopic, message: message, preferredStyle: .alert)
@@ -91,6 +108,7 @@ class QuickActionsViewController: UITableViewController {
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
             var updatedItem = item
             updatedItem.conversationTopic = newName
+            
             self.actionsList[index] = updatedItem
             self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
         }
@@ -98,5 +116,19 @@ class QuickActionsViewController: UITableViewController {
         alert.addAction(saveAction)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
+    }
+}
+
+// MARK: - AddActionDelegate Implementation
+extension QuickActionsViewController: AddActionDelegate {
+    
+    func didCreateNewAction(_ action: RoutineConversation) {
+        // 1. Add to the local data array
+        actionsList.append(action)
+        
+        // 2. Refresh the table view to show the new row
+        tableView.reloadData()
+        
+        // 3. (Optional) Save to DB here
     }
 }

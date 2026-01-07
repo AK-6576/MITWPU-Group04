@@ -32,10 +32,10 @@
                                         </collectionViewFlowLayout>
                                         <cells>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="QCIncomingCell" id="bx9-1M-VOz" customClass="QCIncomingCell" customModule="ANSD_APP" customModuleProvider="target">
-                                                <rect key="frame" x="85" y="0.0" width="191" height="147"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="168" height="147"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="f9V-JT-CNL">
-                                                    <rect key="frame" x="0.0" y="0.0" width="191" height="147"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="168" height="147"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <subviews>
                                                         <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hGV-i0-CBj">
@@ -83,7 +83,7 @@
                                                         <constraint firstItem="llp-l6-Eox" firstAttribute="top" secondItem="f9V-JT-CNL" secondAttribute="top" constant="4" id="yhR-bu-lRB"/>
                                                     </constraints>
                                                 </collectionViewCellContentView>
-                                                <size key="customSize" width="191" height="147"/>
+                                                <size key="customSize" width="168" height="147"/>
                                                 <connections>
                                                     <outlet property="bubbleView" destination="hGV-i0-CBj" id="Xkk-Ot-DKR"/>
                                                     <outlet property="messageLabel" destination="1hn-2U-wTA" id="vJv-ZM-xUD"/>
@@ -91,7 +91,7 @@
                                                 </connections>
                                             </collectionViewCell>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="QCOutgoingCell" id="8RT-my-7rI" customClass="QCOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
-                                                <rect key="frame" x="90" y="157" width="181" height="147"/>
+                                                <rect key="frame" x="178" y="0.0" width="181" height="147"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="19T-BB-fo0">
                                                     <rect key="frame" x="0.0" y="0.0" width="181" height="147"/>

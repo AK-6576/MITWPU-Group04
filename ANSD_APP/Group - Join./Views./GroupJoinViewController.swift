@@ -55,7 +55,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    // MARK: - Collection View Data Source
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
@@ -67,17 +66,11 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! GJIncomingCell
             cell.GJmessageLabel.text = message.text
             
-            let displayName: String
             if message.sender == "Person 1" {
-                displayName = self.otherPersonName
+                cell.GJnameLabel.text = self.otherPersonName
             } else {
-                displayName = message.sender
+                cell.GJnameLabel.text = message.sender
             }
-
-            cell.GJnameLabel.text = displayName
-
-            cell.GJnameLabel.textColor = getParticipantColor(displayName)
-            cell.GJnameLabel.font = UIFont.boldSystemFont(ofSize: cell.GJnameLabel.font.pointSize)
             
             cell.onLabelTapped = { [weak self] in
                 self?.showRenameAlert()
@@ -90,22 +83,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    // MARK: - Color Helper
-    func getParticipantColor(_ name: String) -> UIColor {
-
-        let colors: [UIColor] = [
-            .systemBlue,
-            .systemOrange,
-            .systemPurple,
-            .systemTeal,
-            .systemIndigo,
-            .brown
-        ]
-        let index = abs(name.hashValue) % colors.count
-        return colors[index]
-    }
-    
-    // MARK: - Actions
     func showRenameAlert() {
         if !isPaused { togglePauseState() }
         
