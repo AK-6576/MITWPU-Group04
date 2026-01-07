@@ -49,7 +49,7 @@ struct Conversation: Codable, Identifiable  {
     var category: String
     var icon: String
     var info: Bool?
- 
+    var notes: String?
     // NEW: For pinning functionality (defaults to false if not in JSON)
     var isPinned: Bool = false
 

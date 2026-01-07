@@ -87,6 +87,15 @@ class chatHistory2ViewController: UIViewController {
             // Setup Participants Data if available
             // participantsData = histconversationData?.participants ?? []
         }
+    private func notifyDataChanged() {
+            if let updatedConvo = self.histconversationData {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("ConversationUpdated"),
+                    object: nil,
+                    userInfo: ["updatedConversation": updatedConvo]
+                )
+            }
+        }
 
         // MARK: - Actions
         @IBAction func chatNsumSegmentedController(_ sender: UISegmentedControl) {
@@ -140,25 +149,30 @@ class chatHistory2ViewController: UIViewController {
     func setupMenu() {
         let isChatSelected = (segmentedControl.selectedSegmentIndex == 0)
         
-        // Define Actions
-        let highlightAction = UIAction(title: "Highlight Text", image: UIImage(systemName: "highlighter")) { _ in
-         self.isHighlightModeActive.toggle()
-            self.collectionView.reloadData() // Refresh to show checkboxes or change colors
+        // 1. HIGHLIGHT ACTION
+        let highlightAction = UIAction(title: isHighlightModeActive ? "Stop Highlighting" : "Highlight Text",
+                                       image: UIImage(systemName: "highlighter")) { _ in
+            self.isHighlightModeActive.toggle()
+            // We reload to show a visual cue (like a change in background color) that we are in "Selection Mode"
+            self.collectionView.reloadData()
+            self.setupMenu() // Refresh menu title to show "Stop Highlighting"
         }
         
-        let editAction = UIAction(title: "Edit Text", image: UIImage(systemName: "pencil")) { _ in
-            // Add your edit logic here
+        // 2. EDIT ACTION
+        let editAction = UIAction(title: "Edit Mode", image: UIImage(systemName: "pencil")) { _ in
+            // Option: Show an alert telling user to "Tap a bubble to edit" or "Long press to edit"
+            let alert = UIAlertController(title: "Edit Mode", message: "Tap any message bubble to edit its text.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(alert, animated: true)
         }
         
         let exportAction = UIAction(title: "Share Summary PDF", image: UIImage(systemName: "doc.plaintext")) { _ in
             self.shareAsPDF()
         }
 
-        // Build Menu based on segment
         if isChatSelected {
             menuButton.menu = UIMenu(title: "", children: [highlightAction, editAction, exportAction])
         } else {
-            // Summary segment: Only Export
             menuButton.menu = UIMenu(title: "", children: [exportAction])
         }
     }
@@ -169,9 +183,14 @@ class chatHistory2ViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newText = alert.textFields?.first?.text {
-                // Update your data source here
-                // self.histconversationData?.messages[indexPath.row].text = newText
+                // Update the source data directly
+                self.histconversationData?.messages?[indexPath.row].text = newText
+                
+                // Refresh the UI
                 self.collectionView.reloadItems(at: [indexPath])
+                
+                // Notify other screens
+                self.notifyDataChanged()
             }
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
@@ -188,14 +207,37 @@ class chatHistory2ViewController: UIViewController {
         
         func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
             let message = transcript[indexPath.row]
+            
             if message.isIncoming {
                 let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCIncomingCell", for: indexPath) as! PC2IncomingViewCell
-                cell.messageLabel.text = message.text
+                
+                if message.isHighlighted {
+                    let textAttributes: [NSAttributedString.Key: Any] = [
+                        .underlineStyle: NSUnderlineStyle.single.rawValue,
+                        .underlineColor: UIColor.black // You can change the color of the line here
+                    ]
+                    cell.messageLabel.attributedText = NSAttributedString(string: message.text, attributes: textAttributes)
+                } else {
+                    cell.messageLabel.attributedText = nil
+                    cell.messageLabel.text = message.text
+                }
+                
                 cell.nameLabel.text = message.senderName
                 return cell
             } else {
                 let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCOutCell", for: indexPath) as! PCOutgoing2Cell
-                cell.PCmessageLabel.text = message.text
+                
+                if message.isHighlighted {
+                    let textAttributes: [NSAttributedString.Key: Any] = [
+                        .underlineStyle: NSUnderlineStyle.single.rawValue,
+                        .underlineColor: UIColor.white // White looks better on the blue outgoing bubble
+                    ]
+                    cell.PCmessageLabel.attributedText = NSAttributedString(string: message.text, attributes: textAttributes)
+                } else {
+                    cell.PCmessageLabel.attributedText = nil
+                    cell.PCmessageLabel.text = message.text
+                }
+                
                 return cell
             }
         }
@@ -207,19 +249,42 @@ class chatHistory2ViewController: UIViewController {
         }
         func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
             return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+                
+                // HIGHLIGHT ACTION
                 let highlight = UIAction(title: "Highlight", image: UIImage(systemName: "highlighter")) { _ in
-                    // logic to highlight this specific index
+                    // 1. Toggle the value in the actual source data
+                    let currentStatus = self.histconversationData?.messages?[indexPath.row].isHighlighted ?? false
+                    self.histconversationData?.messages?[indexPath.row].isHighlighted = !currentStatus
+                    
+                    // 2. Reload the cell to apply the yellow color immediately
+                    collectionView.reloadItems(at: [indexPath])
+                    
+                    // 3. Notify other screens (Real-time update)
+                    self.notifyDataChanged()
                 }
+                
+                // EDIT ACTION
                 let edit = UIAction(title: "Edit", image: UIImage(systemName: "pencil")) { _ in
                     self.showEditAlert(for: indexPath)
                 }
+                
                 return UIMenu(title: "", children: [highlight, edit])
             }
+        
         }
     }
 
     // MARK: - Table View (Summary Logic)
-    extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource, QCNotesCardCellDelegate, QCSummaryCardDelegate {
+extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource, QCNotesCardCellDelegate, QCSummaryCardDelegate {
+    func didChangeTitle(text: String) {
+        self.conversationTitle = text
+        self.histconversationData?.title = text
+            self.navigationItem.title = text
+            self.notifyDataChanged()
+    }
+    
+    
+    
         
         func numberOfSections(in tableView: UITableView) -> Int {
             return 6
@@ -252,22 +317,32 @@ class chatHistory2ViewController: UIViewController {
                 return cell
             case 5:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! QCNotesCardCell
-                cell.delegate = self
+               
+                cell.notesTextView.delegate = self
+                
+                cell.notesTextView.text = histconversationData?.notes ?? ""
+                
                 return cell
-            default:
-                return UITableViewCell()
+        }
+        func didUpdateText(in cell: QCNotesCardCell, newText: String) {
+                // 1. Update the actual data model
+                self.histconversationData?.notes = newText
+                
+                // 2. Refresh table height for auto-expanding text views
+                tableView.performBatchUpdates(nil)
+                
+                // 3. Notify app of data change (Persists the change)
+                self.notifyDataChanged()
             }
-        }
-        
-        // Delegate Methods
-        func didUpdateText(in cell: QCNotesCardCell) {
-            tableView.performBatchUpdates(nil)
-        }
-        
-        func didChangeTitle(text: String) {
-            conversationTitle = text
-        }
-    }
+            
+            // Fallback for your existing version of the delegate if you can't change the protocol
+            func didUpdateText(in cell: QCNotesCardCell) {
+                if let newText = cell.notesTextView.text {
+                    self.histconversationData?.notes = newText
+                    self.notifyDataChanged()
+                }
+                tableView.performBatchUpdates(nil)
+            }    }
 
     // MARK: - PDF Logic
     extension chatHistory2ViewController {
