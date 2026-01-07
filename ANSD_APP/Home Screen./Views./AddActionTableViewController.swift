@@ -96,7 +96,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
                     
                     // 4. Important: Replace the menu to persist visual state changes if needed in older iOS versions,
                     // but usually sender.state handles it. If ticks don't appear, un-comment the next line:
-                    // self.updateDayMenu()
+                    self.updateDayMenu()
                 }
                 
                 actions.append(action)
