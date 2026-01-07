@@ -12,19 +12,28 @@ class QCOutgoingCell: UICollectionViewCell {
     @IBOutlet weak var QCmessageLabel: UILabel!
     
     override func awakeFromNib() {
-            super.awakeFromNib()
-            
-            QCbubbleView.backgroundColor = .systemBlue
-            QCmessageLabel.textColor = .white
-            QCbubbleView.layer.cornerRadius = 16
-            QCbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-            
+        super.awakeFromNib()
+        
+        QCbubbleView.backgroundColor = .systemBlue
+        QCmessageLabel.textColor = .white
+        QCbubbleView.layer.cornerRadius = 16
+        QCbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32).isActive = true
-        }
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
+    }
+}
 
 class QCIncomingCell: UICollectionViewCell {
     @IBOutlet weak var nameLabel: UILabel!
@@ -36,10 +45,8 @@ class QCIncomingCell: UICollectionViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         
-        // 1. Style
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
-        
         bubbleView.layer.cornerRadius = 16
         bubbleView.layer.maskedCorners = [
             .layerMinXMinYCorner,
@@ -47,14 +54,23 @@ class QCIncomingCell: UICollectionViewCell {
             .layerMaxXMaxYCorner
         ]
         
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let screenWidth = windowScene.screen.bounds.width
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32).isActive = true
-        }
+    }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
     }
     @objc func handleTap() { onLabelTapped?() }
 }
