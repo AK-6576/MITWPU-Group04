@@ -364,30 +364,3 @@ func getSymbolForCategory(_ name: String) -> String {
     default: return "tag.fill"
     }
 }
-
-func getColorForCategory(_ name: String) -> UIColor {
-    let lower = name.lowercased().trimmingCharacters(in: .whitespaces)
-    
-    // 1. Check for specific hardcoded matches first
-    switch lower {
-    case "family", "date", "partner", "home": return .systemPink
-    case "office", "work", "coding":          return .systemBlue
-    case "friends", "gaming", "party":        return .systemOrange
-    case "gym", "health", "medical":          return .systemGreen
-    case "finance", "money", "bank":          return .systemMint
-    case "create own...":                     return .systemBlue
-        
-    // 2. Dynamic Fallback: Pick a color based on the name's hash
-    default:
-        let palette: [UIColor] = [
-            .systemYellow,
-            .systemGreen, .systemTeal, .systemBlue,
-            .systemIndigo, .systemPurple, .systemPink, .systemBrown
-        ]
-        
-        // Use the string's hash to pick a consistent index
-        let hash = abs(name.hashValue)
-        let index = hash % palette.count
-        return palette[index]
-    }
-}

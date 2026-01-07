@@ -20,6 +20,7 @@ class QuickActionCell: UITableViewCell {
     }
     
     func setupDesign() {
+        // Design: Gray square background with rounded corners
         iconImageView.layer.cornerRadius = 10
         iconImageView.backgroundColor = .systemGray6
         iconImageView.contentMode = .center
@@ -27,27 +28,26 @@ class QuickActionCell: UITableViewCell {
     }
 
     func configure(with item: RoutineConversation) {
+        // 1. Text Configuration
         titleLabel.text = item.conversationTopic
         subtitleLabel.text = item.startTime
         
+        // 2. Icon Configuration
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
-        if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
+        let iconName = item.iconName ?? "tag.fill" // Fallback to 'tag' if nil
+        
+        if let image = UIImage(systemName: iconName, withConfiguration: config) {
+            // .alwaysTemplate is CRITICAL. It tells iOS "Ignore the image's original color, use tintColor instead"
             iconImageView.image = image.withRenderingMode(.alwaysTemplate)
         }
         
-        let category = item.categoryTitle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        print("QuickAction Item: \(item.conversationTopic) | Category: '\(category)'")
+        // 3. Color Configuration (The Fix)
+        // We use the shared helper to get the exact color for this category
+        let category = item.categoryTitle ?? "Other"
+        let color = getColorForCategory(category)
         
-        switch category {
-        case "office", "work", "business":
-            iconImageView.tintColor = .systemBlue
-        case "family", "home", "personal":
-            iconImageView.tintColor = .systemPink
-        case "friends", "social", "hangout":
-            iconImageView.tintColor = .systemGreen
-        default:
-            iconImageView.tintColor = .systemGray
-        }
+        // Apply the color to the icon
+        iconImageView.tintColor = color
     }
     
     @IBAction func didTapInfoButton(_ sender: UIButton) {
