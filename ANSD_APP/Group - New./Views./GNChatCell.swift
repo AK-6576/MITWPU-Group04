@@ -20,8 +20,17 @@ class GNOutgoingCell: UICollectionViewCell {
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32).isActive = true
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
+    }
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
     }
 }
 
@@ -44,8 +53,17 @@ class GNIncomingCell: UICollectionViewCell {
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32).isActive = true
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
+    }
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
     }
     
     @objc func handleTap() {
