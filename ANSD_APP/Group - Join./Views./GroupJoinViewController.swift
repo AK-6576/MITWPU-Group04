@@ -37,6 +37,23 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         processNextMessage()
     }
     
+    // MARK: - Helper to match Names to Image Assets
+    func getImageName(for name: String) -> String {
+        let lowerName = name.lowercased()
+        
+        if lowerName.contains("peter") { return "peter_parker" }
+        if lowerName.contains("bruce") { return "bruce_banner" }
+        if lowerName.contains("steve") { return "steve_rogers" }
+        if lowerName.contains("tony") { return "tony_stark" }
+        if lowerName.contains("natasha") { return "natasha_romanoff" }
+        if lowerName.contains("wanda") { return "wanda_maximoff" }
+        if lowerName.contains("vision") { return "vision" }
+        if lowerName.contains("bucky") { return "bucky_barnes" }
+        
+        // Fallback
+        return "person.circle.fill"
+    }
+    
     func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -66,10 +83,21 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! GJIncomingCell
             cell.GJmessageLabel.text = message.text
             
+            // Determine Name
+            let displayName: String
             if message.sender == "Person 1" {
-                cell.GJnameLabel.text = self.otherPersonName
+                displayName = self.otherPersonName
             } else {
-                cell.GJnameLabel.text = message.sender
+                displayName = message.sender
+            }
+            cell.GJnameLabel.text = displayName
+            
+            // NEW: Set the Profile Image based on the name
+            let imageName = getImageName(for: displayName)
+            if let image = UIImage(named: imageName) {
+                cell.GJprofileImageView.image = image
+            } else {
+                cell.GJprofileImageView.image = UIImage(systemName: "person.circle.fill")
             }
             
             cell.onLabelTapped = { [weak self] in
@@ -129,18 +157,23 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 
                 summaryVC.conversationTitle = self.sessionTitle
                 summaryVC.chatHistory = self.messages
+                
+                // NEW: Pass the imageName here as well
                 summaryVC.participantsData = [
                     GJParticipantData(
                         name: "Peter Parker",
-                        summary: "Peter has finished his assignment and is informing his friends about the same. He has a family outing at 4 PM and cannot help."
+                        summary: "Peter has finished his assignment and is informing his friends about the same. He has a family outing at 4 PM and cannot help.",
+                        imageName: "peter_parker"
                     ),
                     GJParticipantData(
                         name: "Bruce Banner",
-                        summary: "Bruce is having fun at Steve's misfortune and he hasn't started doing it as well. He is very relaxed about the whole thing."
+                        summary: "Bruce is having fun at Steve's misfortune and he hasn't started doing it as well. He is very relaxed about the whole thing.",
+                        imageName: "bruce_banner"
                     ),
                     GJParticipantData(
                         name: "Steve Parker",
-                        summary: "Steve is being smug about the whole thing and is scolding his friends for not having done the assignment in the past 3 weeks."
+                        summary: "Steve is being smug about the whole thing and is scolding his friends for not having done the assignment in the past 3 weeks.",
+                        imageName: "steve_rogers" // Assuming Steve Parker might use Steve Rogers image or similar
                     )
                 ]
                 

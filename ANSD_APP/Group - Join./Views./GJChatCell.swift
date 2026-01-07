@@ -39,6 +39,9 @@ class GJIncomingCell: UICollectionViewCell {
     @IBOutlet weak var GJbubbleView: UIView!
     @IBOutlet weak var GJmessageLabel: UILabel!
     
+    // NEW: Outlet for the profile picture
+    @IBOutlet weak var GJprofileImageView: UIImageView!
+    
     var onLabelTapped: (() -> Void)?
     
     override func awakeFromNib() {
@@ -47,15 +50,25 @@ class GJIncomingCell: UICollectionViewCell {
         GJmessageLabel.textColor = .black
         GJbubbleView.layer.cornerRadius = 16
         GJbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        
         GJnameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         GJnameLabel.addGestureRecognizer(tap)
+        
+        // NEW: Style the Profile Image
+        if let profileImg = GJprofileImageView {
+            profileImg.layer.cornerRadius = profileImg.frame.height / 2
+            profileImg.clipsToBounds = true
+            profileImg.contentMode = .scaleAspectFill
+            profileImg.backgroundColor = .systemGray4
+        }
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
+    
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()

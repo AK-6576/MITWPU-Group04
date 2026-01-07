@@ -65,13 +65,23 @@ class GJParticipantCardCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
+        
+        // Style the avatar
         avatarImageView.layer.cornerRadius = 4
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
+        avatarImageView.contentMode = .scaleAspectFill
     }
     
     func configure(with data: GJParticipantData) {
         detailsLabel.text = data.summary
+        
+        // Set Image
+        if let image = UIImage(named: data.imageName) {
+            avatarImageView.image = image
+        } else {
+            avatarImageView.image = UIImage(systemName: "person.crop.circle")
+        }
     }
 }
 
