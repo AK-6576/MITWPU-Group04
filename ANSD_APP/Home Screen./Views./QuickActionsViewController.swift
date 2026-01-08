@@ -14,14 +14,9 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         super.viewDidLoad()
         
         self.title = "Quick Actions"
-        
-        // 1. Register Header
         tableView.register(SectionHeaderView.self, forHeaderFooterViewReuseIdentifier: SectionHeaderView.identifier)
-        
-        // 2. Remove empty cell separators
         tableView.tableHeaderView = UIView()
         
-        // 3. Load Data
         loadData()
     }
     
@@ -30,7 +25,6 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         tableView.reloadData()
     }
     
-    // MARK: - Navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if let addVC = segue.destination as? AddActionTableViewController {
             addVC.delegate = self
@@ -47,12 +41,10 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         return sections[section].items.count
     }
     
-    // MARK: - Header Config
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard let header = tableView.dequeueReusableHeaderFooterView(withIdentifier: SectionHeaderView.identifier) as? SectionHeaderView else { return nil }
         
         let categoryName = sections[section].category
-        // Clean configure (no colors)
         header.configure(title: categoryName, section: section)
         header.delegate = self
         
@@ -75,9 +67,6 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         let item = sections[indexPath.section].items[indexPath.row]
         cell.configure(with: item)
         
-        // Optional: Tint the icon image using Utils
-        // cell.iconImageView?.tintColor = getColorForCategory(item.categoryTitle)
-        
         cell.onInfoTapped = { [weak self] in
             self?.showActionDetails(for: item)
         }
@@ -85,19 +74,15 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         return cell
     }
     
-    // MARK: - Swipe Actions
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
         let item = self.sections[indexPath.section].items[indexPath.row]
         
-        // 1. DELETE
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
             
-            // Remove from array
             self.sections[indexPath.section].items.remove(at: indexPath.row)
             
-            // Update Table View
             if self.sections[indexPath.section].items.isEmpty {
                 self.sections.remove(at: indexPath.section)
                 tableView.deleteSections([indexPath.section], with: .fade)
@@ -109,7 +94,6 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         deleteAction.backgroundColor = UIColor.systemRed
         deleteAction.image = UIImage(systemName: "trash")
         
-        // 2. RENAME
         let renameAction = UIContextualAction(style: .normal, title: "Rename") { [weak self] (_, _, completion) in
             self?.showRenameAlert(for: item, section: indexPath.section, row: indexPath.row)
             completion(true)
@@ -117,7 +101,6 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         renameAction.backgroundColor = UIColor.systemOrange
         renameAction.image = UIImage(systemName: "pencil")
         
-        // 3. INFO
         let infoAction = UIContextualAction(style: .normal, title: "Info") { [weak self] (_, _, completion) in
             self?.showActionDetails(for: item)
             completion(true)
@@ -130,10 +113,39 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         return config
     }
     
-    // MARK: - Header Delegate
+    // MARK: - Header Delegate (FIXED CRASH)
     func didTapHeader(sectionIndex: Int, categoryName: String) {
-        print("Header tapped: \(categoryName)")
-        // Implement expansion/navigation logic here
+        
+        var storyboardName = ""
+        
+        switch categoryName {
+        case "Friends":
+            storyboardName = "Friends"
+        case "Family":
+            storyboardName = "RoutineConvo 2"
+        case "Office":
+            storyboardName = "RoutineConvo"
+        default:
+            print("No storyboard configured for: \(categoryName)")
+            return
+        }
+        
+        if !storyboardName.isEmpty {
+            let storyboard = UIStoryboard(name: storyboardName, bundle: nil)
+            
+            // Check if we can instantiate the Initial View Controller
+            if var targetVC = storyboard.instantiateInitialViewController() {
+                
+                // MARK: - FIX IS HERE
+                // Check if the storyboard starts with a NavigationController.
+                // If yes, grab the 'topViewController' inside it instead.
+                if let navVC = targetVC as? UINavigationController, let topVC = navVC.topViewController {
+                    targetVC = topVC
+                }
+                
+                navigationController?.pushViewController(targetVC, animated: true)
+            }
+        }
     }
     
     // MARK: - Helpers
@@ -166,18 +178,14 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
 // MARK: - AddActionDelegate
 extension QuickActionsViewController: AddActionDelegate {
     func didCreateNewAction(_ action: RoutineConversation) {
-        // 1. Flatten existing items
         var allItems = sections.flatMap { $0.items }
-        // 2. Add new item
         allItems.append(action)
         
-        // 3. Regroup and Sort
         let groupedDictionary = Dictionary(grouping: allItems) { $0.categoryTitle }
         self.sections = groupedDictionary.map { (key, value) in
             RoutineSection(category: key, items: value)
         }.sorted { $0.category < $1.category }
         
-        // 4. Reload
         tableView.reloadData()
     }
 }
