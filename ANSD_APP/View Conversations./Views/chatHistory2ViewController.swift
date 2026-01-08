@@ -147,11 +147,16 @@ class chatHistory2ViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        if let participants = histconversationData?.participants {
+            self.participantsData = participants
+            
+        }
         setupNavigation()
         setupChatUI()
         setupSummaryUI()
         setupMenu()
         updateContainerViews()
+        
     }
     
     // MARK: - Setup Methods
@@ -346,7 +351,7 @@ extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
     
     // Protocol method for PCNotesCardCellDelegate
     func didUpdateText(in cell: PCNotesCardCell) {
-        // If it's not the placeholder, save to data
+      
         if cell.notesTextView.text != cell.placeholderText {
             self.histconversationData?.notes = cell.notesTextView.text
             

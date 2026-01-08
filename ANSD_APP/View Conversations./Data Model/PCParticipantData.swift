@@ -6,7 +6,7 @@
 //
 
 import Foundation
-struct PCParticipantData {
-    var name: String
-    var summary: String
-}
+//struct PCParticipantData {
+//    var name: String
+//    var summary: String
+//}

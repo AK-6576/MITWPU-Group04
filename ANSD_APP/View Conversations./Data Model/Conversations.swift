@@ -1,13 +1,6 @@
-//
-//  Conversations.swift
-//  Group_4-ANSD_App
-//
-//  Created by Omkar Varpe on 26/11/25.
-//
-
 import Foundation
 
-// MARK: - 1.struct 
+// MARK: - 1. Message Struct
 struct Message: Codable {
     var text: String
     let senderName: String
@@ -16,19 +9,23 @@ struct Message: Codable {
     let id: String
 }
 
+// MARK: - 2. Participant Data Struct (New)
+struct PCParticipantData: Codable {
+    let name: String
+    let summary: String
+}
+
 // MARK: - Main Response
 struct ConversationsResponse: Codable {
-
     var conversations: [Conversation] = []
     var previousMonths: [PreviousMonth] = []
 
+    // Note: Creating an empty init that calls load() can be risky in multi-threaded environments,
+    // but works for simple setups.
     init() {
-        do {
-            let response = try load()
-            conversations = response.conversations
-            previousMonths = response.previousMonths
-        } catch {
-            print(error.localizedDescription)
+        if let response = try? load() {
+            self.conversations = response.conversations
+            self.previousMonths = response.previousMonths
         }
     }
 
@@ -38,8 +35,8 @@ struct ConversationsResponse: Codable {
     }
 }
 
-// MARK: - Conversation
-struct Conversation: Codable, Identifiable  {
+// MARK: - Conversation Struct
+struct Conversation: Codable, Identifiable {
     let id: String
     var title: String
     var description: String
@@ -49,28 +46,19 @@ struct Conversation: Codable, Identifiable  {
     var category: String
     var icon: String
     var info: Bool?
+    
+    // Summary Data
     var notes: String?
-    // NEW: For pinning functionality (defaults to false if not in JSON)
+    var participants: [PCParticipantData]? // Added to match JSON
+    
     var isPinned: Bool = false
-
-    // MARK: - 2. Add the messages property
-    // This holds the actual chat transcript. It is optional (?) because not all
-    // conversation entries (like those in previousMonths) might need to load the full chat history immediately.
     var messages: [Message]?
 
     enum CodingKeys: String, CodingKey {
-        case id
-        case title
-        case description
-        case date
-        case category
-        case icon
-        case info
-       
-        // Match JSON keys
+        case id, title, description, date, category, icon, info, notes, participants
         case startTime = "start_time"
         case endTime = "end_time"
-        case messages // Ensure your conversation JSON includes this key for the chat transcript
+        case messages
     }
 }
 
