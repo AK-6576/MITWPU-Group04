@@ -2,16 +2,10 @@
 //  RoutineModels.swift
 //  ANSD_APP
 //
-//  Created by Daiwiik Harihar on 10/12/25.
-//
 
 import Foundation
 
-struct RoutineResponse: Codable {
-    let routine_conversations: [RoutineConversation]
-    let view_conversations: [RoutineConversation]
-}
-
+// MARK: - Data Models
 struct RoutineConversation: Codable, Identifiable {
     let id: String
     let iconName: String
@@ -23,4 +17,11 @@ struct RoutineConversation: Codable, Identifiable {
     let description: String?
     let date: String?
     let timeImage: String
+}
+
+// MARK: - Section Model
+struct RoutineSection {
+    let category: String
+    // 'var' allows us to delete/move items within the section
+    var items: [RoutineConversation]
 }
