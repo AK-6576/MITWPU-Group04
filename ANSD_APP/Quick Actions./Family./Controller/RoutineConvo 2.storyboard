@@ -19,7 +19,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Tc3-Gd-Ah9">
-                                <rect key="frame" x="0.0" y="224" width="393" height="560"/>
+                                <rect key="frame" x="0.0" y="172" width="393" height="612"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="uES-0Y-ZxV" userLabel="ContentView">
                                         <rect key="frame" x="0.0" y="0.0" width="393" height="1000"/>
@@ -600,8 +600,8 @@
             <objects>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="F4e-b6-kPu" sceneMemberID="viewController">
                     <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" largeTitles="YES" id="1ro-hS-oLa">
-                        <rect key="frame" x="0.0" y="118" width="393" height="106"/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="1ro-hS-oLa">
+                        <rect key="frame" x="0.0" y="118" width="393" height="54"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
