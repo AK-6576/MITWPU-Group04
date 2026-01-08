@@ -85,8 +85,8 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
           
         let selectedConversation = conversationSections[indexPath.section].conversations[indexPath.row]
           
-        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistoryViewController") as? ChatHistoryViewController else {
-            print("DIAGNOSTIC FAILURE: Could not instantiate ChatHistoryViewController. Check Storyboard ID.")
+        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "chatHistory2ViewController") as? chatHistory2ViewController else {
+            print("DIAGNOSTIC FAILURE: Could not instantiate chatHistory2ViewController. Check Storyboard ID.")
             return
         }
           

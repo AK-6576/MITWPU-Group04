@@ -6,17 +6,30 @@
 //
 
 import UIKit
-import Contacts // 1. Import the framework
 
 class ParticipantSelectionViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
     @IBOutlet weak var tableView: UITableView!
     
-    // 2. Data Source: Use CNContact instead of a custom struct
-    var contacts: [CNContact] = []
-    let contactStore = CNContactStore()
+    // 1. Model: Define a struct to hold both Name and Image Name
+    struct Contact {
+        let name: String
+        let imageName: String
+    }
     
-    // Keep this for your logic (matches by full name string)
+    // 2. Data Source: Update the list with image filenames
+    // Ensure these image names match exactly what is in your Assets folder
+    let contacts: [Contact] = [
+        Contact(name: "Steve Rogers", imageName: "steve_rogers"),
+        Contact(name: "Bucky Barnes", imageName: "bucky_barnes"),
+        Contact(name: "Tony Stark", imageName: "tony_stark"),
+        Contact(name: "Natasha Romanoff", imageName: "nat_rom"),
+        Contact(name: "Bruce Banner", imageName: "bruce_banner"),
+        Contact(name: "Peter Parker", imageName: "peter_parker"),
+        Contact(name: "Wanda Maximoff", imageName: "wanda_max"),
+        Contact(name: "Vision", imageName: "vis")
+    ]
+    
     var unavailableContacts: Set<String> = []
     var selectedIndices: Set<Int> = []
     var onPeopleAdded: (([String]) -> Void)?
@@ -26,11 +39,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         tableView.delegate = self
         tableView.dataSource = self
         tableView.tableFooterView = UIView()
-        
         setupNavigationBar()
-        
-        // 3. Fetch contacts when view loads
-        fetchContacts()
     }
     
     func setupNavigationBar() {
@@ -42,75 +51,14 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         }
     }
     
-    // MARK: - Contacts Framework Logic
-    
-    func fetchContacts() {
-        // 4. Request Access
-        contactStore.requestAccess(for: .contacts) { [weak self] (granted, error) in
-            guard let self = self else { return }
-            
-            if granted {
-                self.retrieveContactsFromStore()
-            } else {
-                DispatchQueue.main.async {
-                    self.showSettingsAlert()
-                }
-            }
-        }
-    }
-    
-    func retrieveContactsFromStore() {
-        // 5. Define the keys we want to fetch (Name and Image)
-        let keys = [
-            CNContactGivenNameKey,
-            CNContactFamilyNameKey,
-            CNContactThumbnailImageDataKey,
-            CNContactImageDataAvailableKey
-        ] as [CNKeyDescriptor]
-        
-        let request = CNContactFetchRequest(keysToFetch: keys)
-        // Sort by given name
-        request.sortOrder = .userDefault
-        
-        var fetchedContacts: [CNContact] = []
-        
-        do {
-            try contactStore.enumerateContacts(with: request) { (contact, stop) in
-                fetchedContacts.append(contact)
-            }
-            
-            // 6. Update UI on Main Thread
-            DispatchQueue.main.async {
-                self.contacts = fetchedContacts
-                self.tableView.reloadData()
-            }
-        } catch {
-            print("Failed to fetch contacts: \(error)")
-        }
-    }
-    
-    func showSettingsAlert() {
-        let alert = UIAlertController(title: "Permission Denied", message: "Please enable Contacts access in Settings to invite friends.", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
-            }
-        })
-        self.present(alert, animated: true)
-    }
-    
     @objc func closeTapped() {
         self.dismiss(animated: true, completion: nil)
     }
 
     @IBAction func doneTapped(_ sender: Any) {
         if let callback = onPeopleAdded {
-            // Map selected contacts to their Full Name strings
-            let selectedNames = selectedIndices.map { index -> String in
-                let contact = contacts[index]
-                return "\(contact.givenName) \(contact.familyName)"
-            }
+            // Map the selected indices back to a list of Name Strings for the callback
+            let selectedNames = selectedIndices.map { contacts[$0].name }
             callback(selectedNames)
             self.dismiss(animated: true, completion: nil)
         } else {
@@ -133,33 +81,29 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        // IMPORTANT: Ensure your Prototype Cell Class in Storyboard is set to "ContactCell"
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath) as! ContactCell
         
         let contact = contacts[indexPath.row]
-        let fullName = "\(contact.givenName) \(contact.familyName)"
         
-        // Configure Name
-        cell.nameLabel.text = fullName
+        // Configure Custom UI Elements
+        cell.nameLabel.text = contact.name
         
-        // Configure Image (Check if real contact has image data)
-        if contact.imageDataAvailable, let data = contact.thumbnailImageData {
-            cell.profileImageView.image = UIImage(data: data)
-            // Ensure circular style is applied here or in Cell awakeFromNib
-            cell.profileImageView.layer.cornerRadius = cell.profileImageView.frame.height / 2
-            cell.profileImageView.clipsToBounds = true
-            cell.profileImageView.contentMode = .scaleAspectFill
+        if let image = UIImage(named: contact.imageName) {
+            cell.profileImageView.image = image
         } else {
             cell.profileImageView.image = UIImage(systemName: "person.circle.fill")
         }
         
         // Handle Unavailable State
-        if unavailableContacts.contains(fullName) {
+        if unavailableContacts.contains(contact.name) {
             cell.nameLabel.textColor = .systemGray3
             cell.isUserInteractionEnabled = false
             cell.accessoryType = .none
-            cell.nameLabel.text = "\(fullName) (Unavailable)"
-            cell.profileImageView.alpha = 0.5
+            cell.nameLabel.text = "\(contact.name) (Unavailable)"
+            cell.profileImageView.alpha = 0.5 // Dim the image
         } else {
+            // Reset state for reusable cells
             cell.isUserInteractionEnabled = true
             cell.profileImageView.alpha = 1.0
             
@@ -183,6 +127,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         } else {
             selectedIndices.insert(indexPath.row)
         }
+        // Efficiently reload just the tapped row to update the checkmark
         tableView.reloadRows(at: [indexPath], with: .automatic)
     }
 }

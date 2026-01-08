@@ -527,7 +527,7 @@
                                                     <rect key="frame" x="20" y="10" width="353" height="180"/>
                                                     <subviews>
                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="g03-da-YyC">
-                                                            <rect key="frame" x="16" y="17.666666666666668" width="50" height="46.666666666666643"/>
+                                                            <rect key="frame" x="16" y="17.666666666666668" width="50" height="46.666666666666657"/>
                                                             <color key="backgroundColor" systemColor="systemGray4Color"/>
                                                             <color key="tintColor" systemColor="labelColor"/>
                                                             <constraints>
