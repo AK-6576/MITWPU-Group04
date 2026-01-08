@@ -103,7 +103,7 @@
                                         <rect key="frame" x="0.0" y="0.0" width="440" height="639"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <prototypes>
-                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="SummarySectionHeaderCell" rowHeight="50" id="zqF-af-Z6o" customClass="QCSummarySectionHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCSummarySectionHeaderCell" rowHeight="50" id="zqF-af-Z6o" customClass="PCSummarySectionHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="50" width="440" height="50"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="zqF-af-Z6o" id="RhH-zZ-bYI">
@@ -141,11 +141,11 @@
                                                     </constraints>
                                                 </tableViewCellContentView>
                                                 <connections>
-                                                    <outlet property="headerIcon" destination="vKd-dr-ao4" id="bJb-Gv-gam"/>
-                                                    <outlet property="headerLabel" destination="0GV-ye-lBA" id="He0-31-VAr"/>
+                                                    <outlet property="headerIcon" destination="vKd-dr-ao4" id="z1B-ra-oWD"/>
+                                                    <outlet property="headerLabel" destination="0GV-ye-lBA" id="enS-zS-YpQ"/>
                                                 </connections>
                                             </tableViewCell>
-                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="SummaryCardCell" rowHeight="200" id="Inm-cF-v3b" customClass="QCSummaryCardCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCSummaryCardCell" rowHeight="200" id="Inm-cF-v3b" customClass="PCSummaryCardCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="100" width="440" height="200"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Inm-cF-v3b" id="LwI-p0-zwf">
@@ -265,7 +265,7 @@
                                                     <outlet property="titleTextField" destination="vo4-wC-pph" id="oho-Jp-i7I"/>
                                                 </connections>
                                             </tableViewCell>
-                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsSummaryHeaderCell" rowHeight="50" id="IHI-HM-h0w" customClass="QCParticipantsSummaryHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCParticipantsSummaryHeaderCell" rowHeight="50" id="IHI-HM-h0w" customClass="PCParticipantsSummaryHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="300" width="440" height="50"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="IHI-HM-h0w" id="rvs-F8-kw2">
@@ -303,11 +303,11 @@
                                                     </constraints>
                                                 </tableViewCellContentView>
                                                 <connections>
-                                                    <outlet property="participantIcon" destination="aeB-06-YQW" id="EDS-yg-i5w"/>
-                                                    <outlet property="participantLabel" destination="WL3-z3-ev5" id="Yon-Ns-6jo"/>
+                                                    <outlet property="participantIcon" destination="aeB-06-YQW" id="1X5-1A-zk6"/>
+                                                    <outlet property="participantLabel" destination="WL3-z3-ev5" id="2Dp-nn-kYn"/>
                                                 </connections>
                                             </tableViewCell>
-                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsCardCell" rowHeight="200" id="m73-At-fIo" customClass="QCParticipantCardCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCParticipantsCardCell" rowHeight="200" id="m73-At-fIo" customClass="PCParticipantsCardCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="350" width="440" height="200"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="m73-At-fIo" id="TZ4-js-yof">
@@ -362,12 +362,12 @@
                                                     </constraints>
                                                 </tableViewCellContentView>
                                                 <connections>
-                                                    <outlet property="avatarImageView" destination="nWV-Ny-Y9X" id="7fv-s2-Hyy"/>
-                                                    <outlet property="detailsLabel" destination="38g-oR-Drc" id="Ve1-U8-En5"/>
-                                                    <outlet property="mainCardView" destination="HOQ-4o-pQE" id="7lc-nu-yYB"/>
+                                                    <outlet property="avatarImageView" destination="nWV-Ny-Y9X" id="s1S-9W-aDN"/>
+                                                    <outlet property="detailsLabel" destination="38g-oR-Drc" id="0Zn-2q-apf"/>
+                                                    <outlet property="mainCardView" destination="HOQ-4o-pQE" id="e39-lq-SOu"/>
                                                 </connections>
                                             </tableViewCell>
-                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="NotesSectionHeaderCell" rowHeight="50" id="dbQ-ZA-Zzg" customClass="NotesHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCNotesSectionHeaderCell" rowHeight="50" id="dbQ-ZA-Zzg" customClass="PCNotesSectionHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="550" width="440" height="50"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="dbQ-ZA-Zzg" id="7gI-az-5CE">
@@ -405,11 +405,11 @@
                                                     </constraints>
                                                 </tableViewCellContentView>
                                                 <connections>
-                                                    <outlet property="notesIcon" destination="Krr-G1-44g" id="wz5-k4-JXx"/>
-                                                    <outlet property="notesLabel" destination="e3w-cn-zNz" id="M7z-1Y-Kws"/>
+                                                    <outlet property="notesIcon" destination="Krr-G1-44g" id="aRb-c4-R93"/>
+                                                    <outlet property="notesLabel" destination="e3w-cn-zNz" id="hMc-Uj-Jkl"/>
                                                 </connections>
                                             </tableViewCell>
-                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="NotesCardCell" rowHeight="200" id="mSr-9f-4m9" customClass="QCNotesCardCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCNotesCardCell" rowHeight="200" id="mSr-9f-4m9" customClass="PCNotesCardCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="600" width="440" height="200"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="mSr-9f-4m9" id="YYm-Dt-4qo">
@@ -444,8 +444,8 @@
                                                     </constraints>
                                                 </tableViewCellContentView>
                                                 <connections>
-                                                    <outlet property="mainCardView" destination="Nbh-4K-itg" id="0iU-3z-m2h"/>
-                                                    <outlet property="notesTextView" destination="5ue-iT-YoD" id="rT1-VS-cuo"/>
+                                                    <outlet property="mainCardView" destination="Nbh-4K-itg" id="TV7-mb-gRC"/>
+                                                    <outlet property="notesTextView" destination="5ue-iT-YoD" id="KtH-UR-KiH"/>
                                                 </connections>
                                             </tableViewCell>
                                         </prototypes>
@@ -739,22 +739,22 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.53333333333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray2Color">
-            <color red="0.68235294117647061" green="0.68235294117647061" blue="0.69803921568627447" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68235294120000001" green="0.68235294120000001" blue="0.69803921570000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray4Color">
-            <color red="0.81960784313725488" green="0.81960784313725488" blue="0.83921568627450982" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.81960784310000001" green="0.81960784310000001" blue="0.83921568629999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
