@@ -19,6 +19,7 @@ class PCSummarySectionHeaderCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        contentView.layer.cornerRadius = 20
     }
 }
 
@@ -30,6 +31,7 @@ class PCParticipantsSummaryHeaderCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        contentView.layer.cornerRadius = 20
     }
 }
 
@@ -40,7 +42,8 @@ class PCNotesSectionHeaderCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        contentView.backgroundColor = .clear
+          
+  
     }
 }
 
@@ -55,8 +58,9 @@ class PCSummaryCardCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        // Note: Ensure styleCard is defined in your project
-        // styleCard(view: mainCardView)
+        mainCardView.backgroundColor = .white
+        mainCardView.layer.cornerRadius = 20
+        contentView.layer.cornerRadius = 20
     }
     
     @IBAction func titleChanged(_ sender: UITextField) {
@@ -75,7 +79,9 @@ class PCParticipantsCardCell: UITableViewCell {
         avatarImageView.layer.cornerRadius = 4
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
-        // styleCard(view: mainCardView)
+        mainCardView.layer.cornerRadius = 16
+        mainCardView.backgroundColor = .white
+        
     }
     
     func configure(with data: PCParticipantData) {
@@ -100,7 +106,8 @@ class PCNotesCardCell: UITableViewCell, UITextViewDelegate {
         notesTextView.isScrollEnabled = false
         notesTextView.textContainerInset = .zero
         notesTextView.textContainer.lineFragmentPadding = 0
-        // styleCard(view: mainCardView)
+        mainCardView.backgroundColor = .white
+        mainCardView.layer.cornerRadius = 20
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -147,6 +154,7 @@ class chatHistory2ViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .systemGroupedBackground
         if let participants = histconversationData?.participants {
             self.participantsData = participants
             
@@ -160,6 +168,8 @@ class chatHistory2ViewController: UIViewController {
     }
     
     // MARK: - Setup Methods
+  
+    
     private func setupNavigation() {
         if let convoData = histconversationData {
             navigationItem.title = convoData.title
@@ -172,6 +182,7 @@ class chatHistory2ViewController: UIViewController {
     private func setupChatUI() {
         collectionView.delegate = self
         collectionView.dataSource = self
+        collectionView.layer.cornerRadius = 20
         chatContainerView.layer.cornerRadius = 20
         
         if let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
@@ -189,11 +200,16 @@ class chatHistory2ViewController: UIViewController {
     }
     
     private func setupSummaryUI() {
+        view.backgroundColor = .systemGroupedBackground
         tableView.delegate = self
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
         tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 120
+        tableView.layer.cornerRadius = 20
+        summaryContainerView.layer.cornerRadius = 20
+        
     }
     
     private func notifyDataChanged() {
@@ -383,8 +399,6 @@ extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
         switch indexPath.section {
         case 0:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath) as! PCSummarySectionHeaderCell
-            cell.headerLabel.text = "Summary"
-            cell.headerIcon.image = UIImage(systemName: "text.alignleft")
             return cell
             
         case 1:
@@ -403,7 +417,7 @@ extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
             
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath) as! PCSummarySectionHeaderCell
-            cell.headerLabel.text = "Notes"
+            cell.headerLabel.text = "Notes" // CHECK
             cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
             
