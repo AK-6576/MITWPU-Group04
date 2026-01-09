@@ -107,10 +107,18 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         performSegue(withIdentifier: "ShowInfo", sender: sender.tag)
     }
     
+    // MARK: - Updated Segue Logic (Half-Modal Added)
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
             print("🟢 Segue 'ShowInfo' triggered!")
             
+            // 1. Apply Half-Modal (Sheet) Logic to the Destination
+            if let sheet = segue.destination.sheetPresentationController {
+                sheet.detents = [.medium(), .large()]
+                sheet.prefersGrabberVisible = true
+            }
+            
+            // 2. Handle Data Passing
             var destinationVC: InfoViewController1?
             
             if let nav = segue.destination as? UINavigationController {
@@ -121,19 +129,6 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
                 destinationVC = infoVC
             } else {
                 print("🔴 ERROR: Could not find InfoViewController in destination!")
-            }
-            
-            if let infoVC = destinationVC, let rowIndex = sender as? Int {
-                print("✅ Found InfoVC! Passing data for Row \(rowIndex)")
-                infoVC.existingNote = routineList[rowIndex].notes
-                print("📤 Sent Note: '\(routineList[rowIndex].notes)'")
-                
-                infoVC.onSave = { [weak self] newNote in
-                    print("📥 RECEIVED back in RoutineVC: '\(newNote)'")
-                    self?.routineList[rowIndex].notes = newNote
-                }
-            } else {
-                print("🔴 ERROR: Row Index was missing or InfoVC is nil.")
             }
         }
     }
@@ -162,8 +157,6 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         let item = routineList[indexPath.row]
         cell.titleLabel.text = item.title
         cell.subtitleLabel.text = item.time
-        cell.infoButton.tag = indexPath.row
-        cell.infoButton.addTarget(self, action: #selector(didTapInfoButton(_:)), for: .touchUpInside)
         cell.separatorInset = .zero
         cell.layoutMargins = .zero
         

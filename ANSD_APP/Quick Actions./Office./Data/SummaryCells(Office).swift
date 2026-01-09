@@ -52,7 +52,6 @@ class ParticipantsSummaryHeaderCell: UITableViewCell {
 class SummaryCardCell: UITableViewCell {
     
     @IBOutlet weak var mainCardView: UIView!
-    
     @IBOutlet weak var titleLabel: UILabel!
     
     @IBOutlet weak var dateLabel: UILabel!
@@ -77,13 +76,20 @@ class ParticipantCardCell: UITableViewCell {
         backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        avatarImageView.layer.cornerRadius = 4
+        avatarImageView.layer.cornerRadius = 4 // Or make it circular if you prefer
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
     }
     
     func configure(with data: ParticipantData) {
         detailsLabel.text = data.summary
+        
+        // NEW: Set the image
+        if let image = UIImage(named: data.imageName) {
+            avatarImageView.image = image
+        } else {
+            avatarImageView.image = UIImage(systemName: "person.circle.fill")
+        }
     }
 }
 

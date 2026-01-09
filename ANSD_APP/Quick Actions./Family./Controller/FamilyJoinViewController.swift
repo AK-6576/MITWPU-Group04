@@ -154,6 +154,26 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         self.present(actionSheet, animated: true)
     }
     
+    // MARK: - Manual Segue Logic for Info Button
+    
+    // 1. Connect this action to the (i) Bar Button Item
+    @IBAction func didTapInfoButton(_ sender: UIBarButtonItem) {
+        performSegue(withIdentifier: "ShowInfo", sender: self)
+    }
+    
+    // 2. Intercept the segue to apply Half-Modal styling
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "ShowInfo" {
+            let destinationVC = segue.destination
+            
+            // This enables the "Half Modal" / Bottom Sheet behavior
+            if let sheet = destinationVC.sheetPresentationController {
+                sheet.detents = [.medium(), .large()]
+                sheet.prefersGrabberVisible = true
+            }
+        }
+    }
+    
     func scrollToBottom() {
         guard messages.count > 0 else { return }
         collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)

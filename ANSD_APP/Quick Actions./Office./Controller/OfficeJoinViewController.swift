@@ -37,6 +37,16 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         processNextMessage()
     }
     
+    // MARK: - Helper: Image Mapping
+    func getImageName(for name: String) -> String {
+        let lower = name.lowercased()
+        // Map names to avatar assets
+        if lower.contains("julius") { return "avatar_3" }
+        if lower.contains("richard") { return "avatar_4" }
+        // Fallback
+        return "person.circle.fill"
+    }
+    
     func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -66,10 +76,20 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell
             cell.messageLabel.text = message.text
             
+            let senderName: String
             if message.sender == "Person 1" {
-                cell.nameLabel.text = self.otherPersonName
+                senderName = self.otherPersonName
             } else {
-                cell.nameLabel.text = message.sender
+                senderName = message.sender
+            }
+            cell.nameLabel.text = senderName
+            
+            // NEW: Set the profile image
+            let imgName = getImageName(for: senderName)
+            if let image = UIImage(named: imgName) {
+                cell.profileImageView.image = image
+            } else {
+                cell.profileImageView.image = UIImage(systemName: "person.circle.fill")
             }
             
             cell.onLabelTapped = { [weak self] in
@@ -129,18 +149,23 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                 
                 summaryVC.conversationTitle = self.sessionTitle
                 summaryVC.chatHistory = self.messages
+                
+                // Updated Participant Data with Images
                 summaryVC.participantsData = [
                     ParticipantData(
                         name: "Julius Robert Oppenheimer",
-                        summary: "Julius checked on the task status due tomorrow and complained about the client. He mentioned a conflict with a family outing at 4 PM and warned others not to push their luck."
+                        summary: "Julius checked on the task status due tomorrow and complained about the client. He mentioned a conflict with a family outing at 4 PM and warned others not to push their luck.",
+                        imageName: "avatar_3"
                     ),
                     ParticipantData(
                         name: "Richard Feynman",
-                        summary: "Richard admitted he hadn't started the task yet and asked for assistance. He expressed significant panic regarding the timeline."
+                        summary: "Richard admitted he hadn't started the task yet and asked for assistance. He expressed significant panic regarding the timeline.",
+                        imageName: "avatar_4"
                     ),
                     ParticipantData(
                         name: "Me",
-                        summary: "I confirmed I was finishing up proofreading and offered help at 4 PM. I refused to reschedule to the next day and criticized Richard for procrastinating."
+                        summary: "I confirmed I was finishing up proofreading and offered help at 4 PM. I refused to reschedule to the next day and criticized Richard for procrastinating.",
+                        imageName: "person.circle.fill"
                     )
                 ]
                 
@@ -152,6 +177,21 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         actionSheet.addAction(endAction)
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         self.present(actionSheet, animated: true)
+    }
+    
+    // MARK: - Manual Segue Logic for Info Button
+    @IBAction func didTapInfoButton(_ sender: UIBarButtonItem) {
+        performSegue(withIdentifier: "ShowInfo", sender: self)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "ShowInfo" {
+            let destinationVC = segue.destination
+            if let sheet = destinationVC.sheetPresentationController {
+                sheet.detents = [.medium(), .large()]
+                sheet.prefersGrabberVisible = true
+            }
+        }
     }
     
     func scrollToBottom() {

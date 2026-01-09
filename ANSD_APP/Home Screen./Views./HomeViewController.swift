@@ -81,9 +81,6 @@ class HomeViewController: UIViewController {
                 profileVC.incomingImage = profileIconButton?.image(for: .normal)
             }
         }
-        
-        if segue.identifier == "startCaptionSession" {
-        }
     }
 }
 
@@ -140,7 +137,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             performSegue(withIdentifier: "startCaptionSession", sender: item)
         } else {
             let item = routineConversations[indexPath.row]
-            performSegue(withIdentifier: "pastConvoCell", sender: item)
+            performSegue(withIdentifier: "viewConvoCell", sender: item)
         }
     }
     
@@ -167,14 +164,9 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         renameAction.backgroundColor = .systemOrange
         renameAction.image = UIImage(systemName: "pencil")
         
-        let infoAction = UIContextualAction(style: .normal, title: "Info") { [weak self] (action, view, completionHandler) in
-            self?.presentInfoScreen(for: item)
-            completionHandler(true)
-        }
-        infoAction.backgroundColor = .systemBlue
-        infoAction.image = UIImage(systemName: "info.circle")
+        // Removed Info Action
         
-        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction, infoAction])
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction])
         config.performsFirstActionWithFullSwipe = false
         return config
     }
@@ -243,6 +235,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         return 60
     }
 }
+
 extension HomeViewController {
     func randomInfoMessage(for item: RoutineConversation) -> String {
         // Try to build a pretty date string

@@ -13,13 +13,13 @@ class OutgoingCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
     
     override func awakeFromNib() {
-            super.awakeFromNib()
-            
-            bubbleView.backgroundColor = .systemBlue
-            messageLabel.textColor = .white
-            bubbleView.layer.cornerRadius = 16
-            bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-        }
+        super.awakeFromNib()
+        
+        bubbleView.backgroundColor = .systemBlue
+        messageLabel.textColor = .white
+        bubbleView.layer.cornerRadius = 16
+        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+    }
     
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -46,6 +46,10 @@ class IncomingCell: UICollectionViewCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
+    
+    // NEW: Outlet for the profile image
+    @IBOutlet weak var profileImageView: UIImageView!
+    
     private var widthConstraint: NSLayoutConstraint?
     
     var onLabelTapped: (() -> Void)?
@@ -63,10 +67,18 @@ class IncomingCell: UICollectionViewCell {
             .layerMaxXMaxYCorner
         ]
         
+        // Circular Image Setup
+        if let iv = profileImageView {
+            iv.layer.cornerRadius = iv.frame.width / 2
+            iv.clipsToBounds = true
+            iv.contentMode = .scaleAspectFill
+        }
+        
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
     }
+    
     @objc func handleTap() { onLabelTapped?() }
     
     override func layoutSubviews() {

@@ -10,4 +10,5 @@ import Foundation
 struct ParticipantData {
     var name: String
     var summary: String
+    var imageName: String
 }

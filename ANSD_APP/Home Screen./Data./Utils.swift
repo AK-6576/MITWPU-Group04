@@ -17,8 +17,8 @@ func getColorForCategory(_ name: String) -> UIColor {
     switch lower {
     case "family", "date", "partner", "home": return .systemPink
     case "office", "work", "coding":          return .systemBlue
-    case "friends", "gaming", "party":        return .systemOrange
-    case "gym", "health", "medical":          return .systemGreen
+    case "friends", "gaming", "party":        return .systemGreen
+    case "gym", "health", "medical":          return .systemOrange
     case "finance", "money", "bank":          return .systemMint
     case "create own...":                     return .systemBlue
         

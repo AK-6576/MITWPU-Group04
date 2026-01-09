@@ -355,23 +355,13 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="OCQ-lx-jlW">
-                        <barButtonItem key="rightBarButtonItem" style="plain" id="9WJ-ML-Zny">
-                            <button key="customView" opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" adjustsImageSizeForAccessibilityContentSizeCategory="YES" lineBreakMode="middleTruncation" id="RH5-X3-PRW">
-                                <rect key="frame" x="323.33333333333331" y="4.6666666666666687" width="49.666666666666686" height="34.666666666666664"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" image="person.crop.circle" catalog="system" cornerStyle="fixed">
-                                    <color key="baseForegroundColor" name="AccentColor"/>
-                                </buttonConfiguration>
-                                <connections>
-                                    <segue destination="8gA-PQ-7QW" kind="presentation" identifier="showProfile" id="uFY-Oo-wgQ"/>
-                                </connections>
-                            </button>
-                            <color key="tintColor" systemColor="systemBackgroundColor"/>
+                        <barButtonItem key="rightBarButtonItem" image="person.crop.circle" catalog="system" id="CRz-QF-pke">
+                            <connections>
+                                <segue destination="8gA-PQ-7QW" kind="presentation" identifier="showProfile" id="73d-UH-Kvk"/>
+                            </connections>
                         </barButtonItem>
                     </navigationItem>
                     <connections>
-                        <outlet property="profileIconButton" destination="RH5-X3-PRW" id="qNB-MD-k86"/>
                         <outlet property="tableView" destination="5xb-pI-Qcn" id="yph-hl-pRA"/>
                         <outlet property="usernameLabel" destination="1ix-Hh-AU5" id="gQh-zL-7Kp"/>
                         <segue destination="0Xm-WW-Dax" kind="show" identifier="viewConvo" id="7HU-4V-DBS"/>
@@ -1285,20 +1275,17 @@
         <image name="square.and.pencil" catalog="system" width="128" height="121"/>
         <image name="star.fill" catalog="system" width="128" height="116"/>
         <image name="waveform" catalog="system" width="125" height="128"/>
-        <namedColor name="AccentColor">
-            <color red="0.0" green="0.46000000000000002" blue="0.89000000000000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-        </namedColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.79607843137254897" green="0.18823529411764706" blue="0.8784313725490196" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

@@ -101,19 +101,13 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         renameAction.backgroundColor = UIColor.systemOrange
         renameAction.image = UIImage(systemName: "pencil")
         
-        let infoAction = UIContextualAction(style: .normal, title: "Info") { [weak self] (_, _, completion) in
-            self?.showActionDetails(for: item)
-            completion(true)
-        }
-        infoAction.backgroundColor = UIColor.systemBlue
-        infoAction.image = UIImage(systemName: "info.circle")
-        
-        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction, infoAction])
+        // Removed Info Action from swipe since button exists on cell
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction])
         config.performsFirstActionWithFullSwipe = false
         return config
     }
     
-    // MARK: - Header Delegate (FIXED CRASH)
+    // MARK: - Header Delegate
     func didTapHeader(sectionIndex: Int, categoryName: String) {
         
         var storyboardName = ""
@@ -133,12 +127,9 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         if !storyboardName.isEmpty {
             let storyboard = UIStoryboard(name: storyboardName, bundle: nil)
             
-            // Check if we can instantiate the Initial View Controller
             if var targetVC = storyboard.instantiateInitialViewController() {
                 
-                // MARK: - FIX IS HERE
-                // Check if the storyboard starts with a NavigationController.
-                // If yes, grab the 'topViewController' inside it instead.
+                // If the storyboard starts with a NavigationController, grab the topVC
                 if let navVC = targetVC as? UINavigationController, let topVC = navVC.topViewController {
                     targetVC = topVC
                 }

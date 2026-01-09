@@ -13,8 +13,6 @@ class OfficeRoutineTableViewCell: UITableViewCell {
     
     @IBOutlet var subtitleLabel: UILabel!
     
-    @IBOutlet var infoButton : UIButton!
-    
     override func awakeFromNib() {
         super.awakeFromNib()
     }

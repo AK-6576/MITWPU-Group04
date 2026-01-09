@@ -153,8 +153,6 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
         let item = routineList[indexPath.row]
         cell.titleLabel.text = item.title
         cell.subtitleLabel.text = item.time
-        cell.infoButton.tag = indexPath.row
-        cell.infoButton.addTarget(self, action: #selector(didTapInfoButton(_:)), for: .touchUpInside)
         cell.separatorInset = .zero
         cell.layoutMargins = .zero
         
