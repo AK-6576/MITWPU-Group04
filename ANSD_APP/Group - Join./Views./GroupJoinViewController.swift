@@ -37,18 +37,18 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         processNextMessage()
     }
     
-    // MARK: - Helper to match Names to Image Assets
+    // MARK: - Helper to match Names to Avatar Assets
     func getImageName(for name: String) -> String {
         let lowerName = name.lowercased()
         
-        if lowerName.contains("peter") { return "peter_parker" }
-        if lowerName.contains("bruce") { return "bruce_banner" }
-        if lowerName.contains("steve") { return "steve_rogers" }
-        if lowerName.contains("tony") { return "tony_stark" }
-        if lowerName.contains("natasha") { return "natasha_romanoff" }
-        if lowerName.contains("wanda") { return "wanda_maximoff" }
-        if lowerName.contains("vision") { return "vision" }
-        if lowerName.contains("bucky") { return "bucky_barnes" }
+        if lowerName.contains("steve") { return "avatar_1" }
+        if lowerName.contains("peter") { return "avatar_2" }
+        if lowerName.contains("bruce") { return "avatar_3" }
+        if lowerName.contains("tony") { return "avatar_4" }
+        if lowerName.contains("natasha") { return "avatar_5" }
+        if lowerName.contains("wanda") { return "avatar_6" }
+        if lowerName.contains("vision") { return "avatar_7" }
+        if lowerName.contains("bucky") { return "avatar_8" }
         
         // Fallback
         return "person.circle.fill"
@@ -92,7 +92,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             }
             cell.GJnameLabel.text = displayName
             
-            // NEW: Set the Profile Image based on the name
+            // Set the Profile Image based on the updated Avatar logic
             let imageName = getImageName(for: displayName)
             if let image = UIImage(named: imageName) {
                 cell.GJprofileImageView.image = image
@@ -158,22 +158,22 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 summaryVC.conversationTitle = self.sessionTitle
                 summaryVC.chatHistory = self.messages
                 
-                // NEW: Pass the imageName here as well
+                // Updated Summary Data with new Avatar names
                 summaryVC.participantsData = [
                     GJParticipantData(
                         name: "Peter Parker",
                         summary: "Peter has finished his assignment and is informing his friends about the same. He has a family outing at 4 PM and cannot help.",
-                        imageName: "peter_parker"
+                        imageName: "avatar_2" // Updated from peter_parker
                     ),
                     GJParticipantData(
                         name: "Bruce Banner",
                         summary: "Bruce is having fun at Steve's misfortune and he hasn't started doing it as well. He is very relaxed about the whole thing.",
-                        imageName: "bruce_banner"
+                        imageName: "avatar_3" // Updated from bruce_banner
                     ),
                     GJParticipantData(
                         name: "Steve Parker",
                         summary: "Steve is being smug about the whole thing and is scolding his friends for not having done the assignment in the past 3 weeks.",
-                        imageName: "steve_rogers" // Assuming Steve Parker might use Steve Rogers image or similar
+                        imageName: "avatar_1" // Updated from steve_rogers
                     )
                 ]
                 

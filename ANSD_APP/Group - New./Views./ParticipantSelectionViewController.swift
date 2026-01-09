@@ -20,14 +20,12 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     // 2. Data Source: Update the list with image filenames
     // Ensure these image names match exactly what is in your Assets folder
     let contacts: [Contact] = [
-        Contact(name: "Steve Rogers", imageName: "steve_rogers"),
-        Contact(name: "Bucky Barnes", imageName: "bucky_barnes"),
-        Contact(name: "Tony Stark", imageName: "tony_stark"),
-        Contact(name: "Natasha Romanoff", imageName: "nat_rom"),
-        Contact(name: "Bruce Banner", imageName: "bruce_banner"),
-        Contact(name: "Peter Parker", imageName: "peter_parker"),
-        Contact(name: "Wanda Maximoff", imageName: "wanda_max"),
-        Contact(name: "Vision", imageName: "vis")
+        Contact(name: "Steve", imageName: "avatar_1"),
+        Contact(name: "Amanda", imageName: "avatar_2"),
+        Contact(name: "Josh", imageName: "avatar_3"),
+        Contact(name: "Mark", imageName: "avatar_4"),
+        Contact(name: "Sam", imageName: "avatar_5"),
+        Contact(name: "Alex", imageName: "avatar_6")
     ]
     
     var unavailableContacts: Set<String> = []
