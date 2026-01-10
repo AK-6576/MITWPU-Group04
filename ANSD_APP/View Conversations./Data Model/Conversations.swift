@@ -46,7 +46,7 @@ struct Conversation: Codable, Identifiable {
     var category: String
     var icon: String
     var info: Bool?
-    
+    var cal: Date?
     // Summary Data
     var notes: String?
     var participants: [PCParticipantData]? // Added to match JSON

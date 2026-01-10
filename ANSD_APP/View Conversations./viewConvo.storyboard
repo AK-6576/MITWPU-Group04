@@ -3,7 +3,6 @@
     <device id="retina6_9" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
-        <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="collection view cell content view" minToolsVersion="11.0"/>
@@ -64,7 +63,8 @@
                     <navigationItem key="navigationItem" title="View Conversations" largeTitleDisplayMode="always" customizationIdentifier="navbar" id="j2T-eT-dFc">
                         <barButtonItem key="rightBarButtonItem" title="Item" image="calendar" catalog="system" id="EHs-YL-VZ3">
                             <connections>
-                                <segue destination="kaW-NH-dxb" kind="presentation" id="i6p-ox-tUd"/>
+                                <action selector="calenderbuttontapped:" destination="Y6W-OH-hqX" id="bZ2-Wl-n3V"/>
+                                <segue destination="HQs-Gw-LoX" kind="presentation" id="fy3-n3-4tA"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
@@ -96,7 +96,7 @@
                                     <action selector="chatNsumSegmentedController:" destination="QHW-Tz-f9p" eventType="valueChanged" id="gu3-Mz-MfS"/>
                                 </connections>
                             </segmentedControl>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="8fe-mF-eyB">
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="8fe-mF-eyB">
                                 <rect key="frame" x="0.0" y="249" width="440" height="639"/>
                                 <subviews>
                                     <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="NxE-pZ-noY">
@@ -310,7 +310,7 @@
                                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="PCParticipantsCardCell" rowHeight="200" id="m73-At-fIo" customClass="PCParticipantsCardCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="350" width="440" height="200"/>
                                                 <autoresizingMask key="autoresizingMask"/>
-                                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="m73-At-fIo" id="TZ4-js-yof">
+                                                <tableViewCellContentView key="contentView" autoresizesSubviews="NO" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="m73-At-fIo" id="TZ4-js-yof">
                                                     <rect key="frame" x="0.0" y="0.0" width="440" height="200"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <subviews>
@@ -458,11 +458,11 @@
                                     <constraint firstItem="NxE-pZ-noY" firstAttribute="leading" secondItem="8fe-mF-eyB" secondAttribute="leading" id="hEX-HT-Xdr"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="OA9-zr-RLK">
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="OA9-zr-RLK">
                                 <rect key="frame" x="16" y="249" width="408" height="629"/>
                                 <subviews>
                                     <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="w4l-aF-w5g">
-                                        <rect key="frame" x="0.0" y="10" width="408" height="619"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="408" height="629"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <collectionViewFlowLayout key="collectionViewLayout" automaticEstimatedItemSize="YES" minimumLineSpacing="8" minimumInteritemSpacing="10" id="jRd-zR-NT0">
                                             <size key="itemSize" width="128" height="128"/>
@@ -576,7 +576,7 @@
                                     <constraint firstItem="w4l-aF-w5g" firstAttribute="leading" secondItem="OA9-zr-RLK" secondAttribute="leading" id="CCH-ag-bHj"/>
                                     <constraint firstAttribute="trailing" secondItem="w4l-aF-w5g" secondAttribute="trailing" id="bdS-1g-W7w"/>
                                     <constraint firstAttribute="bottom" secondItem="w4l-aF-w5g" secondAttribute="bottom" id="gSY-Ew-wIR"/>
-                                    <constraint firstItem="w4l-aF-w5g" firstAttribute="top" secondItem="OA9-zr-RLK" secondAttribute="top" constant="10" id="xLL-6c-9GG"/>
+                                    <constraint firstItem="w4l-aF-w5g" firstAttribute="top" secondItem="OA9-zr-RLK" secondAttribute="top" id="xLL-6c-9GG"/>
                                 </constraints>
                             </view>
                         </subviews>
@@ -617,13 +617,13 @@
         <!--Calendar-->
         <scene sceneID="GcB-uM-EAQ">
             <objects>
-                <viewController storyboardIdentifier="chatVC" id="I6P-Rj-6E4" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="calenderViewController" id="I6P-Rj-6E4" customClass="calenderViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Pn0-2v-4CZ">
                         <rect key="frame" x="0.0" y="0.0" width="440" height="894"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <datePicker contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" datePickerMode="date" style="inline" translatesAutoresizingMaskIntoConstraints="NO" id="AaE-vB-KaV">
-                                <rect key="frame" x="0.0" y="74.000000000000028" width="440" height="374.66666666666674"/>
+                            <datePicker contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" datePickerMode="date" style="inline" translatesAutoresizingMaskIntoConstraints="NO" id="AaE-vB-KaV">
+                                <rect key="frame" x="0.0" y="74" width="440" height="374.66666666666674"/>
                                 <date key="minimumDate" timeIntervalSinceReferenceDate="757422000">
                                     <!--2025-01-01 11:00:00 +0000-->
                                 </date>
@@ -641,33 +641,20 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Calendar" id="kjs-sf-aCQ">
-                        <barButtonItem key="leftBarButtonItem" title="Item" id="CXO-vt-gqR">
-                            <imageReference key="image" image="xmark.circle" catalog="system" symbolScale="large"/>
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="CXO-vt-gqR">
                             <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <connections>
+                                <action selector="exitButtonTapped:" destination="I6P-Rj-6E4" id="AFR-sl-OD8"/>
+                            </connections>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <outlet property="datePicker" destination="AaE-vB-KaV" id="LhK-P1-bwR"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F6C-MW-mNG" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="5904.5801526717551" y="-415.49295774647891"/>
-        </scene>
-        <!--Navigation Controller-->
-        <scene sceneID="Z6P-60-vjq">
-            <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="kaW-NH-dxb" sceneMemberID="viewController">
-                    <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="HqQ-MF-CfO">
-                        <rect key="frame" x="0.0" y="20" width="440" height="54"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                    </navigationBar>
-                    <nil name="viewControllers"/>
-                    <connections>
-                        <segue destination="I6P-Rj-6E4" kind="relationship" relationship="rootViewController" id="XD6-oa-Vyn"/>
-                    </connections>
-                </navigationController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="cEQ-bT-2UR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="4794.6564885496182" y="-415.49295774647891"/>
+            <point key="canvasLocation" x="6796.3636363636369" y="-416.10878661087867"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="hnv-Q2-Sgh">
@@ -720,6 +707,24 @@
             </objects>
             <point key="canvasLocation" x="4921.3740458015263" y="327.46478873239437"/>
         </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="McE-yI-y3E">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="HQs-Gw-LoX" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="dHz-45-421">
+                        <rect key="frame" x="0.0" y="20" width="440" height="54"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="I6P-Rj-6E4" kind="relationship" relationship="rootViewController" id="ecC-F3-yya"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="BD1-7W-iVi" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="5904.545454545455" y="-416.10878661087867"/>
+        </scene>
     </scenes>
     <resources>
         <image name="calendar" catalog="system" width="128" height="107"/>
@@ -731,7 +736,6 @@
         <image name="person.circle.fill" catalog="system" width="128" height="123"/>
         <image name="person.fill" catalog="system" width="128" height="120"/>
         <image name="text.pad.header" catalog="system" width="128" height="107"/>
-        <image name="xmark.circle" catalog="system" width="128" height="123"/>
         <systemColor name="labelColor">
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
@@ -739,22 +743,22 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.53333333333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray2Color">
-            <color red="0.68235294120000001" green="0.68235294120000001" blue="0.69803921570000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68235294117647061" green="0.68235294117647061" blue="0.69803921568627447" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray4Color">
-            <color red="0.81960784310000001" green="0.81960784310000001" blue="0.83921568629999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.81960784313725488" green="0.81960784313725488" blue="0.83921568627450982" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

@@ -16,6 +16,7 @@
         }
       ],
       "date": "4 Oct 2025",
+      "cal": "2025-10-04T22:30:00Z",
       "start_time": "10:30 PM",
       "end_time": "11:30 PM",
       "category": "friends",
@@ -46,6 +47,7 @@
         { "name": "Me", "summary": "Checking IMAX seating." }
       ],
       "date": "5 Oct 2025",
+      "cal": "2025-10-05T09:30:00Z",
       "start_time": "09:30 AM",
       "end_time": "10:30 AM",
       "category": "family",
@@ -68,6 +70,7 @@
         { "name": "Me", "summary": "Confirmed unit tests passed." }
       ],
       "date": "6 Oct 2025",
+      "cal": "2025-10-06T15:00:00Z",
       "start_time": "03:00 PM",
       "end_time": "03:15 PM",
       "category": "office",
@@ -95,6 +98,7 @@
             { "name": "CFO", "summary": "Budget allocation of $50k." }
           ],
           "date": "10 Sep 2025",
+          "cal": "2025-09-10T09:00:00Z",
           "start_time": "09:00 AM",
           "end_time": "11:00 AM",
           "category": "office",
@@ -120,6 +124,7 @@
             { "name": "Kid 2", "summary": "Wants beach." }
           ],
           "date": "10 Aug 2025",
+          "cal": "2025-08-10T17:00:00Z",
           "start_time": "05:00 PM",
           "end_time": "06:00 PM",
           "category": "family",
