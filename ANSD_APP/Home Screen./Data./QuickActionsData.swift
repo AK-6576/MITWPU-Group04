@@ -8,20 +8,13 @@ import Foundation
 class QuickActionsRepository {
     
     static let shared = QuickActionsRepository()
-    
-    // LIST 1: The Standard Items
-    // These will appear in the bottom "Quick Actions" list on Home (because they are later in the day)
+
     private var quickActionBubbles: [RoutineConversation] = []
-    
-    // LIST 2: The Early Items
-    // These are set for 6 AM and 8 AM. Because they are earliest,
-    // they will be the top 2 items in "View Conversations" on Home.
+
     private var viewOnlyItems: [RoutineConversation] = []
     
     private init() {
-        // ---------------------------------------------------------
-        // 1. POPULATE STANDARD ITEMS (Later in the day)
-        // ---------------------------------------------------------
+
         self.quickActionBubbles = [
             RoutineConversation(
                 id: "1", iconName: "briefcase.fill", categoryTitle: "Office",
@@ -49,10 +42,7 @@ class QuickActionsRepository {
                 startTime: "10:30 PM", description: "Discussed drop-off location, gate code, and cab fare.", date: "4 Oct 2025", timeImage: "clock.badge.checkmark.fill"
             )
         ]
-        
-        // ---------------------------------------------------------
-        // 2. POPULATE EARLY ITEMS (Morning)
-        // ---------------------------------------------------------
+
         self.viewOnlyItems = [
             RoutineConversation(
                 id: "conv_6", iconName: "figure.run", categoryTitle: "Friends",
@@ -68,8 +58,6 @@ class QuickActionsRepository {
     }
     
     // MARK: - Data Access Methods
-    
-    // Used by the Quick Actions Tab (The Bubbles Screen)
     func getGroupedSections() -> [RoutineSection] {
         let groupedDictionary = Dictionary(grouping: quickActionBubbles) { $0.categoryTitle }
         
@@ -78,21 +66,16 @@ class QuickActionsRepository {
             return RoutineSection(category: key, items: sortedItems)
         }.sorted { $0.category < $1.category }
     }
-    
-    // Used by HomeViewController
-    // Combines EVERYTHING and sorts by time.
-    // Result: Jog (6am) -> Breakfast (8am) -> Scrum (9:30am) -> etc.
+
     func getAllActions() -> [RoutineConversation] {
         let combined = quickActionBubbles + viewOnlyItems
         return combined.sorted { compareTimes(time1: $0.startTime, time2: $1.startTime) }
     }
     
     func addAction(_ action: RoutineConversation) {
-        // Add new actions to the main list
         quickActionBubbles.append(action)
     }
     
-    // Helper to sort "06:00 AM" before "09:30 AM"
     private func compareTimes(time1: String, time2: String) -> Bool {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"

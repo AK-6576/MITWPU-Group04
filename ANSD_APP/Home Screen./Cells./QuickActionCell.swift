@@ -20,7 +20,6 @@ class QuickActionCell: UITableViewCell {
     }
     
     func setupDesign() {
-        // Design: Gray square background with rounded corners
         iconImageView.layer.cornerRadius = 10
         iconImageView.backgroundColor = .systemGray6
         iconImageView.contentMode = .center
@@ -28,25 +27,19 @@ class QuickActionCell: UITableViewCell {
     }
 
     func configure(with item: RoutineConversation) {
-        // 1. Text Configuration
         titleLabel.text = item.conversationTopic
         subtitleLabel.text = item.startTime
         
-        // 2. Icon Configuration
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
-        let iconName = item.iconName // Fallback to 'tag' if nil
+        let iconName = item.iconName
         
         if let image = UIImage(systemName: iconName, withConfiguration: config) {
-            // .alwaysTemplate is CRITICAL. It tells iOS "Ignore the image's original color, use tintColor instead"
             iconImageView.image = image.withRenderingMode(.alwaysTemplate)
         }
-        
-        // 3. Color Configuration (The Fix)
-        // We use the shared helper to get the exact color for this category
+
         let category = item.categoryTitle
         let color = getColorForCategory(category)
-        
-        // Apply the color to the icon
+
         iconImageView.tintColor = color
     }
 }

@@ -5,19 +5,16 @@
 
 import Foundation
 
-// 1. The Root structure of your JSON
 struct ConversationRoot: Codable {
     let conversations: [JSONConversation]
     let previous_months: [MonthSection]?
 }
 
-// 2. Handling the "Previous Months" section
 struct MonthSection: Codable {
     let month: String
     let conversations: [JSONConversation]
 }
 
-// 3. The actual Conversation Data (Raw JSON)
 struct JSONConversation: Codable {
     let id: String
     let title: String
@@ -31,13 +28,11 @@ struct JSONConversation: Codable {
     let messages: [JSONMessage]
 }
 
-// 4. Participants (Raw JSON)
 struct JSONParticipant: Codable {
     let name: String
     let summary: String
 }
 
-// 5. Messages (Raw JSON)
 struct JSONMessage: Codable {
     let id: String
     let text: String

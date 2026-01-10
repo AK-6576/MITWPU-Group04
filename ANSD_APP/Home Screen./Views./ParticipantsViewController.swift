@@ -1,5 +1,5 @@
 import UIKit
-import Contacts // 1. Import the framework
+import Contacts
 
 protocol ParticipantsSelectionDelegate: AnyObject {
     func didSelectParticipants(_ names: [String])
@@ -10,13 +10,10 @@ class ParticipantsViewController: UITableViewController {
     // MARK: - Variables
     weak var delegate: ParticipantsSelectionDelegate?
     
-    // Store real contact objects here
     var contacts = [CNContact]()
     
-    // We use IDs for selection to handle people with the same name correctly
     var selectedContactIDs: Set<String> = []
     
-    // Pass pre-selected names back to check them initially (Optional logic)
     var initialSelectedNames: [String] = []
 
     // MARK: - Lifecycle
@@ -26,14 +23,11 @@ class ParticipantsViewController: UITableViewController {
         title = "Add Participants"
         view.backgroundColor = .systemBackground
         
-        // Navigation Setup
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneTapped))
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelTapped))
         
-        // Register Cell
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ContactCell")
         
-        // Fetch Contacts immediately
         fetchContacts()
     }
 
@@ -41,15 +35,12 @@ class ParticipantsViewController: UITableViewController {
     func fetchContacts() {
         let store = CNContactStore()
         
-        // Request Permission
         store.requestAccess(for: .contacts) { [weak self] granted, error in
             guard let self = self else { return }
             
             if granted {
-                // Permission granted, fetch data
                 self.getContacts(from: store)
             } else {
-                // Permission denied
                 DispatchQueue.main.async {
                     self.showPermissionAlert()
                 }
@@ -67,12 +58,10 @@ class ParticipantsViewController: UITableViewController {
                 try store.enumerateContacts(with: request) { (contact, stop) in
                     newContacts.append(contact)
                     
-                    // --- NEW CODE START: Check if this person was previously selected ---
                     let fullName = "\(contact.givenName) \(contact.familyName)"
                     if self.initialSelectedNames.contains(fullName) {
                         self.selectedContactIDs.insert(contact.identifier)
                     }
-                    // --- NEW CODE END ---
                 }
                 
                 self.contacts = newContacts
@@ -87,7 +76,7 @@ class ParticipantsViewController: UITableViewController {
 
     // MARK: - Actions
     @objc func doneTapped() {
-        // Map the selected IDs back to Names to send to the delegate
+
         let selectedContacts = contacts.filter { selectedContactIDs.contains($0.identifier) }
         let names = selectedContacts.map { "\($0.givenName) \($0.familyName)" }
         
@@ -114,14 +103,11 @@ class ParticipantsViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
         let contact = contacts[indexPath.row]
         
-        // Format Name
         cell.textLabel?.text = "\(contact.givenName) \(contact.familyName)"
         
-        // Handle Selection State
         let isSelected = selectedContactIDs.contains(contact.identifier)
         cell.accessoryType = isSelected ? .checkmark : .none
         
-        // Optional: Add simple styling
         cell.tintColor = .systemBlue
         
         return cell
@@ -134,14 +120,12 @@ class ParticipantsViewController: UITableViewController {
         let contact = contacts[indexPath.row]
         let id = contact.identifier
         
-        // Toggle Selection
         if selectedContactIDs.contains(id) {
             selectedContactIDs.remove(id)
         } else {
             selectedContactIDs.insert(id)
         }
         
-        // Reload row for smooth animation
         tableView.reloadRows(at: [indexPath], with: .none)
     }
 }

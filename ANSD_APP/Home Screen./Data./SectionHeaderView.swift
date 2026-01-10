@@ -3,10 +3,6 @@
 //  ANSD_APP
 //
 
-//
-//  SectionHeaderView.swift
-//  ANSD_APP
-//
 
 import UIKit
 
@@ -22,7 +18,6 @@ class SectionHeaderView: UITableViewHeaderFooterView {
     private var sectionIndex: Int = 0
     private var categoryTitle: String = ""
     
-    // 1. Title: Big, Bold, Standard Label Color
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 22, weight: .bold)
@@ -31,7 +26,6 @@ class SectionHeaderView: UITableViewHeaderFooterView {
         return label
     }()
     
-    // 2. Chevron: Subtle Gray
     private let chevronImageView: UIImageView = {
         let iv = UIImageView()
         iv.image = UIImage(systemName: "chevron.right")
@@ -41,7 +35,7 @@ class SectionHeaderView: UITableViewHeaderFooterView {
         return iv
     }()
     
-    // 3. Invisible Tap Button
+
     private let tapButton: UIButton = {
         let btn = UIButton()
         btn.translatesAutoresizingMaskIntoConstraints = false
@@ -58,7 +52,6 @@ class SectionHeaderView: UITableViewHeaderFooterView {
     }
     
     private func setupView() {
-        // Transparent background lets the TableView style show through
         contentView.backgroundColor = .clear
         
         contentView.addSubview(titleLabel)
@@ -66,18 +59,15 @@ class SectionHeaderView: UITableViewHeaderFooterView {
         contentView.addSubview(tapButton)
         
         NSLayoutConstraint.activate([
-            // Label
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 4), // Aligned with inset cells
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 4),
             titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
             titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             
-            // Chevron
             chevronImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             chevronImageView.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
             chevronImageView.widthAnchor.constraint(equalToConstant: 12),
             chevronImageView.heightAnchor.constraint(equalToConstant: 16),
             
-            // Button
             tapButton.topAnchor.constraint(equalTo: contentView.topAnchor),
             tapButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             tapButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),

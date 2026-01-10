@@ -33,7 +33,7 @@ class RoutineTableViewCell: UITableViewCell {
         timeLabel.textColor = .secondaryLabel
         
         self.selectionStyle = .default
-        // ensure background is white/system so it looks like a continuous list
+
         self.backgroundColor = .secondarySystemGroupedBackground
     }
     
@@ -45,12 +45,11 @@ class RoutineTableViewCell: UITableViewCell {
         NSLayoutConstraint.activate([
             bottomBorder.heightAnchor.constraint(equalToConstant: 1),
             bottomBorder.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            bottomBorder.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor), // Align line with text
+            bottomBorder.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             bottomBorder.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
         ])
     }
 
-    // Added 'isLast' parameter to hide separator on the final item
     func configure(with item: RoutineConversation, isLast: Bool) {
         titleLabel.text = item.conversationTopic
         timeLabel.text = item.startTime
@@ -85,8 +84,7 @@ class ConversationCardCell: UITableViewCell {
     @IBOutlet weak var cardContainer: UIView!
     @IBOutlet weak var topicLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
-    
-    // Separate labels as requested
+
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
@@ -101,22 +99,20 @@ class ConversationCardCell: UITableViewCell {
     }
     
     func setupDesign() {
-        // Transparent background for the cell so the TableView gray shows through
+
         self.backgroundColor = .clear
         self.contentView.backgroundColor = .clear
         self.selectionStyle = .none
         
-        // Card Styling
-        cardContainer.backgroundColor = .secondarySystemGroupedBackground // White in light mode, Dark Gray in dark mode
+
+        cardContainer.backgroundColor = .secondarySystemGroupedBackground
         cardContainer.layer.cornerRadius = 20
         cardContainer.layer.cornerCurve = .continuous
         cardContainer.layer.masksToBounds = false
-        
-        // Border
+
         cardContainer.layer.borderWidth = 1
         cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
         
-        // Shadow
         cardContainer.layer.shadowColor = UIColor.black.cgColor
         cardContainer.layer.shadowOpacity = 0.08
         cardContainer.layer.shadowOffset = CGSize(width: 0, height: 4)
@@ -124,24 +120,23 @@ class ConversationCardCell: UITableViewCell {
     }
 
     func configure(with item: RoutineConversation) {
-        // 1. Basic Text
+
         topicLabel.text = item.conversationTopic
         descriptionLabel.text = item.description ?? item.status
-        
-        // 2. Metadata Labels
+
         dateLabel.text = item.date ?? "Today"
         timeLabel.text = item.startTime
         
-        // 3. Static Icons setup
+
         calendarIcon.image = UIImage(systemName: "calendar")
         calendarIcon.tintColor = .systemGray2
         
         clockIcon.image = UIImage(systemName: "clock")
         clockIcon.tintColor = .systemGray2
         
-        // 4. Category Styling Logic
+ 
         let categoryString = item.categoryTitle
-        // Capitalize first letter
+
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
@@ -169,7 +164,6 @@ class ConversationCardCell: UITableViewCell {
         categoryIcon.image = UIImage(systemName: iconName)
         categoryIcon.tintColor = tintColor
         
-        // Optional: Color the label to match the icon
         categoryLabel.textColor = .secondaryLabel
     }
 }

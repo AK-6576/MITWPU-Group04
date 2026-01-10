@@ -9,8 +9,7 @@ class HomeViewController: UIViewController {
     
     @IBOutlet weak var usernameLabel: UILabel!
     @IBOutlet weak var tableView: UITableView!
-    @IBOutlet weak var profileIconButton: UIButton!
-    
+
     var quickActions: [RoutineConversation] = []
     var routineConversations: [RoutineConversation] = []
     
@@ -20,8 +19,6 @@ class HomeViewController: UIViewController {
         navigationItem.hidesBackButton = true
     }
     
-    // CRITICAL: Reload data every time the screen appears
-    // This ensures new actions added in the other tab show up here immediately.
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadData()
@@ -43,16 +40,11 @@ class HomeViewController: UIViewController {
     }
 
     func loadData() {
-            // 1. Fetch all valid items (Source of Truth)
-            // We filter out "Done" items first so they don't take up slots.
+
             let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
-            
-            // 2. Configure "View Conversations" (The Priority List)
-            // Request: The first 2 items go here.
+
             self.routineConversations = Array(allItems.prefix(2))
             
-            // 3. Configure "Quick Actions" (The Remainder)
-            // Request: The rest of the items (after the first 2) go here.
             self.quickActions = Array(allItems.dropFirst(2))
             
             self.tableView.reloadData()
@@ -135,7 +127,6 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
             tableView.deselectRow(at: indexPath, animated: true)
             
-            // 1. Determine which item was tapped
             let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
             
             var segueID = ""
@@ -143,13 +134,13 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             if indexPath.section == 0 {
                 switch item.categoryTitle {
                 case "Office":
-                    segueID = "office"       // Your existing Office segue ID
+                    segueID = "office"
                     
                 case "Family":
-                    segueID = "family"       // <--- CHANGE THIS to your Family segue ID
+                    segueID = "family"
                     
                 case "Friends":
-                    segueID = "friends"      // <--- CHANGE THIS (if you have one for friends)
+                    segueID = "friends"
                     
                 default:
                     print("No segue configured for category: \(item.categoryTitle)")
@@ -157,11 +148,9 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 }
                 
             } else {
-                // --- SECTION 1: Past Conversations ---
                 segueID = "viewConvoCell"
             }
-            
-            // 2. Perform the Segue
+
             performSegue(withIdentifier: segueID, sender: item)
         }
     
