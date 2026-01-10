@@ -31,9 +31,14 @@ class QuickActionsRepository {
                 startTime: "09:30 AM", description: "Discussed whether to see The Mandalorian movie.", date: "2025-10-05", timeImage: "clock"
             ),
             RoutineConversation(
-                id: "conv_5", iconName: "briefcase.fill", categoryTitle: "Office",
-                status: "In Progress", conversationTopic: "Project Alpha Status", topicImage: "chart.bar.xaxis",
-                startTime: "03:00 PM", description: "Quick sync-up on the Project Alpha deliverable timeline.", date: "2025-10-06", timeImage: "clock.badge.checkmark.fill"
+                id: "conv_5", iconName: "person.3.fill", categoryTitle: "Friends",
+                status: "In Progress", conversationTopic: "Cab Ride with Bucky Barnes", topicImage: "chart.bar.xaxis",
+                startTime: "10:30 PM", description: "Discussed drop-off location, gate code, and cab fare.", date: "4 Oct 2025", timeImage: "clock.badge.checkmark.fill"
+            ),
+            RoutineConversation(
+                id: "conv_6", iconName: "figure.2.and.child.holdinghands.fill", categoryTitle: "Family",
+                status: "In Progress", conversationTopic: "Movie Watch", topicImage: "chart.bar.xaxis",
+                startTime: "9:30 AM", description: "Discussed whether to see The Mandalorian movie.", date: "4 Oct 2025", timeImage: "clock.badge.checkmark.fill"
             )
         ]
     }

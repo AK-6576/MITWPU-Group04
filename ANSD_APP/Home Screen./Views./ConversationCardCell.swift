@@ -10,18 +10,14 @@ class RoutineTableViewCell: UITableViewCell {
     @IBOutlet weak var iconImageView: UIImageView!
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
-    @IBOutlet weak var infoButton: UIButton?
     
     var onInfoTapped: (() -> Void)?
     
-    // We add a manual separator because the TableView separatorStyle is set to .none
     private let bottomBorder = UIView()
     
     override func awakeFromNib() {
         super.awakeFromNib()
         setupDesign()
-        setupCustomSeparator()
-        infoButton?.addTarget(self, action: #selector(infoButtonTapped), for: .touchUpInside)
     }
 
     func setupDesign() {
@@ -103,7 +99,7 @@ class ConversationCardCell: UITableViewCell {
         super.awakeFromNib()
         setupDesign()
     }
-
+    
     func setupDesign() {
         // Transparent background for the cell so the TableView gray shows through
         self.backgroundColor = .clear
@@ -154,7 +150,7 @@ class ConversationCardCell: UITableViewCell {
         
         switch categoryString.lowercased() {
         case "family":
-            iconName = "heart.fill"
+            iconName = "figure.2.and.child.holdinghands"
             tintColor = .systemPink
         case "friends":
             iconName = "person.2.fill"

@@ -71,7 +71,7 @@ class HomeViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showProfile" {
             let destinationVC = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
-            destinationVC?.incomingName = usernameLabel?.text
+            destinationVC?.incomingName = "Hello + \(usernameLabel?.text)"
             destinationVC?.incomingImage = profileIconButton?.image(for: .normal)
         }
     }

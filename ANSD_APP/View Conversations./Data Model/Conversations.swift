@@ -20,8 +20,6 @@ struct ConversationsResponse: Codable {
     var conversations: [Conversation] = []
     var previousMonths: [PreviousMonth] = []
 
-    // Note: Creating an empty init that calls load() can be risky in multi-threaded environments,
-    // but works for simple setups.
     init() {
         if let response = try? load() {
             self.conversations = response.conversations
