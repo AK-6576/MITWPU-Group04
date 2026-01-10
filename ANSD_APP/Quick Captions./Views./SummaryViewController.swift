@@ -8,6 +8,7 @@
 import UIKit
 import PDFKit
 
+// View controller for displaying and managing conversation summary with PDF export
 class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, QCNotesCardCellDelegate, QCSummaryCardDelegate {
     
     @IBOutlet weak var tableView: UITableView!
@@ -16,7 +17,6 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     var conversationTitle = "Conversation 1"
     var participantsData: [QCParticipantData] = []
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -26,7 +26,6 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
-        
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 120
         
@@ -40,35 +39,29 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
-        
     }
     
-    @objc func dismissKeyboard() {
+    // Dismisses the keyboard when tapping outside text fields
+    @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
     
     // MARK: - Actions
     
-    // --- 3. SHARE AS PDF DEFAULT ---
-    @objc func shareTapped() {
-        // Calls the PDF generation directly. No alerts.
+    // Initiates PDF sharing when share button is tapped
+    @objc private func shareTapped() {
         shareAsPDF()
     }
     
+    // Navigates back to home screen with cross-dissolve transition
     @IBAction func backTapped(_ sender: Any) {
-        // 1. Get the Home Screen
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
         
-        // 2. IMPORTANT: Put Home inside a new Navigation Controller
-        // This restores the "Push" ability for your other screens.
         let navController = UINavigationController(rootViewController: homeVC)
-        
-        // (Optional) Hide the nav bar on Home if you have a custom design like "Hello Steve"
         navController.isNavigationBarHidden = false
         navController.modalPresentationStyle = .fullScreen
         
-        // 3. Swap the Root
         if let window = self.view.window {
             UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
                 window.rootViewController = navController
@@ -78,35 +71,35 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         }
     }
 
-    // MARK: - Logic: Share PDF
-    func shareAsPDF() {
+    // MARK: - PDF Generation
+    
+    // Generates a PDF from conversation data and presents share sheet
+    private func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         for person in participantsData {
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
         }
         
         if let pdfURL = createPDF(from: pdfContent) {
-
             let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
-            
             self.present(activityVC, animated: true)
         }
     }
     
-    // MARK: - PDF Generator Helper
-    func createPDF(from text: String) -> URL? {
+    // Creates a PDF file from text content and returns the temporary file URL
+    private func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
         
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         
-        let data = renderer.pdfData { (context) in
+        let data = renderer.pdfData { context in
             context.beginPage()
             
-            let attributes = [
-                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12),
-                NSAttributedString.Key.paragraphStyle: NSMutableParagraphStyle()
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12),
+                .paragraphStyle: NSMutableParagraphStyle()
             ]
             
             let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
@@ -127,17 +120,20 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     // MARK: - Table View Data Source
+    
+    // Returns the number of sections in the summary table
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
     
+    // Returns row count for each section, with participants section having variable rows
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 3 { return participantsData.count }
         return 1
     }
     
+    // Configures and returns cells for each section of the summary view
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
         switch indexPath.section {
         case 0:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QCSummarySectionHeaderCell
@@ -177,12 +173,15 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Delegates
     
+    // Adjusts table view height dynamically when notes text is updated
     func didUpdateText(in cell: QCNotesCardCell) {
         tableView.performBatchUpdates(nil, completion: nil)
         if let indexPath = tableView.indexPath(for: cell) {
             tableView.scrollToRow(at: indexPath, at: .bottom, animated: false)
         }
     }
+    
+    // Updates the conversation title when edited
     func didChangeTitle(text: String) {
         conversationTitle = text
     }

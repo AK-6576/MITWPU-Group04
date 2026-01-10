@@ -7,15 +7,14 @@
 
 import UIKit
 
+// Main view controller for live quick-captioning with animated message display
 class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
-    // MARK: - Outlets
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var pauseButton: UIButton!
     @IBOutlet weak var micButton: UIButton!
     @IBOutlet weak var endButton: UIButton!
     
-    // MARK: - Variables
     var messages: [QCChatMessage] = []
     let fullConversation = QCChatData.fullConversation
     
@@ -23,7 +22,6 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     var isPaused = false
     var otherPersonName = "Person 1"
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -41,7 +39,9 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     }
     
     // MARK: - Animation Logic
-    func processNextMessage() {
+    
+    // Processes and displays the next message in the conversation with a delay
+    private func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
         
@@ -62,10 +62,13 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     }
     
     // MARK: - CollectionView DataSource
+    
+    // Returns the total number of messages to display
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
     
+    // Configures and returns the appropriate cell for incoming or outgoing messages
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = messages[indexPath.row]
         
@@ -91,7 +94,9 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     }
     
     // MARK: - Rename Alert
-    func showRenameAlert() {
+    
+    // Displays an alert allowing the user to rename the speaker
+    private func showRenameAlert() {
         if !isPaused { togglePauseState() }
         
         let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
@@ -114,11 +119,14 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     }
 
     // MARK: - Button Actions
+    
+    // Toggles the pause state when pause button is tapped
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         togglePauseState()
     }
     
-    func togglePauseState() {
+    // Switches between paused and playing states and updates button icon
+    private func togglePauseState() {
         isPaused = !isPaused
         let config = UIImage.SymbolConfiguration(scale: .small)
         let imgName = isPaused ? "play.fill" : "pause.fill"
@@ -127,50 +135,50 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
         if !isPaused { processNextMessage() }
     }
     
+    // Handles end session button tap with confirmation dialog
     @IBAction func didTapStopButton(_ sender: UIButton) {
         if !isPaused { togglePauseState() }
+        
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+        
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
+            let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
+            
+            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
+               let summaryVC = summaryNav.topViewController as? SummaryViewController {
                 
-                let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
-                
-                let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-                    
-                    let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
-                    
-                    if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
-                       let summaryVC = summaryNav.topViewController as? SummaryViewController {
-                        
-                        let passedName = self.otherPersonName
-                        summaryVC.participantsData = [
-                            QCParticipantData(
-                                name: passedName,
-                                summary: "\(passedName) is a cab driver who inquired about drop-off locations."
-                            ),
-                            QCParticipantData(
-                                name: "Steve",
-                                summary: "Steve provided the gate code (1322 5669) and building number (C4)."
-                            )
-                        ]
+                let passedName = self.otherPersonName
+                summaryVC.participantsData = [
+                    QCParticipantData(
+                        name: passedName,
+                        summary: "\(passedName) is a cab driver who inquired about drop-off locations."
+                    ),
+                    QCParticipantData(
+                        name: "Steve",
+                        summary: "Steve provided the gate code (1322 5669) and building number (C4)."
+                    )
+                ]
 
-                        summaryNav.modalPresentationStyle = .pageSheet
-                
-                        
-                        self.present(summaryNav, animated: true, completion: nil)
-                    }
-                }
-                
-                actionSheet.addAction(endAction)
-                actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-                
-                self.present(actionSheet, animated: true)
+                summaryNav.modalPresentationStyle = .pageSheet
+                self.present(summaryNav, animated: true, completion: nil)
+            }
+        }
+        
+        actionSheet.addAction(endAction)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        self.present(actionSheet, animated: true)
     }
 
-    
     // MARK: - Layout Helpers
-    func scrollToBottom() {
+    
+    // Scrolls the collection view to show the most recent message
+    private func scrollToBottom() {
         guard messages.count > 0 else { return }
         collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
     }
     
+    // Returns fixed size for message cells
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 100)
     }

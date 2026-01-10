@@ -1,5 +1,5 @@
 //
-//  ChatCell.swift
+//  QCChatCell.swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
@@ -7,6 +7,7 @@
 
 import UIKit
 
+// Collection view cell for outgoing messages with blue bubble and right alignment
 class QCOutgoingCell: UICollectionViewCell {
     @IBOutlet weak var QCbubbleView: UIView!
     @IBOutlet weak var QCmessageLabel: UILabel!
@@ -24,6 +25,8 @@ class QCOutgoingCell: UICollectionViewCell {
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
+    
+    // Calculates and returns the preferred size for auto-sizing cells
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -35,6 +38,7 @@ class QCOutgoingCell: UICollectionViewCell {
     }
 }
 
+// Collection view cell for incoming messages with gray bubble and sender name
 class QCIncomingCell: UICollectionViewCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
@@ -58,11 +62,13 @@ class QCIncomingCell: UICollectionViewCell {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
+        
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
     }
     
+    // Calculates and returns the preferred size for auto-sizing cells
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -72,5 +78,9 @@ class QCIncomingCell: UICollectionViewCell {
         layoutAttributes.frame = newFrame
         return layoutAttributes
     }
-    @objc func handleTap() { onLabelTapped?() }
+    
+    // Handles tap gesture on sender name label to trigger rename action
+    @objc private func handleTap() {
+        onLabelTapped?()
+    }
 }

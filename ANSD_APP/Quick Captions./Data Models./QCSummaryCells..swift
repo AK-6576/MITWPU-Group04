@@ -1,5 +1,5 @@
 //
-//  SummaryCells.swift
+//  QCSummaryCells.swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
@@ -8,15 +8,20 @@
 import UIKit
 
 // MARK: - Protocols
+
+// Delegate for handling text updates in notes card cells
 protocol QCNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: QCNotesCardCell)
 }
 
+// Delegate for handling title changes in summary cards
 protocol QCSummaryCardDelegate: AnyObject {
     func didChangeTitle(text: String)
 }
 
 // MARK: - Styling Helper
+
+// Applies consistent card styling to views with shadow and corner radius
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
@@ -27,24 +32,37 @@ private func styleCard(view: UIView?) {
     card.layer.shadowRadius = 4
 }
 
-// MARK: - Headers
+// MARK: - Header Cells
+
+// Header cell for summary section with icon and label
 class QCSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
-    override func awakeFromNib() { super.awakeFromNib(); backgroundColor = .clear; contentView.backgroundColor = .clear }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
+// Header cell for participants section
 class QCParticipantsSummaryHeaderCell: UITableViewCell {
     @IBOutlet weak var participantIcon: UIImageView!
     @IBOutlet weak var participantLabel: UILabel!
-    override func awakeFromNib() { super.awakeFromNib(); backgroundColor = .clear; contentView.backgroundColor = .clear }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
-// MARK: - 1. Conversation Card (Title Only)
+// MARK: - Content Cells
+
+// Card cell displaying conversation summary with editable title field
 class QCSummaryCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
-    
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
@@ -57,14 +75,14 @@ class QCSummaryCardCell: UITableViewCell {
         styleCard(view: mainCardView)
     }
     
+    // Notifies delegate when conversation title is changed
     @IBAction func titleChanged(_ sender: UITextField) {
         delegate?.didChangeTitle(text: sender.text ?? "")
     }
 }
 
-// MARK: - 2. Participant Card (Display Label)
+// Card cell displaying individual participant information
 class QCParticipantCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var detailsLabel: UILabel!
@@ -78,12 +96,13 @@ class QCParticipantCardCell: UITableViewCell {
         avatarImageView.tintColor = .systemGray
     }
     
+    // Populates the cell with participant data
     func configure(with data: QCParticipantData) {
         detailsLabel.text = data.summary
     }
 }
 
-// MARK: - 3. Notes Card
+// Card cell with expandable text view for conversation notes
 class QCNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
@@ -104,13 +123,24 @@ class QCNotesCardCell: UITableViewCell, UITextViewDelegate {
         notesTextView.textContainer.lineFragmentPadding = 0
     }
     
+    // Removes placeholder text when user begins editing
     func textViewDidBeginEditing(_ textView: UITextView) {
-        if textView.text == placeholderText { textView.text = nil; textView.textColor = UIColor.label }
+        if textView.text == placeholderText {
+            textView.text = nil
+            textView.textColor = UIColor.label
+        }
     }
     
+    // Restores placeholder if text view is empty after editing
     func textViewDidEndEditing(_ textView: UITextView) {
-        if textView.text.isEmpty { textView.text = placeholderText; textView.textColor = .lightGray }
+        if textView.text.isEmpty {
+            textView.text = placeholderText
+            textView.textColor = .lightGray
+        }
     }
     
-    func textViewDidChange(_ textView: UITextView) { delegate?.didUpdateText(in: self) }
+    // Notifies delegate of text changes for dynamic height adjustment
+    func textViewDidChange(_ textView: UITextView) {
+        delegate?.didUpdateText(in: self)
+    }
 }
