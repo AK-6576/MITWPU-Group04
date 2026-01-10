@@ -160,7 +160,7 @@ class ConversationCardCell: UITableViewCell {
             tintColor = .systemBlue
         case "medical", "health":
             iconName = "cross.case.fill"
-            tintColor = .systemRed
+            tintColor = .systemGreen
         default:
             iconName = "folder.fill"
             tintColor = .systemGray

@@ -42,7 +42,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         self.descriptionLabel.text = conversation.description
         
         let categoryString = conversation.category
-        let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
+       let capitalizedCategory = categoryString!.prefix(1).uppercased() + categoryString!.dropFirst()
         self.categoryLabel.text = capitalizedCategory
         
         self.dateLabel.text = conversation.date
@@ -57,7 +57,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         let iconName: String
         let tintColor: UIColor
         
-        switch categoryString.lowercased() {
+       switch categoryString!.lowercased() {
         case "family":
             iconName = "heart.fill"
             tintColor = .systemRed

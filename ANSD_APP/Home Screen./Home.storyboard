@@ -416,6 +416,7 @@
                         <segue destination="0Xm-WW-Dax" kind="show" identifier="viewConvo" id="7HU-4V-DBS"/>
                         <segue destination="yeB-Fh-cwB" kind="show" identifier="startCaptionSession" id="ps5-42-M8h"/>
                         <segue destination="CdC-RP-GEa" kind="show" identifier="showQuickActions" id="0yZ-wg-NOQ"/>
+                        <segue destination="V9a-Kk-xxE" kind="show" identifier="viewConvoCell" id="Say-oD-Yz5"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="WS3-2k-O8Z" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -449,6 +450,16 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="0v6-UN-Io6" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="2427" y="-312"/>
+        </scene>
+        <!--chatHistory2ViewController-->
+        <scene sceneID="lhK-KH-2P6">
+            <objects>
+                <viewControllerPlaceholder storyboardName="viewConvo" referencedIdentifier="chatHistory2ViewController" id="V9a-Kk-xxE" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="UqX-tg-UIa"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="O5c-T3-KMF" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2411" y="-263"/>
         </scene>
         <!--About Me-->
         <scene sceneID="h8I-CM-OAq">
@@ -1156,16 +1167,6 @@
             </objects>
             <point key="canvasLocation" x="2334" y="-570"/>
         </scene>
-        <!--Family-->
-        <scene sceneID="GX4-GC-EYh">
-            <objects>
-                <viewControllerPlaceholder storyboardName="RoutineConvo 2" referencedIdentifier="Family" id="ehS-ch-vgz" sceneMemberID="viewController">
-                    <navigationItem key="navigationItem" id="XaL-ZM-yBd"/>
-                </viewControllerPlaceholder>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="oSb-cS-V0D" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="2548" y="-77"/>
-        </scene>
         <!--MeetSelectionViewController-->
         <scene sceneID="YV0-tX-3ra">
             <objects>
@@ -1257,16 +1258,6 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F8T-D9-LtR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1360" y="516"/>
-        </scene>
-        <!--Office-->
-        <scene sceneID="Ha0-rL-Yk5">
-            <objects>
-                <viewControllerPlaceholder storyboardName="RoutineConvo" referencedIdentifier="Office" id="JX6-Rf-JXC" sceneMemberID="viewController">
-                    <navigationItem key="navigationItem" id="dwy-22-7Ir"/>
-                </viewControllerPlaceholder>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="GJr-3Y-5N4" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="2544" y="-3"/>
         </scene>
         <!--viewConvo-->
         <scene sceneID="3ip-YL-OMA">
