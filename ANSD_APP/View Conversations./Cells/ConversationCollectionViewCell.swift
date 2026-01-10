@@ -46,7 +46,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         self.categoryLabel.text = capitalizedCategory
         
         self.dateLabel.text = conversation.date
-        self.timeLabel.text = "\(conversation.startTime) "
+        self.timeLabel.text = "\(conversation.startTime)"
         
         self.calendarIcon.image = UIImage(systemName: "calendar")
         self.clockIcon.image = UIImage(systemName: "clock")

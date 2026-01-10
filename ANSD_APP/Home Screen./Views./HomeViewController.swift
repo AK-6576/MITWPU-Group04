@@ -82,7 +82,7 @@ class HomeViewController: UIViewController {
         // 2. Chat History Navigation (The Card Tap)
         else if segue.identifier == "viewConvoCell" {
             
-            guard let destVC = segue.destination as? chatHistory2ViewController,
+            guard let destVC = segue.destination as? ChatHistory2ViewController,
                   let selectedItem = sender as? RoutineConversation else {
                 print("Error: Destination or Sender mismatch for viewConvoCell")
                 return

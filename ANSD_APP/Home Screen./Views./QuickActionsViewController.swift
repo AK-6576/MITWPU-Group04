@@ -116,9 +116,9 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         case "Friends":
             storyboardName = "Friends"
         case "Family":
-            storyboardName = "RoutineConvo 2"
+            storyboardName = "Family."
         case "Office":
-            storyboardName = "RoutineConvo"
+            storyboardName = "Office."
         default:
             print("No storyboard configured for: \(categoryName)")
             return

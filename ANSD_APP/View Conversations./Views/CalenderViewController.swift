@@ -9,7 +9,7 @@ import UIKit
 protocol CalendarDelegate: AnyObject {
     func didSelectDate(_ date: Date)
 }
-class calenderViewController: UIViewController {
+class CalenderViewController: UIViewController {
 
     // MARK: - Outlets
     // In Storyboard, drag a 'Date Picker' and connect it to this outlet

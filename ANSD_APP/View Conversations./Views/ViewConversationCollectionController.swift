@@ -84,7 +84,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let selectedConversation = conversationSections[indexPath.section].conversations[indexPath.row]
         
-        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "chatHistory2ViewController") as? chatHistory2ViewController else {
+        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "chatHistory2ViewController") as? ChatHistory2ViewController else {
             print("DIAGNOSTIC FAILURE: Could not instantiate chatHistory2ViewController. Check Storyboard ID.")
             return
         }
@@ -388,7 +388,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     
     @IBAction func calenderbuttontapped(_ sender: Any) {
         // 1. Correctly load from Storyboard using the ID you just set
-        guard let calendarVC = self.storyboard?.instantiateViewController(withIdentifier: "calenderViewController") as? calenderViewController else {
+        guard let calendarVC = self.storyboard?.instantiateViewController(withIdentifier: "calenderViewController") as? CalenderViewController else {
             print("Error: Could not find calenderViewController in Storyboard. Check the Storyboard ID.")
             return
         }

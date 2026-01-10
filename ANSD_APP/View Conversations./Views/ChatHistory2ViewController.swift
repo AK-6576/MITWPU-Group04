@@ -128,7 +128,7 @@ class PCNotesCardCell: UITableViewCell, UITextViewDelegate {
 }
 
 // MARK: - Main View Controller
-class chatHistory2ViewController: UIViewController {
+class ChatHistory2ViewController: UIViewController {
     
     // MARK: Outlets
     @IBOutlet var segmentedControl: UISegmentedControl!
@@ -304,7 +304,7 @@ class chatHistory2ViewController: UIViewController {
 }
 
 // MARK: - PDF Logic (Updated to match Code 2)
-extension chatHistory2ViewController {
+extension ChatHistory2ViewController {
     
     func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
@@ -363,7 +363,7 @@ extension chatHistory2ViewController {
 }
 
 // MARK: - Collection View Logic
-extension chatHistory2ViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return transcript.count
     }
@@ -416,7 +416,7 @@ extension chatHistory2ViewController: UICollectionViewDelegate, UICollectionView
 }
 
 // MARK: - Table View & Text Management
-extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource, PCSummaryCardDelegate, PCNotesCardCellDelegate {
+extension ChatHistory2ViewController: UITableViewDelegate, UITableViewDataSource, PCSummaryCardDelegate, PCNotesCardCellDelegate {
     
     // Protocol method for PCNotesCardCellDelegate
     func didUpdateText(in cell: PCNotesCardCell) {
