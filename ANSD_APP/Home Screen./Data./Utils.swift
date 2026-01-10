@@ -38,7 +38,7 @@ func getSymbolForCategory(_ name: String) -> String {
     
     switch lower {
     case "friends", "hangout": return "person.2.fill"
-    case "family", "home", "house": return "figure.2.and.child.holdinghands.fill"
+    case "family", "home", "house": return "figure.2.and.child.holdinghands"
     case "date", "partner": return "heart.fill"
     case "office", "work", "meeting": return "briefcase.fill"
     case "school", "study", "class", "university": return "book.fill"

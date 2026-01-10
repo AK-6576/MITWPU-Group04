@@ -23,8 +23,25 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
     }
     
     func loadData() {
-        // Fetch from Singleton -> This runs the Grouping & Sorting logic
-        self.sections = QuickActionsRepository.shared.getGroupedSections()
+        // 1. Fetch from Singleton -> This runs the Grouping & Sorting logic
+        let allSections = QuickActionsRepository.shared.getGroupedSections()
+        
+        // 2. Filter out "Done" items so they don't appear in Quick Actions
+        self.sections = allSections.compactMap { section in
+            // Keep only items where status is NOT "Done"
+            let activeItems = section.items.filter { $0.status != "Done" }
+            
+            // If the section is empty after filtering, remove the section entirely
+            if activeItems.isEmpty {
+                return nil
+            }
+            
+            // Return the section with only the active items
+            var filteredSection = section
+            filteredSection.items = activeItems
+            return filteredSection
+        }
+        
         tableView.reloadData()
     }
     

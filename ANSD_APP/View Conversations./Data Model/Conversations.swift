@@ -72,12 +72,12 @@ struct PCParticipantData: Codable {
 struct Conversation: Codable, Identifiable {
     let id: String
     var title: String
-    var description: String? // Made optional
+    var description: String // Made optional
     var date: String?        // Made optional
-    var startTime: String?   // Made optional
-    var endTime: String?     // Made optional
-    var category: String?    // Made optional
-    var icon: String?        // Made optional
+    var startTime: String   // Made optional
+    var endTime: String     // Made optional
+    var category: String    // Made optional
+    var icon: String        // Made optional
     var info: Bool?
     var cal: Date?
     
@@ -101,12 +101,12 @@ struct Conversation: Codable, Identifiable {
         self.messages = messages
         self.participants = participants
         self.notes = notes
-        self.description = description
-        self.date = date
-        self.startTime = startTime
-        self.endTime = endTime
-        self.category = category
-        self.icon = icon
+        self.description = description!
+        self.date = date!
+        self.startTime = startTime!
+        self.endTime = endTime!
+        self.category = category!
+        self.icon = icon!
     }
 }
 

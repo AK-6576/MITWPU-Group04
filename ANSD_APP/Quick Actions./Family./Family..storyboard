@@ -912,7 +912,7 @@
         <!--Assignment Completion-->
         <scene sceneID="lKG-FB-vhg">
             <objects>
-                <viewController storyboardIdentifier="GroupNewViewController" useStoryboardIdentifierAsRestorationIdentifier="YES" id="9c8-7o-CVo" customClass="FamilyJoinViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="FamilyNewViewController" useStoryboardIdentifierAsRestorationIdentifier="YES" id="9c8-7o-CVo" customClass="FamilyJoinViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="lwu-Hr-S0i">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

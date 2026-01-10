@@ -84,7 +84,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let selectedConversation = conversationSections[indexPath.section].conversations[indexPath.row]
         
-        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "chatHistory2ViewController") as? ChatHistory2ViewController else {
+        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistory2ViewController") as? ChatHistory2ViewController else {
             print("DIAGNOSTIC FAILURE: Could not instantiate chatHistory2ViewController. Check Storyboard ID.")
             return
         }
@@ -211,8 +211,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     
     // MARK: - Navbar
     func setupNavBar() {
-        navigationController?.setNavigationBarHidden(false, animated: true)
-        navigationItem.title = "View Conversations" // This is fine
         collectionView.backgroundColor = .systemGroupedBackground
         view.backgroundColor = .systemGroupedBackground
     }
@@ -364,7 +362,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             self.conversationSections = self.allConversationSections.compactMap { section in
                 let filtered = section.conversations.filter { convo in
                     convo.title.lowercased().contains(lowercasedSearchText) ||
-                    convo.description!.lowercased().contains(lowercasedSearchText)
+                    convo.description.lowercased().contains(lowercasedSearchText)
                 }
                 return filtered.isEmpty ? nil : ConversationSection(title: section.title, conversations: filtered)
             }

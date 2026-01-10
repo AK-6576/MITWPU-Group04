@@ -1,18 +1,173 @@
 {
   "conversations": [
     {
+      "id": "1",
+      "title": "Scrum Meet",
+      "description": "Updates on Project Stardust.",
+      "topic_image": "person.3.sequence.fill",
+      "notes": "Follow up with Dev team regarding API integration.",
+      "participants": [
+        {
+          "name": "Manager",
+          "summary": "Asked about timeline.",
+          "image": "avatar_2"
+        },
+        {
+          "name": "Me",
+          "summary": "Confirmed Stardust phase 1 is complete.",
+          "image": "avatar_1"
+        },
+        {
+          "name": "Sarah (Dev)",
+          "summary": "Raised concern about database latency.",
+          "image": "avatar_3"
+        }
+      ],
+      "date": "Today",
+      "cal": "2025-10-15T09:30:00Z",
+      "start_time": "09:30 AM",
+      "end_time": "10:00 AM",
+      "category": "office",
+      "icon": "briefcase.fill",
+      "info": true,
+      "messages": [
+        { "id": "m1", "text": "Good morning everyone. Let's start with the Project Stardust demo. Are we set?", "senderName": "Manager", "isIncoming": true, "isHighlighted": false },
+        { "id": "m2", "text": "Yes, phase 1 is deployed. I'll present the UI updates. The new dashboard is live on staging.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m3", "text": "Excellent. It looks much cleaner than the old version. How are the load times?", "senderName": "Manager", "isIncoming": true, "isHighlighted": false },
+        { "id": "m4", "text": "We are seeing a slight latency spike when fetching the user history.", "senderName": "Sarah (Dev)", "isIncoming": true, "isHighlighted": false },
+        { "id": "m5", "text": "Is it critical?", "senderName": "Manager", "isIncoming": true, "isHighlighted": false },
+        { "id": "m6", "text": "It adds about 200ms. I can optimize the query by tomorrow.", "senderName": "Sarah (Dev)", "isIncoming": true, "isHighlighted": false },
+        { "id": "m7", "text": "Sounds like a plan. Let's aim to have that fixed before the client demo on Friday.", "senderName": "Manager", "isIncoming": true, "isHighlighted": false },
+        { "id": "m8", "text": "Will do. I'll coordinate with the backend team.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
+      ]
+    },
+    {
+      "id": "2",
+      "title": "Brunch with Amanda",
+      "description": "Weekly catch-up at The Toast Cafe.",
+      "topic_image": "fork.knife.circle.fill",
+      "notes": "Remember to ask about her new dog.",
+      "participants": [
+        {
+          "name": "Amanda",
+          "summary": "Running 5 mins late.",
+          "image": "avatar_4"
+        },
+        {
+          "name": "Me",
+          "summary": "Ordering coffee.",
+          "image": "avatar_1"
+        }
+      ],
+      "date": "Today",
+      "cal": "2025-10-15T11:00:00Z",
+      "start_time": "11:00 AM",
+      "end_time": "12:30 PM",
+      "category": "family",
+      "icon": "figure.2.and.child.holdinghands",
+      "info": false,
+      "messages": [
+        { "id": "m1", "text": "Hey! I'm stuck in traffic near the bridge, be there in 10.", "senderName": "Amanda", "isIncoming": true, "isHighlighted": false },
+        { "id": "m2", "text": "No worries, I'll grab a table and order us some lattes. Iced or hot today?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m3", "text": "Definitely iced. It's surprisingly warm out.", "senderName": "Amanda", "isIncoming": true, "isHighlighted": false },
+        { "id": "m4", "text": "Got it. I'm at the table by the window.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m5", "text": "Perfect. Oh, and you have to see the photos of the new puppy when I get there!", "senderName": "Amanda", "isIncoming": true, "isHighlighted": false },
+        { "id": "m6", "text": "I can't wait! What did you name him?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m7", "text": "Buster. He's a menace but adorable.", "senderName": "Amanda", "isIncoming": true, "isHighlighted": false }
+      ]
+    },
+    {
+      "id": "3",
+      "title": "Cafeteria Hangout",
+      "description": "Lunch break with the design team.",
+      "topic_image": "cup.and.saucer.fill",
+      "notes": "",
+      "participants": [
+        {
+          "name": "Sarah",
+          "summary": "Brought cookies.",
+          "image": "avatar_3"
+        },
+        {
+          "name": "Mike",
+          "summary": "Talked about football.",
+          "image": "avatar_5"
+        },
+        {
+          "name": "Me",
+          "summary": "Forgot lunch, buying a sandwich.",
+          "image": "avatar_1"
+        }
+      ],
+      "date": "Today",
+      "cal": "2025-10-15T12:30:00Z",
+      "start_time": "12:30 PM",
+      "end_time": "01:30 PM",
+      "category": "friends",
+      "icon": "person.3.fill",
+      "info": false,
+      "messages": [
+        { "id": "m1", "text": "We are sitting near the window, the usual spot.", "senderName": "Sarah", "isIncoming": true, "isHighlighted": false },
+        { "id": "m2", "text": "Coming down now. Did you guys bring lunch or are you buying?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m3", "text": "I brought leftovers, but Sarah brought those amazing cookies again.", "senderName": "Mike", "isIncoming": true, "isHighlighted": false },
+        { "id": "m4", "text": "Oh, save me one! I totally forgot to pack anything today.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m5", "text": "Better hurry, Mike is eyeing the last chocolate chip one.", "senderName": "Sarah", "isIncoming": true, "isHighlighted": false },
+        { "id": "m6", "text": "I'm running!", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m7", "text": "Also, did you catch the game last night? That final goal was insane.", "senderName": "Mike", "isIncoming": true, "isHighlighted": false },
+        { "id": "m8", "text": "I missed it. Don't spoil it, I'm watching the replay tonight.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
+      ]
+    },
+    {
+      "id": "conv_3",
+      "title": "Movie Watch",
+      "description": "Discussed whether to see The Mandalorian movie.",
+      "topic_image": "film.stack.fill",
+      "notes": "",
+      "participants": [
+        {
+          "name": "Wife",
+          "summary": "Discussed movie timing.",
+          "image": "avatar_6"
+        },
+        {
+          "name": "Me",
+          "summary": "Checking IMAX seating.",
+          "image": "avatar_1"
+        }
+      ],
+      "date": "2025-10-05",
+      "cal": "2025-10-05T18:00:00Z",
+      "start_time": "06:00 PM",
+      "end_time": "08:30 PM",
+      "category": "family",
+      "icon": "figure.2.and.child.holdinghands",
+      "info": false,
+      "messages": [
+        { "id": "m1", "text": "Did you see the trailers for the new Mandalorian movie? It looks incredible!", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m2", "text": "I did! I'm trying to decide if we should watch it this weekend or wait for the crowds to die down.", "senderName": "Wife", "isIncoming": true, "isHighlighted": false },
+        { "id": "m3", "text": "Let's go Saturday evening. I already checked the seating chart, and 7 PM still has good spots at the IMAX.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m4", "text": "IMAX sounds loud, but worth it for the visuals. How much are the tickets?", "senderName": "Wife", "isIncoming": true, "isHighlighted": false },
+        { "id": "m5", "text": "About $25 each. But we have that gift card from Christmas.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m6", "text": "Oh right! Okay, let's do it. Book the tickets and send me the confirmation!", "senderName": "Wife", "isIncoming": true, "isHighlighted": false },
+        { "id": "m7", "text": "Done. See you at home.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
+      ]
+    },
+    {
       "id": "conv_2",
       "title": "Cab Ride with Bucky Barnes",
       "description": "Discussed drop-off location, gate code, and cab fare.",
+      "topic_image": "car.fill",
       "notes": "Add notes about this conversation...",
       "participants": [
         {
           "name": "Person 1",
-          "summary": "Driver from Brooklyn; requested 120 cash."
+          "summary": "Driver from Brooklyn; requested 120 cash.",
+          "image": "avatar_7"
         },
         {
           "name": "Me",
-          "summary": "Provided gate code 10042005."
+          "summary": "Provided gate code 10042005.",
+          "image": "avatar_1"
         }
       ],
       "date": "4 Oct 2025",
@@ -20,7 +175,7 @@
       "start_time": "10:30 PM",
       "end_time": "11:30 PM",
       "category": "friends",
-      "icon": "friends_icon",
+      "icon": "person.3.fill",
       "info": true,
       "messages": [
         { "id": "m1", "text": "Bucky Barnes, right? How do you spell your surname?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
@@ -38,49 +193,37 @@
       ]
     },
     {
-      "id": "conv_3",
-      "title": "Movie Watch",
-      "description": "Discussed whether to see The Mandalorian movie.",
-      "notes": "",
+      "id": "conv_6",
+      "title": "Evening Jog",
+      "description": "Running path discussion with neighbor.",
+      "topic_image": "figure.run",
+      "notes": "Meet at the park entrance.",
       "participants": [
-        { "name": "Wife", "summary": "Discussed movie timing." },
-        { "name": "Me", "summary": "Checking IMAX seating." }
+        {
+          "name": "Neighbor",
+          "summary": "Suggesting the lake route.",
+          "image": "avatar_8"
+        },
+        {
+          "name": "Me",
+          "summary": "Preferring the trail.",
+          "image": "avatar_1"
+        }
       ],
-      "date": "5 Oct 2025",
-      "cal": "2025-10-05T09:30:00Z",
-      "start_time": "09:30 AM",
-      "end_time": "10:30 AM",
-      "category": "family",
-      "icon": "family_icon",
+      "date": "Today",
+      "cal": "2025-10-15T18:00:00Z",
+      "start_time": "06:00 PM",
+      "end_time": "07:00 PM",
+      "category": "friends",
+      "icon": "figure.run",
       "info": false,
       "messages": [
-        { "id": "m1", "text": "Did you see the trailers for the new Mandalorian movie? It looks incredible!", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
-        { "id": "m2", "text": "I did! I'm trying to decide if we should watch it this weekend or wait for the crowds to die down.", "senderName": "Wife", "isIncoming": true, "isHighlighted": false },
-        { "id": "m3", "text": "Let's go Saturday evening. I already checked the seating chart, and 7 PM still has good spots at the IMAX.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
-        { "id": "m4", "text": "Perfect. Book the tickets and send me the confirmation!", "senderName": "Wife", "isIncoming": true, "isHighlighted": false }
-      ]
-    },
-    {
-      "id": "conv_5",
-      "title": "Project Alpha Status",
-      "description": "Quick sync-up on the Project Alpha deliverable timeline.",
-      "notes": "Follow up with Manager at 4 PM.",
-      "participants": [
-        { "name": "Manager", "summary": "Requested integration status." },
-        { "name": "Me", "summary": "Confirmed unit tests passed." }
-      ],
-      "date": "6 Oct 2025",
-      "cal": "2025-10-06T15:00:00Z",
-      "start_time": "03:00 PM",
-      "end_time": "03:15 PM",
-      "category": "office",
-      "icon": "office_icon",
-      "info": true,
-      "messages": [
-        { "id": "m1", "text": "Hi team, just confirming: is Project Alpha integration still on track for Friday delivery?", "senderName": "Manager", "isIncoming": true, "isHighlighted": false },
-        { "id": "m2", "text": "Yes, all unit tests passed. We anticipate a successful deployment by EOD tomorrow.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
-        { "id": "m3", "text": "Great news. Please send a final report summary by 4 PM today.", "senderName": "Manager", "isIncoming": true, "isHighlighted": false },
-        { "id": "m4", "text": "Will do. Report is next on my list.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
+        { "id": "m1", "text": "Are you up for a run later?", "senderName": "Neighbor", "isIncoming": true, "isHighlighted": false },
+        { "id": "m2", "text": "Yeah, I need to clear my head. Where should we go?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m3", "text": "The lake route is nice this time of year, lots of breeze.", "senderName": "Neighbor", "isIncoming": true, "isHighlighted": false },
+        { "id": "m4", "text": "True, but the trail is softer on my knees. Can we do the woodland loop?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+        { "id": "m5", "text": "Fair enough. Woodland loop it is. Meet at the entrance at 6?", "senderName": "Neighbor", "isIncoming": true, "isHighlighted": false },
+        { "id": "m6", "text": "Perfect. See you then.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
       ]
     }
   ],
@@ -92,21 +235,39 @@
           "id": "conv_11",
           "title": "Quarterly Business Review",
           "description": "Deep dive into Q3 metrics.",
+          "topic_image": "chart.bar.fill",
           "notes": "",
           "participants": [
-            { "name": "CEO", "summary": "Reported 15% APAC growth." },
-            { "name": "CFO", "summary": "Budget allocation of $50k." }
+            {
+              "name": "CEO",
+              "summary": "Reported 15% APAC growth.",
+              "image": "avatar_9"
+            },
+            {
+              "name": "CFO",
+              "summary": "Budget allocation of $50k.",
+              "image": "avatar_10"
+            },
+            {
+              "name": "Me",
+              "summary": "Proposed Q4 focus on Europe.",
+              "image": "avatar_1"
+            }
           ],
           "date": "10 Sep 2025",
           "cal": "2025-09-10T09:00:00Z",
           "start_time": "09:00 AM",
           "end_time": "11:00 AM",
           "category": "office",
-          "icon": "office_icon",
+          "icon": "briefcase.fill",
           "info": true,
           "messages": [
-            { "id": "m1", "text": "The Q3 data shows a 15% growth in the APAC region.", "senderName": "CEO", "isIncoming": true, "isHighlighted": false },
-            { "id": "m2", "text": "Our Q4 focus will be European market penetration.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
+            { "id": "m1", "text": "Welcome everyone. Let's look at the numbers. The Q3 data shows a 15% growth in the APAC region.", "senderName": "CEO", "isIncoming": true, "isHighlighted": false },
+            { "id": "m2", "text": "That exceeds our forecast. What drove the surge?", "senderName": "CFO", "isIncoming": false, "isHighlighted": false },
+            { "id": "m3", "text": "Mainly the new partnership in Singapore. It opened up a lot of doors.", "senderName": "CEO", "isIncoming": true, "isHighlighted": false },
+            { "id": "m4", "text": "We should double down on that strategy. Our Q4 focus will be European market penetration.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+            { "id": "m5", "text": "Agreed. I am allocating an extra $50k to the marketing budget for Europe.", "senderName": "CFO", "isIncoming": true, "isHighlighted": false },
+            { "id": "m6", "text": "Make sure the creative team gets the brief by Monday.", "senderName": "CEO", "isIncoming": true, "isHighlighted": false }
           ]
         }
       ]
@@ -118,20 +279,39 @@
           "id": "conv_8",
           "title": "Vacation Spot Ideas",
           "description": "Brainstormed locations.",
+          "topic_image": "airplane",
           "notes": "Check cabin availability near Lake Tahoe.",
           "participants": [
-            { "name": "Kid 1", "summary": "Wants mountains." },
-            { "name": "Kid 2", "summary": "Wants beach." }
+            {
+              "name": "Kid 1",
+              "summary": "Wants mountains.",
+              "image": "avatar_11"
+            },
+            {
+              "name": "Kid 2",
+              "summary": "Wants beach.",
+              "image": "avatar_2"
+            },
+            {
+              "name": "Me",
+              "summary": "Found a lake cabin.",
+              "image": "avatar_1"
+            }
           ],
           "date": "10 Aug 2025",
           "cal": "2025-08-10T17:00:00Z",
           "start_time": "05:00 PM",
           "end_time": "06:00 PM",
           "category": "family",
-          "icon": "family_icon",
+          "icon": "figure.2.and.child.holdinghands",
           "info": true,
           "messages": [
-            { "id": "m1", "text": "I'm thinking beach or mountains?", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
+            { "id": "m1", "text": "Okay family meeting. I'm thinking beach or mountains for the trip?", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+            { "id": "m2", "text": "Mountains! I want to see snow!", "senderName": "Kid 1", "isIncoming": true, "isHighlighted": false },
+            { "id": "m3", "text": "No way, beach! I want to swim.", "senderName": "Kid 2", "isIncoming": true, "isHighlighted": false },
+            { "id": "m4", "text": "We did the beach last year. Maybe a cabin near a lake? Best of both worlds.", "senderName": "Me", "isIncoming": false, "isHighlighted": false },
+            { "id": "m5", "text": "Like Lake Tahoe?", "senderName": "Kid 1", "isIncoming": true, "isHighlighted": false },
+            { "id": "m6", "text": "Exactly. I'll check if we can find a place with a dock.", "senderName": "Me", "isIncoming": false, "isHighlighted": false }
           ]
         }
       ]

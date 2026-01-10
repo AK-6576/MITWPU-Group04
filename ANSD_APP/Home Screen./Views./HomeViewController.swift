@@ -43,19 +43,24 @@ class HomeViewController: UIViewController {
     }
 
     func loadData() {
-        // fetch from Singleton
-        let allItems = QuickActionsRepository.shared.getAllActions()
-        
-        if allItems.count >= 4 {
-            self.quickActions = Array(allItems.prefix(4))
-            self.routineConversations = Array(allItems.dropFirst(4))
-        } else {
-            self.quickActions = allItems
-            self.routineConversations = []
+            // 1. Fetch all items (Source of Truth)
+            let allItems = QuickActionsRepository.shared.getAllActions()
+            
+            // 2. Configure "Quick Actions" (Top Section)
+            // Keep existing logic: Show all active/scheduled items
+            self.quickActions = allItems.filter { $0.status != "Done" }
+            
+            // 3. Configure "View Conversations" (Bottom Section)
+            // Request: Show the first 2 items from the "All Conversations" list.
+            // We take the first 2 items from the main list directly.
+            if allItems.count >= 2 {
+                self.routineConversations = Array(allItems.prefix(2))
+            } else {
+                self.routineConversations = allItems
+            }
+            
+            self.tableView.reloadData()
         }
-        self.tableView.reloadData()
-    }
-    
     // MARK: - Actions & Navigation
     @objc func headerChevronTapped(_ sender: UIButton) {
         let segueID = (sender.tag == 0) ? "showQuickActions" : "viewConvo"
@@ -131,11 +136,37 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
-        let segueID = (indexPath.section == 0) ? "startCaptionSession" : "viewConvoCell"
-        performSegue(withIdentifier: segueID, sender: item)
-    }
+            tableView.deselectRow(at: indexPath, animated: true)
+            
+            // 1. Determine which item was tapped
+            let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
+            
+            var segueID = ""
+            
+            if indexPath.section == 0 {
+                switch item.categoryTitle {
+                case "Office":
+                    segueID = "office"       // Your existing Office segue ID
+                    
+                case "Family":
+                    segueID = "family"       // <--- CHANGE THIS to your Family segue ID
+                    
+                case "Friends":
+                    segueID = "friends"      // <--- CHANGE THIS (if you have one for friends)
+                    
+                default:
+                    print("No segue configured for category: \(item.categoryTitle)")
+                    return // Stop execution so the app doesn't crash
+                }
+                
+            } else {
+                // --- SECTION 1: Past Conversations ---
+                segueID = "viewConvoCell"
+            }
+            
+            // 2. Perform the Segue
+            performSegue(withIdentifier: segueID, sender: item)
+        }
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
