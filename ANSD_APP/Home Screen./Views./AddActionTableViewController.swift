@@ -63,6 +63,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
                 self?.toggleDay(sender.title)
                 sender.state = (self?.selectedDays.contains(sender.title) ?? false) ? .on : .off
                 self?.updateDayButtonText()
+                self!.updateDayMenu()
             }
             actions.append(action)
         }
@@ -90,27 +91,27 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         categoryCell.accessoryView = categoryPopupButton
         updateCategory(selectedCategory)
     }
-      
+       
     func setupCategoryMenu() {
         let selectionHandler: (UIAction) -> Void = { [weak self] action in
             self?.updateCategory(action.title)
         }
-        
+       
         var actions: [UIAction] = []
         for cat in availableCategories {
             let iconName = getSymbolForCategory(cat)
             let color = getColorForCategory(cat)
             let coloredImage = UIImage(systemName: iconName)?.withTintColor(color, renderingMode: .alwaysOriginal)
-            
+           
             let action = UIAction(title: cat, image: coloredImage, state: (cat == selectedCategory) ? .on : .off, handler: selectionHandler)
             actions.append(action)
         }
-        
+       
         let plusImage = UIImage(systemName: "plus")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
         let createOwnAction = UIAction(title: "Create Own...", image: plusImage) { [weak self] _ in
             self?.showCustomCategoryAlert()
         }
-        
+       
         let menu = UIMenu(title: "Choose Category", children: actions + [createOwnAction])
         categoryPopupButton?.menu = menu
     }
@@ -119,7 +120,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         self.selectedCategory = category
         let iconName = getSymbolForCategory(category)
         let color = getColorForCategory(category)
-        
+       
         if var config = categoryPopupButton?.configuration {
             config.baseForegroundColor = .label
             config.title = category
@@ -170,15 +171,20 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         present(alert, animated: true)
     }
     
-    // MARK: - Save
+    // MARK: - Save Action
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
         guard let name = nameTextField.text, !name.isEmpty else { return }
-        let formatter = DateFormatter(); formatter.dateFormat = "h:mm a"
-        let timeString = formatter.string(from: startTimePicker.date)
         
+        // --- KEY CHANGE: Strict Time Formatting for Sorting ---
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a" // e.g. "9:30 AM"
+        formatter.amSymbol = "AM"
+        formatter.pmSymbol = "PM"
+        let timeString = formatter.string(from: startTimePicker.date)
+       
         let iconName = getSymbolForCategory(selectedCategory)
         let dateString = getFormattedDateString()
-        
+       
         let newAction = RoutineConversation(
             id: UUID().uuidString, iconName: iconName, categoryTitle: selectedCategory,
             status: "Scheduled", conversationTopic: name, topicImage: "mic.circle.fill",
