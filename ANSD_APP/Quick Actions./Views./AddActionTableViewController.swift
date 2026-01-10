@@ -5,22 +5,21 @@
 
 import UIKit
 
+// Delegate protocol for communicating newly created actions back to the parent view
 protocol AddActionDelegate: AnyObject {
     func didCreateNewAction(_ action: RoutineConversation)
 }
 
+// Table view controller for creating new routine conversation actions
 class AddActionTableViewController: UITableViewController, ParticipantsSelectionDelegate {
 
-    // MARK: - Outlets
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var participantsLabel: UILabel!
     @IBOutlet weak var startTimePicker: UIDatePicker!
     @IBOutlet weak var saveButton: UIBarButtonItem!
-    
     @IBOutlet weak var daysCell: UITableViewCell!
     @IBOutlet weak var categoryCell: UITableViewCell!
     
-    // MARK: - Variables
     weak var delegate: AddActionDelegate?
     private var dayPopupButton: UIButton?
     private var categoryPopupButton: UIButton?
@@ -32,7 +31,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     var availableCategories: [String] = ["Friends", "Family", "Office"]
     let allDaysOrdered = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardDismissal()
@@ -43,8 +41,10 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         nameTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
     }
 
-    // MARK: - Days Drop-down
-    func setupDayCell() {
+    // MARK: - Day Selection Setup
+    
+    // Configures the day selection cell with popup button
+    private func setupDayCell() {
         dayPopupButton = createPopupButton()
         dayPopupButton?.tintColor = .systemBlue
         if var config = dayPopupButton?.configuration {
@@ -54,8 +54,9 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         updateDayMenu()
         daysCell.accessoryView = dayPopupButton
     }
-          
-    func updateDayMenu() {
+    
+    // Updates the day selection menu with current selections
+    private func updateDayMenu() {
         var actions: [UIAction] = []
         for day in allDaysOrdered {
             let isSelected = selectedDays.contains(day)
@@ -63,7 +64,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
                 self?.toggleDay(sender.title)
                 sender.state = (self?.selectedDays.contains(sender.title) ?? false) ? .on : .off
                 self?.updateDayButtonText()
-                self!.updateDayMenu()
+                self?.updateDayMenu()
             }
             actions.append(action)
         }
@@ -72,7 +73,8 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         updateDayButtonText()
     }
     
-    func toggleDay(_ day: String) {
+    // Toggles a day selection, ensuring at least one day remains selected
+    private func toggleDay(_ day: String) {
         if selectedDays.contains(day) {
             if selectedDays.count > 1 { selectedDays.remove(day) }
         } else {
@@ -80,19 +82,23 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         }
     }
     
-    func updateDayButtonText() {
+    // Updates the day button title with formatted day string
+    private func updateDayButtonText() {
         dayPopupButton?.configuration?.title = getFormattedDateString()
     }
 
-    // MARK: - Category Drop-down
-    func setupCategoryCell() {
+    // MARK: - Category Selection Setup
+    
+    // Configures the category selection cell with popup button
+    private func setupCategoryCell() {
         categoryPopupButton = createPopupButton()
         setupCategoryMenu()
         categoryCell.accessoryView = categoryPopupButton
         updateCategory(selectedCategory)
     }
-       
-    func setupCategoryMenu() {
+    
+    // Creates the category selection menu with icons and custom category option
+    private func setupCategoryMenu() {
         let selectionHandler: (UIAction) -> Void = { [weak self] action in
             self?.updateCategory(action.title)
         }
@@ -116,7 +122,8 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         categoryPopupButton?.menu = menu
     }
     
-    func updateCategory(_ category: String) {
+    // Updates the selected category and refreshes button appearance
+    private func updateCategory(_ category: String) {
         self.selectedCategory = category
         let iconName = getSymbolForCategory(category)
         let color = getColorForCategory(category)
@@ -133,8 +140,10 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         }
     }
     
-    // MARK: - Helpers
-    func createPopupButton() -> UIButton {
+    // MARK: - Helper Methods
+    
+    // Creates a configured popup button for selection menus
+    private func createPopupButton() -> UIButton {
         var config = UIButton.Configuration.plain()
         config.image = UIImage(systemName: "chevron.up.chevron.down")
         config.imagePlacement = .trailing
@@ -147,7 +156,8 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         return button
     }
     
-    func getFormattedDateString() -> String {
+    // Returns a formatted string representation of selected days
+    private func getFormattedDateString() -> String {
         let weekdays: Set<String> = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
         let weekends: Set<String> = ["Saturday", "Sunday"]
         if selectedDays.isEmpty { return "Select" }
@@ -158,7 +168,8 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         return sorted.map { String($0.prefix(3)) }.joined(separator: ", ")
     }
     
-    func showCustomCategoryAlert() {
+    // Shows an alert dialog for creating a custom category
+    private func showCustomCategoryAlert() {
         let alert = UIAlertController(title: "New Category", message: "Enter category name", preferredStyle: .alert)
         alert.addTextField { $0.placeholder = "Category Name"; $0.autocapitalizationType = .words }
         let add = UIAlertAction(title: "Add", style: .default) { [weak self] _ in
@@ -167,17 +178,19 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             self.updateCategory(text)
             self.setupCategoryMenu()
         }
-        alert.addAction(add); alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(add)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
     
     // MARK: - Save Action
+    
+    // Creates and saves a new routine conversation action
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
         guard let name = nameTextField.text, !name.isEmpty else { return }
         
-        // --- KEY CHANGE: Strict Time Formatting for Sorting ---
         let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a" // e.g. "9:30 AM"
+        formatter.dateFormat = "h:mm a"
         formatter.amSymbol = "AM"
         formatter.pmSymbol = "PM"
         let timeString = formatter.string(from: startTimePicker.date)
@@ -186,23 +199,31 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         let dateString = getFormattedDateString()
        
         let newAction = RoutineConversation(
-            id: UUID().uuidString, iconName: iconName, categoryTitle: selectedCategory,
-            status: "Scheduled", conversationTopic: name, topicImage: "mic.circle.fill",
+            id: UUID().uuidString,
+            iconName: iconName,
+            categoryTitle: selectedCategory,
+            status: "Scheduled",
+            conversationTopic: name,
+            topicImage: "mic.circle.fill",
             startTime: timeString,
             description: selectedParticipants.isEmpty ? "No participants" : "With: \(selectedParticipants.joined(separator: ", "))",
-            date: dateString, timeImage: "clock"
+            date: dateString,
+            timeImage: "clock"
         )
         delegate?.didCreateNewAction(newAction)
         navigationController?.popViewController(animated: true)
     }
     
-    // MARK: - Participants
+    // MARK: - Participants Selection
+    
+    // Handles row selection to open participants modal
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.section == 0 && indexPath.row == 1 { openParticipantsModal() }
     }
     
-    func openParticipantsModal() {
+    // Presents the participants selection modal sheet
+    private func openParticipantsModal() {
         let pickerVC = ParticipantsViewController()
         pickerVC.delegate = self
         pickerVC.initialSelectedNames = self.selectedParticipants
@@ -211,17 +232,29 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         present(nav, animated: true)
     }
 
+    // Updates selected participants from the delegate callback
     func didSelectParticipants(_ names: [String]) {
         self.selectedParticipants = names
         participantsLabel.text = names.isEmpty ? "None" : names.joined(separator: ", ")
         participantsLabel.textColor = names.isEmpty ? .secondaryLabel : .label
     }
     
-    // MARK: - Utilities
-    func setupKeyboardDismissal() {
+    // MARK: - Keyboard & Validation
+    
+    // Sets up tap gesture to dismiss keyboard
+    private func setupKeyboardDismissal() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        tap.cancelsTouchesInView = false; view.addGestureRecognizer(tap)
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
     }
-    @objc func dismissKeyboard() { view.endEditing(true) }
-    @objc func textDidChange(_ sender: UITextField) { saveButton.isEnabled = !(sender.text?.isEmpty ?? true) }
+    
+    // Dismisses the keyboard when tapping outside text fields
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    // Enables or disables save button based on name field content
+    @objc private func textDidChange(_ sender: UITextField) {
+        saveButton.isEnabled = !(sender.text?.isEmpty ?? true)
+    }
 }

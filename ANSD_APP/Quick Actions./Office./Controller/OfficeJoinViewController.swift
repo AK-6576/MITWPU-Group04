@@ -40,10 +40,9 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     // MARK: - Helper: Image Mapping
     func getImageName(for name: String) -> String {
         let lower = name.lowercased()
-        // Map names to avatar assets
         if lower.contains("julius") { return "avatar_3" }
         if lower.contains("richard") { return "avatar_4" }
-        // Fallback
+
         return "person.circle.fill"
     }
     
@@ -83,8 +82,7 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                 senderName = message.sender
             }
             cell.nameLabel.text = senderName
-            
-            // NEW: Set the profile image
+
             let imgName = getImageName(for: senderName)
             if let image = UIImage(named: imgName) {
                 cell.profileImageView.image = image
@@ -150,7 +148,6 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                 summaryVC.conversationTitle = self.sessionTitle
                 summaryVC.chatHistory = self.messages
                 
-                // Updated Participant Data with Images
                 summaryVC.participantsData = [
                     ParticipantData(
                         name: "Julius Robert Oppenheimer",

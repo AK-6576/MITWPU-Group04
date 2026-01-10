@@ -56,11 +56,21 @@ class FamilySummaryViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     @IBAction func backTapped(_ sender: Any) {
-        if let navController = self.view.window?.rootViewController as? UINavigationController {
-            navController.popToRootViewController(animated: false)
-            navController.dismiss(animated: true, completion: nil)
-        } else {
-            self.view.window?.rootViewController?.dismiss(animated: true, completion: nil)
+
+        let storyboard = UIStoryboard(name: "Home", bundle: nil)
+        let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
+
+        let navController = UINavigationController(rootViewController: homeVC)
+
+        navController.isNavigationBarHidden = false
+        navController.modalPresentationStyle = .fullScreen
+
+        if let window = self.view.window {
+            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = navController
+            }, completion: nil)
+            
+            window.makeKeyAndVisible()
         }
     }
 
@@ -129,13 +139,12 @@ class FamilySummaryViewController: UIViewController, UITableViewDelegate, UITabl
         case 2:
             return tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell1", for: indexPath)
         case 3:
-            // Participant Card
+
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell1", for: indexPath) as! ParticipantCardCell1
             let data = participantsData[indexPath.row]
             
-            cell.configure(with: data) // Sets text
+            cell.configure(with: data)
             
-            // Set Image Manually
             let imgName = getImageName(for: data.name)
             if let image = UIImage(named: imgName) {
                 cell.avatarImageView.image = image

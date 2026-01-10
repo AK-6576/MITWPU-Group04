@@ -98,19 +98,12 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
     // MARK: - Updated Segue Logic (Half-Modal)
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
-            // 1. Apply Half-Modal (Sheet) Logic
+            
             if let sheet = segue.destination.sheetPresentationController {
                 sheet.detents = [.medium(), .large()]
                 sheet.prefersGrabberVisible = true
             }
             
-            // 2. Data Passing
-            var destinationVC: InfoViewController1?
-            if let nav = segue.destination as? UINavigationController {
-                destinationVC = nav.topViewController as? InfoViewController1
-            } else {
-                destinationVC = segue.destination as? InfoViewController1
-            }
         }
     }
     
@@ -143,3 +136,4 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         }
     }
 }
+

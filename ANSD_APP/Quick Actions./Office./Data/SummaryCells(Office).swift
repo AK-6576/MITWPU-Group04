@@ -76,7 +76,7 @@ class ParticipantCardCell: UITableViewCell {
         backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        avatarImageView.layer.cornerRadius = 4 // Or make it circular if you prefer
+        avatarImageView.layer.cornerRadius = 4
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
     }
@@ -84,7 +84,6 @@ class ParticipantCardCell: UITableViewCell {
     func configure(with data: ParticipantData) {
         detailsLabel.text = data.summary
         
-        // NEW: Set the image
         if let image = UIImage(named: data.imageName) {
             avatarImageView.image = image
         } else {

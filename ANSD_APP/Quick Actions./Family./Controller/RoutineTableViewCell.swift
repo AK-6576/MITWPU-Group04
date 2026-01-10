@@ -10,7 +10,6 @@ import UIKit
 class RoutineTableViewCell1: UITableViewCell {
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var subtitleLabel: UILabel!
-    @IBOutlet var infoButton: UIButton!
     
     override func awakeFromNib() {
         super.awakeFromNib()

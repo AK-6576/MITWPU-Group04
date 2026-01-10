@@ -418,7 +418,7 @@
                         <segue destination="CdC-RP-GEa" kind="show" identifier="showQuickActions" id="0yZ-wg-NOQ"/>
                         <segue destination="V9a-Kk-xxE" kind="show" identifier="viewConvoCell" id="Say-oD-Yz5"/>
                         <segue destination="UXL-8h-Ov3" kind="show" identifier="office" id="xpu-rv-kyD"/>
-                        <segue destination="mhO-eJ-wrA" kind="show" identifier="family" id="HQ3-qz-8Jo"/>
+                        <segue destination="mhO-eJ-wrA" kind="show" identifier="family" id="lCt-AV-NyE"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="WS3-2k-O8Z" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -446,10 +446,10 @@
         <!--GroupNewViewController-->
         <scene sceneID="drH-Yc-0Cb">
             <objects>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="0v6-UN-Io6" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <viewControllerPlaceholder storyboardName="RoutineConvo" referencedIdentifier="GroupNewViewController" id="yeB-Fh-cwB" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="JtA-6a-1aT"/>
                 </viewControllerPlaceholder>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="0v6-UN-Io6" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="3352.6717557251909" y="-312.67605633802816"/>
         </scene>
@@ -481,7 +481,7 @@
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="uJP-CY-4LW" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3335.8778625954196" y="-161.26760563380282"/>
+            <point key="canvasLocation" x="3351" y="-162"/>
         </scene>
         <!--About Me-->
         <scene sceneID="h8I-CM-OAq">
@@ -1210,6 +1210,26 @@
             </objects>
             <point key="canvasLocation" x="3399.2366412213737" y="-455.63380281690144"/>
         </scene>
+        <!--Family-->
+        <scene sceneID="gi3-Yr-eAb">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="Family" id="H6f-Ko-ZHl" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="Fjv-5d-G39"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="hk3-h2-C6a" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="610" y="349"/>
+        </scene>
+        <!--Office-->
+        <scene sceneID="UNF-oD-ENv">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Office." referencedIdentifier="Office" id="fKX-Jl-CZP" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="TgI-t7-AdS"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="8yf-vd-VVm" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="538" y="413"/>
+        </scene>
         <!--Quick Actions-->
         <scene sceneID="TTX-AR-SNk">
             <objects>
@@ -1277,6 +1297,10 @@
                             </connections>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <segue destination="H6f-Ko-ZHl" kind="show" identifier="family" id="TAr-sL-Rai"/>
+                        <segue destination="fKX-Jl-CZP" kind="show" identifier="office" id="JcN-8T-bM5"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F8T-D9-LtR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>

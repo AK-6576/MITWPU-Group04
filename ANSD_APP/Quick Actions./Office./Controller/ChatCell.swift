@@ -60,7 +60,7 @@ class IncomingCell: UICollectionViewCell {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
             profileImg.clipsToBounds = true
             profileImg.contentMode = .scaleAspectFill
-            profileImg.backgroundColor = .systemGray4 // Placeholder color
+            profileImg.backgroundColor = .systemGray4
         }
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {

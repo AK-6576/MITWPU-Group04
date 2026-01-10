@@ -43,39 +43,34 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
     }
     
     func setupNavigationBarMenu() {
-        let selectAction = UIAction(title: "Select Conversations", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
+        let deleteAction = UIAction(title: "Select", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
             guard let self = self else { return }
             let isEditing = !self.tableView.isEditing
             self.tableView.setEditing(isEditing, animated: true)
-            print("Selection Mode Toggled: \(isEditing)")
         }
         
         let sortCustom = UIAction(title: "Custom (Reset)", image: UIImage(systemName: "arrow.counterclockwise"), state: .on) { [weak self] _ in
             guard let self = self else { return }
             self.routineList = self.originalList
             self.tableView.reloadData()
-            print("Sorted: Custom (Reset)")
         }
         
         let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
             guard let self = self else { return }
             self.routineList.sort { $0.title < $1.title }
             self.tableView.reloadData()
-            print("Sorted: Title")
         }
         
         let sortTime = UIAction(title: "Time", image: UIImage(systemName: "clock")) { [weak self] _ in
             guard let self = self else { return }
             self.routineList.sort { $0.time < $1.time }
             self.tableView.reloadData()
-            print("Sorted: Time")
         }
         
         let sortNewest = UIAction(title: "Newest First", image: UIImage(systemName: "arrow.up")) { [weak self] _ in
             guard let self = self else { return }
             self.routineList = self.originalList.reversed()
             self.tableView.reloadData()
-            print("Sorted: Newest")
         }
         
         let sortByMenu = UIMenu(title: "Sort By", image: UIImage(systemName: "arrow.up.arrow.down"), children: [
@@ -85,21 +80,13 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
             sortNewest
         ])
         
-        let groupAction = UIAction(title: "Group By Date", image: UIImage(systemName: "calendar")) { _ in
-            print("Group By Date tapped - Logic requires 'numberOfSections' implementation")
-        }
-        
         let mainMenu = UIMenu(title: "", children: [
-            selectAction,
-            sortByMenu,
-            groupAction
+            deleteAction,
+            sortByMenu
         ])
         
         if let rightButton = navigationItem.rightBarButtonItem {
             rightButton.menu = mainMenu
-        } else {
-            let moreButton = UIBarButtonItem(title: nil, image: UIImage(systemName: "ellipsis.circle"), primaryAction: nil, menu: mainMenu) // EDIT
-            navigationItem.rightBarButtonItem = moreButton
         }
     }
     
@@ -109,8 +96,6 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
-            print("🟢 Segue 'ShowInfo' triggered!")
-            
             var destinationVC: OfficeInfoViewController?
             
             if let nav = segue.destination as? UINavigationController {
@@ -122,7 +107,6 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
             if let infoVC = destinationVC, let rowIndex = sender as? Int {
                 infoVC.existingNote = routineList[rowIndex].notes
                 infoVC.onSave = { [weak self] newNote in
-                    print("📥 RECEIVED back in RoutineVC: '\(newNote)'")
                     self?.routineList[rowIndex].notes = newNote
                 }
             }

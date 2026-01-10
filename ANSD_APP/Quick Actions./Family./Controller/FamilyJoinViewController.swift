@@ -75,7 +75,7 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell1
             cell.messageLabel.text = message.text
             
-            // Determine Name
+
             let displayName: String
             if message.sender == "Person 1" {
                 displayName = self.otherPersonName
@@ -84,7 +84,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             }
             cell.nameLabel.text = displayName
             
-            // Set Image
             let imgName = getImageName(for: displayName)
             if let image = UIImage(named: imgName) {
                 cell.profileImageView.image = image
@@ -142,7 +141,7 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-            // Make sure the storyboard name is correct (check if it's "RoutineConvo 2" or "RoutineConvo")
+
             let storyboard = UIStoryboard(name: "Family.", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
@@ -183,7 +182,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
             let destinationVC = segue.destination
-            // Half-Modal Configuration
             if let sheet = destinationVC.sheetPresentationController {
                 sheet.detents = [.medium(), .large()]
                 sheet.prefersGrabberVisible = true

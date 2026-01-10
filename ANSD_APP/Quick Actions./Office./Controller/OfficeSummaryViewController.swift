@@ -49,19 +49,15 @@ class OfficeSummaryViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     @IBAction func backTapped(_ sender: Any) {
-        // 1. Get the Home Screen
+
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
-        
-        // 2. IMPORTANT: Put Home inside a new Navigation Controller
-        // This restores the "Push" ability for your other screens.
+
         let navController = UINavigationController(rootViewController: homeVC)
-        
-        // (Optional) Hide the nav bar on Home if you have a custom design like "Hello Steve"
+
         navController.isNavigationBarHidden = false
         navController.modalPresentationStyle = .fullScreen
-        
-        // 3. Swap the Root
+
         if let window = self.view.window {
             UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
                 window.rootViewController = navController
