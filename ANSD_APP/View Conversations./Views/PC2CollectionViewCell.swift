@@ -10,25 +10,23 @@ import UIKit
 class PC2IncomingViewCell: UICollectionViewCell {
     
     @IBOutlet var bubbleView: UIView!
-    
     @IBOutlet var nameLabel: UILabel!
-    
     @IBOutlet var messageLabel: UILabel!
     
+    // Configures incoming message bubble with rounded corners and dynamic width
     override func awakeFromNib() {
         super.awakeFromNib()
-
         bubbleView.layer.cornerRadius = 16
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         bubbleView.backgroundColor = .systemGray5
         
-        // Dynamic sizing logic
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
              let screenWidth = windowScene.screen.bounds.width
              contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
     
+    // Calculates and returns preferred layout attributes for dynamic cell height
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -40,26 +38,25 @@ class PC2IncomingViewCell: UICollectionViewCell {
     }
 }
 
-
 class PCOutgoing2Cell: UICollectionViewCell {
     @IBOutlet weak var PCmessageLabel: UILabel!
-    
     @IBOutlet var pcBubbleView: UIView!
+    
+    // Configures outgoing message bubble with blue background and rounded corners
     override func awakeFromNib() {
         super.awakeFromNib()
-        
         pcBubbleView.layer.cornerRadius = 16
         pcBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         pcBubbleView.backgroundColor = .systemBlue
         PCmessageLabel.textColor = .white
         
-        // Dynamic sizing logic
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
              let screenWidth = windowScene.screen.bounds.width
              contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
     
+    // Calculates and returns preferred layout attributes for dynamic cell height
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()

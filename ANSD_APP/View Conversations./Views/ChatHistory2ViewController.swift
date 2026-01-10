@@ -1,17 +1,28 @@
+//
+//  ChatHistory2ViewController.swift
+//  ANSD_APP
+//
+//  Created by SDC-USER on 06/01/26.
+//
+
 import UIKit
 import PDFKit
 
 // MARK: - Protocols
+
+// Delegate for handling text updates in notes card cells
 protocol PCNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: PCNotesCardCell)
 }
 
+// Delegate for handling title changes in summary cards
 protocol PCSummaryCardDelegate: AnyObject {
     func didChangeTitle(text: String)
 }
 
 // MARK: - Custom TableView Cell Classes
 
+// Header cell for summary section with icon and label
 class PCSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
@@ -24,6 +35,7 @@ class PCSummarySectionHeaderCell: UITableViewCell {
     }
 }
 
+// Header cell for participants section
 class PCParticipantsSummaryHeaderCell: UITableViewCell {
     @IBOutlet weak var participantIcon: UIImageView!
     @IBOutlet weak var participantLabel: UILabel!
@@ -36,6 +48,7 @@ class PCParticipantsSummaryHeaderCell: UITableViewCell {
     }
 }
 
+// Header cell for notes section
 class PCNotesSectionHeaderCell: UITableViewCell {
     @IBOutlet weak var notesIcon: UIImageView!
     @IBOutlet weak var notesLabel: UILabel!
@@ -46,6 +59,7 @@ class PCNotesSectionHeaderCell: UITableViewCell {
     }
 }
 
+// Card cell displaying conversation summary with editable title
 class PCSummaryCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleTextField: UITextField!
@@ -62,11 +76,13 @@ class PCSummaryCardCell: UITableViewCell {
         contentView.layer.cornerRadius = 20
     }
     
+    // Notifies delegate when the conversation title is edited
     @IBAction func titleChanged(_ sender: UITextField) {
         delegate?.didChangeTitle(text: sender.text ?? "")
     }
 }
 
+// Card cell displaying individual participant information
 class PCParticipantsCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var avatarImageView: UIImageView!
@@ -82,11 +98,13 @@ class PCParticipantsCardCell: UITableViewCell {
         mainCardView.backgroundColor = .white
     }
     
+    // Populates the cell with participant data
     func configure(with data: PCParticipantData) {
         detailsLabel.text = data.summary
     }
 }
 
+// Card cell with expandable text view for conversation notes
 class PCNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
@@ -108,6 +126,7 @@ class PCNotesCardCell: UITableViewCell, UITextViewDelegate {
         mainCardView.layer.cornerRadius = 20
     }
     
+    // Removes placeholder text when user begins editing
     func textViewDidBeginEditing(_ textView: UITextView) {
         if textView.text == placeholderText {
             textView.text = nil
@@ -115,6 +134,7 @@ class PCNotesCardCell: UITableViewCell, UITextViewDelegate {
         }
     }
     
+    // Restores placeholder if text view is empty after editing
     func textViewDidEndEditing(_ textView: UITextView) {
         if textView.text.isEmpty {
             textView.text = placeholderText
@@ -122,23 +142,24 @@ class PCNotesCardCell: UITableViewCell, UITextViewDelegate {
         }
     }
     
+    // Notifies delegate of text changes for dynamic height adjustment
     func textViewDidChange(_ textView: UITextView) {
         delegate?.didUpdateText(in: self)
     }
 }
 
 // MARK: - Main View Controller
+
+// Manages conversation details with segmented control for chat and summary views
 class ChatHistory2ViewController: UIViewController {
     
-    // MARK: Outlets
     @IBOutlet var segmentedControl: UISegmentedControl!
     @IBOutlet var chatContainerView: UIView!
     @IBOutlet var summaryContainerView: UIView!
     @IBOutlet weak var collectionView: UICollectionView!
-    @IBOutlet var menuButton: UIBarButtonItem! // Acting as Share Button now
+    @IBOutlet var menuButton: UIBarButtonItem!
     @IBOutlet weak var tableView: UITableView!
     
-    // MARK: - Properties
     let emptyChatLabel = UILabel()
     var histconversationData: Conversation?
     var isHighlightModeActive = false
@@ -149,7 +170,6 @@ class ChatHistory2ViewController: UIViewController {
         return histconversationData?.messages ?? []
     }
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
@@ -161,21 +181,22 @@ class ChatHistory2ViewController: UIViewController {
         setupNavigation()
         setupChatUI()
         setupSummaryUI()
-        setupShareButton() // Updated from setupMenu
+        setupShareButton()
         updateContainerViews()
         
-        // Dismiss keyboard on tap
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
     
-    @objc func dismissKeyboard() {
+    // Dismisses the keyboard when tapping outside text fields
+    @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
     
     // MARK: - Setup Methods
     
+    // Configures navigation bar title from conversation data
     private func setupNavigation() {
         if let convoData = histconversationData {
             navigationItem.title = convoData.title
@@ -185,6 +206,7 @@ class ChatHistory2ViewController: UIViewController {
         }
     }
     
+    // Sets up chat collection view with auto-sizing cells
     private func setupChatUI() {
         collectionView.delegate = self
         collectionView.dataSource = self
@@ -205,6 +227,7 @@ class ChatHistory2ViewController: UIViewController {
         }
     }
     
+    // Configures summary table view with dynamic row heights
     private func setupSummaryUI() {
         view.backgroundColor = .systemGroupedBackground
         tableView.delegate = self
@@ -217,22 +240,23 @@ class ChatHistory2ViewController: UIViewController {
         summaryContainerView.layer.cornerRadius = 20
     }
     
-    // MARK: - Share Button Logic (Direct Action)
+    // MARK: - Share Button Logic
     
-    func setupShareButton() {
+    // Configures the menu button as a share button with direct action
+    private func setupShareButton() {
         if let shareBtn = menuButton {
-            // Remove any UIMenu configuration
             shareBtn.menu = nil
-            // Set direct target-action
             shareBtn.target = self
             shareBtn.action = #selector(shareTapped)
         }
     }
     
-    @objc func shareTapped() {
+    // Initiates PDF generation and sharing when share button is tapped
+    @objc private func shareTapped() {
         shareAsPDF()
     }
     
+    // Posts notification when conversation data changes to update other views
     private func notifyDataChanged() {
         if let updatedConvo = self.histconversationData {
             NotificationCenter.default.post(
@@ -244,11 +268,14 @@ class ChatHistory2ViewController: UIViewController {
     }
 
     // MARK: - Actions
+    
+    // Switches between chat and summary views based on segmented control
     @IBAction func chatNsumSegmentedController(_ sender: UISegmentedControl) {
         view.endEditing(true)
         updateContainerViews()
     }
     
+    // Shows or hides chat and summary containers based on selection
     private func updateContainerViews() {
         let isChatSelected = (segmentedControl.selectedSegmentIndex == 0)
         chatContainerView.isHidden = !isChatSelected
@@ -261,18 +288,21 @@ class ChatHistory2ViewController: UIViewController {
         }
     }
     
+    // Toggles visibility of collection view and empty state label
     private func updateEmptyState() {
         let isEmpty = transcript.isEmpty
         collectionView.isHidden = isEmpty
         emptyChatLabel.isHidden = !isEmpty
     }
     
-    func scrollToBottom(animated: Bool = true) {
+    // Scrolls collection view to show the most recent message
+    private func scrollToBottom(animated: Bool = true) {
         guard !transcript.isEmpty else { return }
         let lastItem = transcript.count - 1
         collectionView.scrollToItem(at: IndexPath(item: lastItem, section: 0), at: .bottom, animated: animated)
     }
 
+    // Creates and positions the empty state label for when no messages exist
     private func setupEmptyChatLabel() {
         emptyChatLabel.translatesAutoresizingMaskIntoConstraints = false
         emptyChatLabel.text = "No chat transcript available."
@@ -285,8 +315,10 @@ class ChatHistory2ViewController: UIViewController {
         ])
     }
 
-    // MARK: - Edit/Highlight Helpers (Available via context menu or programmatic if needed)
-    func showEditAlert(for indexPath: IndexPath) {
+    // MARK: - Edit/Highlight Helpers
+    
+    // Presents an alert dialog allowing the user to edit a message
+    private func showEditAlert(for indexPath: IndexPath) {
         let message = transcript[indexPath.row]
         let alert = UIAlertController(title: "Edit Message", message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = message.text }
@@ -303,19 +335,18 @@ class ChatHistory2ViewController: UIViewController {
     }
 }
 
-// MARK: - PDF Logic (Updated to match Code 2)
+// MARK: - PDF Generation
+
 extension ChatHistory2ViewController {
     
-    func shareAsPDF() {
+    // Generates a PDF from conversation data and presents share sheet
+    private func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         
-        // Loop through participants data
         for person in participantsData {
-            // Assuming PCParticipantData has 'name' and 'summary' similar to Code 2
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
         }
         
-        // Add Notes if available
         if let notes = histconversationData?.notes, !notes.isEmpty {
             pdfContent += "Notes:\n\(notes)\n\n"
         }
@@ -326,20 +357,20 @@ extension ChatHistory2ViewController {
         }
     }
     
-    // Helper function from Code 2
-    func createPDF(from text: String) -> URL? {
+    // Creates a PDF file from text content and returns the temporary file URL
+    private func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
         
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         
-        let data = renderer.pdfData { (context) in
+        let data = renderer.pdfData { context in
             context.beginPage()
             
-            let attributes = [
-                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12),
-                NSAttributedString.Key.paragraphStyle: NSMutableParagraphStyle()
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12),
+                .paragraphStyle: NSMutableParagraphStyle()
             ]
             
             let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
@@ -347,7 +378,6 @@ extension ChatHistory2ViewController {
         }
         
         let tempFolder = FileManager.default.temporaryDirectory
-        // Sanitize filename
         let safeTitle = conversationTitle.replacingOccurrences(of: "/", with: "-")
         let fileName = "\(safeTitle) - Summary.pdf"
         let fileURL = tempFolder.appendingPathComponent(fileName)
@@ -362,19 +392,26 @@ extension ChatHistory2ViewController {
     }
 }
 
-// MARK: - Collection View Logic
+// MARK: - Collection View Delegate & Data Source
+
 extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    
+    // Returns the number of messages to display in the chat
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return transcript.count
     }
     
+    // Configures and returns chat message cells with highlighting support
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = transcript[indexPath.row]
         
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCIncomingCell", for: indexPath) as! PC2IncomingViewCell
             if message.isHighlighted {
-                let textAttributes: [NSAttributedString.Key: Any] = [.underlineStyle: NSUnderlineStyle.single.rawValue, .underlineColor: UIColor.black]
+                let textAttributes: [NSAttributedString.Key: Any] = [
+                    .underlineStyle: NSUnderlineStyle.single.rawValue,
+                    .underlineColor: UIColor.black
+                ]
                 cell.messageLabel.attributedText = NSAttributedString(string: message.text, attributes: textAttributes)
             } else {
                 cell.messageLabel.attributedText = nil
@@ -385,7 +422,10 @@ extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionView
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCOutCell", for: indexPath) as! PCOutgoing2Cell
             if message.isHighlighted {
-                let textAttributes: [NSAttributedString.Key: Any] = [.underlineStyle: NSUnderlineStyle.single.rawValue, .underlineColor: UIColor.white]
+                let textAttributes: [NSAttributedString.Key: Any] = [
+                    .underlineStyle: NSUnderlineStyle.single.rawValue,
+                    .underlineColor: UIColor.white
+                ]
                 cell.PCmessageLabel.attributedText = NSAttributedString(string: message.text, attributes: textAttributes)
             } else {
                 cell.PCmessageLabel.attributedText = nil
@@ -395,10 +435,12 @@ extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionView
         }
     }
     
+    // Returns fixed size for message cells
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 100)
     }
 
+    // Provides context menu for highlighting and editing messages
     func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
             let highlight = UIAction(title: "Highlight", image: UIImage(systemName: "highlighter")) { _ in
@@ -415,16 +457,15 @@ extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionView
     }
 }
 
-// MARK: - Table View & Text Management
+// MARK: - Table View Delegate & Data Source
+
 extension ChatHistory2ViewController: UITableViewDelegate, UITableViewDataSource, PCSummaryCardDelegate, PCNotesCardCellDelegate {
     
-    // Protocol method for PCNotesCardCellDelegate
+    // Saves notes text and adjusts table view height dynamically
     func didUpdateText(in cell: PCNotesCardCell) {
-      
         if cell.notesTextView.text != cell.placeholderText {
             self.histconversationData?.notes = cell.notesTextView.text
             
-            // Dynamic height adjustment
             tableView.beginUpdates()
             tableView.endUpdates()
             
@@ -432,6 +473,7 @@ extension ChatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
         }
     }
     
+    // Updates conversation title across all views when edited
     func didChangeTitle(text: String) {
         self.conversationTitle = text
         self.histconversationData?.title = text
@@ -439,15 +481,18 @@ extension ChatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
         self.notifyDataChanged()
     }
         
+    // Returns the number of sections in the summary table
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
         
+    // Returns row count for each section, with participants section having variable rows
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 3 { return participantsData.count }
         return 1
     }
         
+    // Configures and returns cells for each section of the summary view
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:

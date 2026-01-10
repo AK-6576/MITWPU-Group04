@@ -2,28 +2,28 @@
 //  Conversations.swift
 //  ANSD_APP
 //
+//  Created by SDC-USER on 06/01/26.
+//
 
 import Foundation
 
-// MARK: - 1. Message Struct (Updated for UI & JSON)
-struct Message: Codable, Identifiable {
-    var id: UUID = UUID() // Changed to UUID to fix HomeViewController mismatch
+// MARK: - Message Model
+
+// Represents a single message in a conversation with sender information and metadata
+struct Message: Codable, Identifiable, Sendable {
+    var id: UUID = UUID()
     var text: String
     let senderName: String
     let isIncoming: Bool
     var isHighlighted: Bool = false
-    
-    // Added these properties for the Chat UI
     var senderId: String = "other"
     var timestamp: Date = Date()
     
-    // Custom CodingKeys to map JSON fields to our properties
     enum CodingKeys: String, CodingKey {
-        case text, senderName, isIncoming, isHighlighted
-        case id // JSON id is likely a String, we handle this in init(from:)
+        case text, senderName, isIncoming, isHighlighted, id
     }
     
-    // Standard Init for HomeViewController
+    // Standard initializer for creating messages programmatically
     init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false) {
         self.id = id
         self.text = text
@@ -34,25 +34,20 @@ struct Message: Codable, Identifiable {
         self.isHighlighted = isHighlighted
     }
     
-    // Custom Decoder to handle JSON loading
+    // Custom decoder for loading messages from JSON
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.text = try container.decode(String.self, forKey: .text)
-        self.senderName = try container.decode(String.self, forKey: .senderName)
-        self.isIncoming = try container.decode(Bool.self, forKey: .isIncoming)
-        self.isHighlighted = try container.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
-        
-        // Handle ID: If JSON has a string ID, we ignore it or hash it,
-        // but for now we generate a new UUID to satisfy Identifiable
-        self.id = UUID()
-        
-        // Calculate UI properties based on JSON data
-        self.senderId = self.isIncoming ? "other" : "me"
-        self.timestamp = Date() // Default to now for JSON loaded messages
+        text = try container.decode(String.self, forKey: .text)
+        senderName = try container.decode(String.self, forKey: .senderName)
+        isIncoming = try container.decode(Bool.self, forKey: .isIncoming)
+        isHighlighted = try container.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
+        id = UUID()
+        senderId = isIncoming ? "other" : "me"
+        timestamp = Date()
     }
     
+    // Custom encoder for saving messages to JSON
     func encode(to encoder: Encoder) throws {
-        // Encoding logic if you ever need to save back to JSON
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(text, forKey: .text)
         try container.encode(senderName, forKey: .senderName)
@@ -62,79 +57,83 @@ struct Message: Codable, Identifiable {
     }
 }
 
-// MARK: - 2. Participant Data Struct
-struct PCParticipantData: Codable {
+// MARK: - Participant Model
+
+// Represents a participant in a conversation with their name and summary
+struct PCParticipantData: Codable, Sendable {
     let name: String
     let summary: String
 }
 
-// MARK: - 3. Conversation Struct (Updated for UI & JSON)
-struct Conversation: Codable, Identifiable {
+// MARK: - Conversation Model
+
+// Represents a complete conversation with metadata, participants, and messages
+struct Conversation: Codable, Identifiable, Sendable {
     let id: String
     var title: String
-    var description: String // Made optional
-    var date: String?        // Made optional
-    var startTime: String   // Made optional
-    var endTime: String     // Made optional
-    var category: String    // Made optional
-    var icon: String        // Made optional
+    var description: String
+    var date: String
+    var startTime: String
+    var endTime: String
+    var category: String
+    var icon: String
     var info: Bool?
     var cal: Date?
-    
-    // Summary Data
     var notes: String?
     var participants: [PCParticipantData]?
     var isPinned: Bool = false
     var messages: [Message]?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, description, date, category, icon, info, notes, participants
+        case id, title, description, date, category, icon, info, notes, participants, messages
         case startTime = "start_time"
         case endTime = "end_time"
-        case messages
     }
     
-    // Manual Init for HomeViewController (The "UI" Initializer)
-    init(id: String, title: String, messages: [Message] = [], participants: [PCParticipantData] = [], notes: String = "", description: String? = nil, date: String? = nil, startTime: String? = nil, endTime: String? = nil, category: String? = nil, icon: String? = nil) {
+    // Manual initializer for creating conversations programmatically
+    init(id: String, title: String, messages: [Message] = [], participants: [PCParticipantData] = [], notes: String = "", description: String = "", date: String = "", startTime: String = "", endTime: String = "", category: String = "", icon: String = "") {
         self.id = id
         self.title = title
         self.messages = messages
         self.participants = participants
         self.notes = notes
-        self.description = description!
-        self.date = date!
-        self.startTime = startTime!
-        self.endTime = endTime!
-        self.category = category!
-        self.icon = icon!
+        self.description = description
+        self.date = date
+        self.startTime = startTime
+        self.endTime = endTime
+        self.category = category
+        self.icon = icon
     }
 }
 
-// MARK: - 4. Main Response & Loader
-struct ConversationsResponse: Codable {
+// MARK: - Response Container Models
+
+// Represents a month of previous conversations
+struct PreviousMonth: Codable, Sendable {
+    let month: String
+    var conversations: [Conversation]
+}
+
+// Main container for all conversations data from JSON
+struct ConversationsResponse: Codable, Sendable {
     var conversations: [Conversation] = []
     var previousMonths: [PreviousMonth] = []
-
-    init() {
-        if let response = try? load() {
-            self.conversations = response.conversations
-            self.previousMonths = response.previousMonths
-        }
-    }
 
     enum CodingKeys: String, CodingKey {
         case conversations
         case previousMonths = "previous_months"
     }
-}
-
-struct PreviousMonth: Codable {
-    let month: String
-    var conversations: [Conversation]
-}
-
-extension ConversationsResponse {
-    func load(from filename: String = "conversations") throws -> ConversationsResponse {
+    
+    // Initializes by attempting to load conversations from JSON file
+    init() {
+        if let response = try? Self.load() {
+            self.conversations = response.conversations
+            self.previousMonths = response.previousMonths
+        }
+    }
+    
+    // Loads and decodes conversations from a JSON file in the app bundle
+    static func load(from filename: String = "conversations") throws -> ConversationsResponse {
         guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
             throw NSError(domain: "ConversationsResponse", code: 404,
                           userInfo: [NSLocalizedDescriptionKey: "conversations.json not found"])

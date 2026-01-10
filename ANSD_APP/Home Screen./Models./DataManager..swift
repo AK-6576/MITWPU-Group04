@@ -18,7 +18,7 @@ class DataManager {
     
     private func loadData() {
         // Attempt to load conversations.json using the struct from Conversations.swift
-        if let response = try? ConversationsResponse().load() {
+        if let response = try? ConversationsResponse.load() {
             self.conversations = response.conversations
             print("DataManager: Successfully loaded \(self.conversations.count) conversations from JSON.")
         } else {
