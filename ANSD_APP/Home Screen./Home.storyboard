@@ -404,7 +404,7 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="OCQ-lx-jlW">
-                        <barButtonItem key="rightBarButtonItem" title="Item" image="person.crop.circle" catalog="system" id="CRz-QF-pke">
+                        <barButtonItem key="rightBarButtonItem" title="Item" image="person.crop.circle" catalog="system" style="plain" id="CRz-QF-pke">
                             <connections>
                                 <segue destination="8gA-PQ-7QW" kind="presentation" identifier="showProfile" id="73d-UH-Kvk"/>
                             </connections>
@@ -416,7 +416,7 @@
                         <segue destination="0Xm-WW-Dax" kind="show" identifier="viewConvo" id="7HU-4V-DBS"/>
                         <segue destination="yeB-Fh-cwB" kind="show" identifier="startCaptionSession" id="ps5-42-M8h"/>
                         <segue destination="CdC-RP-GEa" kind="show" identifier="showQuickActions" id="0yZ-wg-NOQ"/>
-                        <segue destination="V9a-Kk-xxE" kind="show" identifier="viewConvo" id="Say-oD-Yz5"/>
+                        <segue destination="V9a-Kk-xxE" kind="show" identifier="viewConvoCell" id="Say-oD-Yz5"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="WS3-2k-O8Z" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -451,15 +451,15 @@
             </objects>
             <point key="canvasLocation" x="2427" y="-312"/>
         </scene>
-        <!--chatHistory2ViewController-->
+        <!--ChatHistory2ViewController-->
         <scene sceneID="lhK-KH-2P6">
             <objects>
-                <viewControllerPlaceholder storyboardName="viewConvo" referencedIdentifier="chatHistory2ViewController" id="V9a-Kk-xxE" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="ViewConvo." referencedIdentifier="ChatHistory2ViewController" id="V9a-Kk-xxE" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="UqX-tg-UIa"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="O5c-T3-KMF" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2411" y="-263"/>
+            <point key="canvasLocation" x="2438" y="-265"/>
         </scene>
         <!--About Me-->
         <scene sceneID="h8I-CM-OAq">

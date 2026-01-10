@@ -81,7 +81,7 @@
         <!--Chat History2 View Controller-->
         <scene sceneID="UFQ-nN-coe">
             <objects>
-                <viewController storyboardIdentifier="chatHistory2ViewController" useStoryboardIdentifierAsRestorationIdentifier="YES" id="QHW-Tz-f9p" customClass="ChatHistory2ViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="ChatHistory2ViewController" useStoryboardIdentifierAsRestorationIdentifier="YES" id="QHW-Tz-f9p" customClass="ChatHistory2ViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="PBI-D5-cew">
                         <rect key="frame" x="0.0" y="0.0" width="440" height="956"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

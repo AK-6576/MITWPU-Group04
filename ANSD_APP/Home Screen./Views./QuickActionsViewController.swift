@@ -129,7 +129,6 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
             
             if var targetVC = storyboard.instantiateInitialViewController() {
                 
-                // If the storyboard starts with a NavigationController, grab the topVC
                 if let navVC = targetVC as? UINavigationController, let topVC = navVC.topViewController {
                     targetVC = topVC
                 }

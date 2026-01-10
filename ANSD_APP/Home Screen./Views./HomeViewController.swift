@@ -70,74 +70,37 @@ class HomeViewController: UIViewController {
     }
     
     // MARK: - Navigation Preparation (The Logic Hub)
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
-        // 1. Profile Navigation
-        if segue.identifier == "showProfile" {
-            let destinationVC = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
-            destinationVC?.incomingName = usernameLabel?.text
-            destinationVC?.incomingImage = profileIconButton?.image(for: .normal)
-        }
-        
-        // 2. Chat History Navigation (The Card Tap)
-        else if segue.identifier == "viewConvoCell" {
+        override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
             
-            guard let destVC = segue.destination as? ChatHistory2ViewController,
-                  let selectedItem = sender as? RoutineConversation else {
-                print("Error: Destination or Sender mismatch for viewConvoCell")
-                return
+            // 1. Profile Navigation
+            if segue.identifier == "showProfile" {
+                let destinationVC = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
+                destinationVC?.incomingName = usernameLabel?.text
             }
             
-            // --- DATA LOADING LOGIC ---
-            // Use DataManager to find the full JSON data using the ID
-            if let fullData = DataManager.shared.getConversation(byId: selectedItem.id) {
+            // 2. Chat History Navigation (The Card Tap)
+            else if segue.identifier == "viewConvoCell" {
                 
-                print("Found JSON data for ID: \(selectedItem.id)")
-                
-                // 1. Convert JSON Messages to App Messages (UI Model)
-                let mappedMessages = fullData.messages.map { jsonMsg in
-                    Message(
-                        id: UUID(), // Generate a UUID since JSON usually uses strings
-                        text: jsonMsg.text,
-                        senderId: jsonMsg.isIncoming ? "other" : "me",
-                        senderName: jsonMsg.senderName,
-                        isIncoming: jsonMsg.isIncoming,
-                        timestamp: Date()
-                    )
+                guard let destVC = segue.destination as? ChatHistory2ViewController,
+                      let selectedItem = sender as? RoutineConversation else {
+                    print("Error: Destination or Sender mismatch for viewConvoCell")
+                    return
                 }
                 
-                // 2. Convert JSON Participants to App Participants (UI Model)
-                let mappedParticipants = fullData.participants.map { p in
-                    PCParticipantData(name: p.name, summary: p.summary)
+                // --- DATA LOADING LOGIC ---
+                
+                // Try to find the full data in the JSON using the ID (e.g., "conv_5")
+                if let fullData = DataManager.shared.getConversation(byId: selectedItem.id) {
+                    print("Found JSON data for ID: \(selectedItem.id)")
+                    
+                    // Success! Pass the full data directly.
+                    destVC.histconversationData = fullData
+                    
+                } else {
+                    print("WARNING: ID '\(selectedItem.id)' not found in JSON. Using Fallback.")
                 }
-
-                // 3. Create the final 'Conversation' object (UI Model)
-                let realConversation = Conversation(
-                    id: fullData.id,
-                    title: fullData.title,
-                    messages: mappedMessages,
-                    participants: mappedParticipants,
-                    notes: fullData.notes ?? ""
-                )
-                
-                // 4. Pass it to the View Controller
-                destVC.histconversationData = realConversation
-                
-            } else {
-                print("WARNING: Could not find ID '\(selectedItem.id)' in JSON. Loading fallback data.")
-                
-                // Fallback: Create an empty Conversation object if JSON lookup fails
-                let fallbackConv = Conversation(
-                    id: selectedItem.id,
-                    title: selectedItem.conversationTopic,
-                    messages: [], // Empty messages
-                    participants: [],
-                    notes: selectedItem.description ?? ""
-                )
-                destVC.histconversationData = fallbackConv
             }
         }
-    }
 }
 
 // MARK: - TableView Delegate & DataSource
@@ -180,8 +143,6 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         
         // Determine Segue ID
         let segueID = (indexPath.section == 0) ? "startCaptionSession" : "viewConvoCell"
-        
-        // Perform Segue (This triggers prepare(for segue:))
         performSegue(withIdentifier: segueID, sender: item)
     }
     

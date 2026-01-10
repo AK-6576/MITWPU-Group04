@@ -1,49 +1,33 @@
 //
 //  DataManager.swift
-//  ANSD_APP
+//  Group_4-ANSD_App
 //
 
 import Foundation
 
 class DataManager {
+    // Singleton instance: Access this via 'DataManager.shared'
     static let shared = DataManager()
     
-    // This holds all conversations loaded from the file
-    var allConversations: [JSONConversation] = []
+    // The loaded data
+    var conversations: [Conversation] = []
     
     private init() {
         loadData()
     }
     
-    func loadData() {
-        // Ensure you have a file named 'conversations.json' in your Xcode project
-        guard let url = Bundle.main.url(forResource: "conversations", withExtension: "json") else {
-            print("Error: conversations.json not found in bundle.")
-            return
-        }
-        
-        do {
-            let data = try Data(contentsOf: url)
-            let decodedData = try JSONDecoder().decode(ConversationRoot.self, from: data)
-            
-            // Flatten the list: Add top-level conversations
-            allConversations.append(contentsOf: decodedData.conversations)
-            
-            // Add previous months conversations if they exist
-            if let pastMonths = decodedData.previous_months {
-                for month in pastMonths {
-                    allConversations.append(contentsOf: month.conversations)
-                }
-            }
-            print("Successfully loaded \(allConversations.count) conversations from JSON.")
-            
-        } catch {
-            print("Error decoding JSON: \(error)")
+    private func loadData() {
+        // Attempt to load conversations.json using the struct from Conversations.swift
+        if let response = try? ConversationsResponse().load() {
+            self.conversations = response.conversations
+            print("DataManager: Successfully loaded \(self.conversations.count) conversations from JSON.")
+        } else {
+            print("DataManager: Failed to load conversations.json")
         }
     }
     
-    // Helper to find a specific conversation by ID
-    func getConversation(byId id: String) -> JSONConversation? {
-        return allConversations.first { $0.id == id }
+    // Helper to find a specific conversation
+    func getConversation(byId id: String) -> Conversation? {
+        return conversations.first { $0.id == id }
     }
 }
