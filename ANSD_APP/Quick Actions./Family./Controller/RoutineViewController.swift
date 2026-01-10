@@ -47,53 +47,41 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
             guard let self = self else { return }
             let isEditing = !self.tableView.isEditing
             self.tableView.setEditing(isEditing, animated: true)
-            print("Selection Mode Toggled: \(isEditing)")
         }
         
         let sortCustom = UIAction(title: "Custom (Reset)", image: UIImage(systemName: "arrow.counterclockwise"), state: .on) { [weak self] _ in
             guard let self = self else { return }
             self.routineList = self.originalList
             self.tableView.reloadData()
-            print("Sorted: Custom (Reset)")
         }
         
         let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
             guard let self = self else { return }
             self.routineList.sort { $0.title < $1.title }
             self.tableView.reloadData()
-            print("Sorted: Title")
         }
         
         let sortTime = UIAction(title: "Time", image: UIImage(systemName: "clock")) { [weak self] _ in
             guard let self = self else { return }
             self.routineList.sort { $0.time < $1.time }
             self.tableView.reloadData()
-            print("Sorted: Time")
         }
         
         let sortNewest = UIAction(title: "Newest First", image: UIImage(systemName: "arrow.up")) { [weak self] _ in
             guard let self = self else { return }
             self.routineList = self.originalList.reversed()
             self.tableView.reloadData()
-            print("Sorted: Newest")
         }
         
         let sortByMenu = UIMenu(title: "Sort By", image: UIImage(systemName: "arrow.up.arrow.down"), children: [
-            sortCustom,
-            sortTitle,
-            sortTime,
-            sortNewest
+            sortCustom, sortTitle, sortTime, sortNewest
         ])
         
         let groupAction = UIAction(title: "Group By Date", image: UIImage(systemName: "calendar")) { _ in
-            print("Group By Date tapped - Requires Section Logic Implementation")
+            print("Group By Date tapped")
         }
         
-        let mainMenu = UIMenu(title: "", children: [
-            selectAction,
-            sortByMenu,
-            groupAction
-        ])
+        let mainMenu = UIMenu(title: "", children: [selectAction, sortByMenu, groupAction])
         
         if let rightButton = navigationItem.rightBarButtonItem {
             rightButton.menu = mainMenu
@@ -107,28 +95,21 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         performSegue(withIdentifier: "ShowInfo", sender: sender.tag)
     }
     
-    // MARK: - Updated Segue Logic (Half-Modal Added)
+    // MARK: - Updated Segue Logic (Half-Modal)
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
-            print("🟢 Segue 'ShowInfo' triggered!")
-            
-            // 1. Apply Half-Modal (Sheet) Logic to the Destination
+            // 1. Apply Half-Modal (Sheet) Logic
             if let sheet = segue.destination.sheetPresentationController {
                 sheet.detents = [.medium(), .large()]
                 sheet.prefersGrabberVisible = true
             }
             
-            // 2. Handle Data Passing
+            // 2. Data Passing
             var destinationVC: InfoViewController1?
-            
             if let nav = segue.destination as? UINavigationController {
-                print("🔹 Destination is Navigation Controller")
                 destinationVC = nav.topViewController as? InfoViewController1
-            } else if let infoVC = segue.destination as? InfoViewController1 {
-                print("🔹 Destination is directly InfoViewController")
-                destinationVC = infoVC
             } else {
-                print("🔴 ERROR: Could not find InfoViewController in destination!")
+                destinationVC = segue.destination as? InfoViewController1
             }
         }
     }
@@ -139,14 +120,6 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 72
-    }
-    
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return .leastNormalMagnitude
-    }
-    
-    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return .leastNormalMagnitude
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -161,10 +134,6 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         cell.layoutMargins = .zero
         
         return cell
-    }
-    
-    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return true
     }
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {

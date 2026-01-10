@@ -1,5 +1,5 @@
 //
-//  GroupJoinViewController.swift
+//  FamilyJoinViewController.swift
 //  ANSD_APP
 //
 //  Created by Dhiraj Bodake on 25/11/25.
@@ -37,6 +37,15 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         processNextMessage()
     }
     
+    // MARK: - Image Helper
+    func getImageName(for name: String) -> String {
+        let lower = name.lowercased()
+        if lower.contains("marie") { return "avatar_9" }
+        if lower.contains("henry") { return "avatar_10" }
+        if lower.contains("anna") { return "avatar_7" }
+        return "person.circle.fill"
+    }
+    
     func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -66,10 +75,21 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell1
             cell.messageLabel.text = message.text
             
+            // Determine Name
+            let displayName: String
             if message.sender == "Person 1" {
-                cell.nameLabel.text = self.otherPersonName
+                displayName = self.otherPersonName
             } else {
-                cell.nameLabel.text = message.sender
+                displayName = message.sender
+            }
+            cell.nameLabel.text = displayName
+            
+            // Set Image
+            let imgName = getImageName(for: displayName)
+            if let image = UIImage(named: imgName) {
+                cell.profileImageView.image = image
+            } else {
+                cell.profileImageView.image = UIImage(systemName: "person.circle.fill")
             }
             
             cell.onLabelTapped = { [weak self] in
@@ -122,6 +142,7 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
+            // Make sure the storyboard name is correct (check if it's "RoutineConvo 2" or "RoutineConvo")
             let storyboard = UIStoryboard(name: "RoutineConvo 2", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
@@ -154,19 +175,15 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         self.present(actionSheet, animated: true)
     }
     
-    // MARK: - Manual Segue Logic for Info Button
-    
-    // 1. Connect this action to the (i) Bar Button Item
+    // MARK: - Info Button Logic
     @IBAction func didTapInfoButton(_ sender: UIBarButtonItem) {
         performSegue(withIdentifier: "ShowInfo", sender: self)
     }
     
-    // 2. Intercept the segue to apply Half-Modal styling
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
             let destinationVC = segue.destination
-            
-            // This enables the "Half Modal" / Bottom Sheet behavior
+            // Half-Modal Configuration
             if let sheet = destinationVC.sheetPresentationController {
                 sheet.detents = [.medium(), .large()]
                 sheet.prefersGrabberVisible = true
@@ -180,6 +197,6 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width - 32, height: 100)
+        return CGSize(width: collectionView.bounds.width, height: 100)
     }
 }

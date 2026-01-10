@@ -1,5 +1,5 @@
 //
-//  SummaryViewController.swift
+//  FamilySummaryViewController.swift
 //  ANSD_APP
 //
 //  Created by Dhiraj Bodake on 25/11/25.
@@ -31,13 +31,20 @@ class FamilySummaryViewController: UIViewController, UITableViewDelegate, UITabl
         if let shareBtn = optionsButton {
             shareBtn.target = self
             shareBtn.action = #selector(shareTapped)
-        } else {
-            print("WARNING: optionsButton is nil. Check Storyboard connection.")
         }
         
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+    }
+    
+    // MARK: - Image Helper
+    func getImageName(for name: String) -> String {
+        let lower = name.lowercased()
+        if lower.contains("marie") { return "avatar_9" }
+        if lower.contains("henry") { return "avatar_10" }
+        if lower.contains("anna") { return "avatar_7" }
+        return "person.circle.fill"
     }
     
     @objc func dismissKeyboard() {
@@ -122,9 +129,20 @@ class FamilySummaryViewController: UIViewController, UITableViewDelegate, UITabl
         case 2:
             return tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell1", for: indexPath)
         case 3:
+            // Participant Card
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell1", for: indexPath) as! ParticipantCardCell1
             let data = participantsData[indexPath.row]
-            cell.configure(with: data)
+            
+            cell.configure(with: data) // Sets text
+            
+            // Set Image Manually
+            let imgName = getImageName(for: data.name)
+            if let image = UIImage(named: imgName) {
+                cell.avatarImageView.image = image
+            } else {
+                cell.avatarImageView.image = UIImage(systemName: "person.circle.fill")
+            }
+            
             return cell
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell1", for: indexPath) as! SummarySectionHeaderCell1
