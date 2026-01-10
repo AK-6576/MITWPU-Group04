@@ -364,7 +364,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             self.conversationSections = self.allConversationSections.compactMap { section in
                 let filtered = section.conversations.filter { convo in
                     convo.title.lowercased().contains(lowercasedSearchText) ||
-                    convo.description.lowercased().contains(lowercasedSearchText)
+                    convo.description!.lowercased().contains(lowercasedSearchText)
                 }
                 return filtered.isEmpty ? nil : ConversationSection(title: section.title, conversations: filtered)
             }
