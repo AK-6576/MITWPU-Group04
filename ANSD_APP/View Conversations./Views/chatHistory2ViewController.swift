@@ -1,4 +1,5 @@
 import UIKit
+import PDFKit
 
 // MARK: - Protocols
 protocol PCNotesCardCellDelegate: AnyObject {
@@ -42,8 +43,6 @@ class PCNotesSectionHeaderCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-          
-  
     }
 }
 
@@ -81,7 +80,6 @@ class PCParticipantsCardCell: UITableViewCell {
         avatarImageView.tintColor = .systemGray
         mainCardView.layer.cornerRadius = 16
         mainCardView.backgroundColor = .white
-        
     }
     
     func configure(with data: PCParticipantData) {
@@ -137,7 +135,7 @@ class chatHistory2ViewController: UIViewController {
     @IBOutlet var chatContainerView: UIView!
     @IBOutlet var summaryContainerView: UIView!
     @IBOutlet weak var collectionView: UICollectionView!
-    @IBOutlet var menuButton: UIBarButtonItem!
+    @IBOutlet var menuButton: UIBarButtonItem! // Acting as Share Button now
     @IBOutlet weak var tableView: UITableView!
     
     // MARK: - Properties
@@ -155,20 +153,28 @@ class chatHistory2ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
+        
         if let participants = histconversationData?.participants {
             self.participantsData = participants
-            
         }
+        
         setupNavigation()
         setupChatUI()
         setupSummaryUI()
-        setupMenu()
+        setupShareButton() // Updated from setupMenu
         updateContainerViews()
         
+        // Dismiss keyboard on tap
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+    
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     // MARK: - Setup Methods
-  
     
     private func setupNavigation() {
         if let convoData = histconversationData {
@@ -209,7 +215,22 @@ class chatHistory2ViewController: UIViewController {
         tableView.estimatedRowHeight = 120
         tableView.layer.cornerRadius = 20
         summaryContainerView.layer.cornerRadius = 20
-        
+    }
+    
+    // MARK: - Share Button Logic (Direct Action)
+    
+    func setupShareButton() {
+        if let shareBtn = menuButton {
+            // Remove any UIMenu configuration
+            shareBtn.menu = nil
+            // Set direct target-action
+            shareBtn.target = self
+            shareBtn.action = #selector(shareTapped)
+        }
+    }
+    
+    @objc func shareTapped() {
+        shareAsPDF()
     }
     
     private func notifyDataChanged() {
@@ -226,7 +247,6 @@ class chatHistory2ViewController: UIViewController {
     @IBAction func chatNsumSegmentedController(_ sender: UISegmentedControl) {
         view.endEditing(true)
         updateContainerViews()
-        setupMenu()
     }
     
     private func updateContainerViews() {
@@ -265,33 +285,7 @@ class chatHistory2ViewController: UIViewController {
         ])
     }
 
-    func setupMenu() {
-        let isChatSelected = (segmentedControl.selectedSegmentIndex == 0)
-        
-        let highlightAction = UIAction(title: isHighlightModeActive ? "Stop Highlighting" : "Highlight Text",
-                                       image: UIImage(systemName: "highlighter")) { _ in
-            self.isHighlightModeActive.toggle()
-            self.collectionView.reloadData()
-            self.setupMenu()
-        }
-        
-        let editAction = UIAction(title: "Edit Mode", image: UIImage(systemName: "pencil")) { _ in
-            let alert = UIAlertController(title: "Edit Mode", message: "Tap any message bubble to edit.", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            self.present(alert, animated: true)
-        }
-        
-        let exportAction = UIAction(title: "Share Summary PDF", image: UIImage(systemName: "doc.plaintext")) { _ in
-            self.shareAsPDF()
-        }
-
-        if isChatSelected {
-            menuButton.menu = UIMenu(title: "", children: [highlightAction, editAction, exportAction])
-        } else {
-            menuButton.menu = UIMenu(title: "", children: [exportAction])
-        }
-    }
-
+    // MARK: - Edit/Highlight Helpers (Available via context menu or programmatic if needed)
     func showEditAlert(for indexPath: IndexPath) {
         let message = transcript[indexPath.row]
         let alert = UIAlertController(title: "Edit Message", message: nil, preferredStyle: .alert)
@@ -306,6 +300,65 @@ class chatHistory2ViewController: UIViewController {
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
+    }
+}
+
+// MARK: - PDF Logic (Updated to match Code 2)
+extension chatHistory2ViewController {
+    
+    func shareAsPDF() {
+        var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
+        
+        // Loop through participants data
+        for person in participantsData {
+            // Assuming PCParticipantData has 'name' and 'summary' similar to Code 2
+            pdfContent += "\(person.name):\n\(person.summary)\n\n"
+        }
+        
+        // Add Notes if available
+        if let notes = histconversationData?.notes, !notes.isEmpty {
+            pdfContent += "Notes:\n\(notes)\n\n"
+        }
+        
+        if let pdfURL = createPDF(from: pdfContent) {
+            let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
+            self.present(activityVC, animated: true)
+        }
+    }
+    
+    // Helper function from Code 2
+    func createPDF(from text: String) -> URL? {
+        let pageWidth = 595.2
+        let pageHeight = 841.8
+        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+        
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        
+        let data = renderer.pdfData { (context) in
+            context.beginPage()
+            
+            let attributes = [
+                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12),
+                NSAttributedString.Key.paragraphStyle: NSMutableParagraphStyle()
+            ]
+            
+            let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
+            text.draw(in: textRect, withAttributes: attributes)
+        }
+        
+        let tempFolder = FileManager.default.temporaryDirectory
+        // Sanitize filename
+        let safeTitle = conversationTitle.replacingOccurrences(of: "/", with: "-")
+        let fileName = "\(safeTitle) - Summary.pdf"
+        let fileURL = tempFolder.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
+            print("Error generating PDF: \(error)")
+            return nil
+        }
     }
 }
 
@@ -417,7 +470,7 @@ extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
             
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath) as! PCSummarySectionHeaderCell
-            cell.headerLabel.text = "Notes" // CHECK
+            cell.headerLabel.text = "Notes"
             cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
             
@@ -434,26 +487,5 @@ extension chatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
         default:
             return UITableViewCell()
         }
-    }
-}
-
-// MARK: - PDF Logic
-extension chatHistory2ViewController {
-    func shareAsPDF() {
-        var pdfContent = "Title: \(conversationTitle)\n\n"
-        for person in participantsData {
-            pdfContent += "\(person.name): \(person.summary)\n"
-        }
-        
-        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595, height: 842))
-        let data = renderer.pdfData { (context) in
-            context.beginPage()
-            pdfContent.draw(in: CGRect(x: 20, y: 20, width: 555, height: 802), withAttributes: nil)
-        }
-        
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("Summary.pdf")
-        try? data.write(to: tempURL)
-        let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
-        present(activityVC, animated: true)
     }
 }
