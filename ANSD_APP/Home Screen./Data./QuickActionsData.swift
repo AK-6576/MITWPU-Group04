@@ -1,9 +1,10 @@
 //
 //  QuickActionsData.swift
-//  ANSD_APP
+//  Group_4-ANSD_App
 //
 
-// MARK: - Repository
+import Foundation
+
 class QuickActionsRepository {
     
     // 1. Raw Data Source
@@ -42,7 +43,6 @@ class QuickActionsRepository {
         let allItems = getAllActions()
         let groupedDictionary = Dictionary(grouping: allItems) { $0.categoryTitle }
         
-        // Sort sections alphabetically by Category Name
         return groupedDictionary.map { (key, value) in
             RoutineSection(category: key, items: value)
         }.sorted { $0.category < $1.category }

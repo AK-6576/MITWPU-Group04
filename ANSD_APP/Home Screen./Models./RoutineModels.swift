@@ -1,6 +1,6 @@
 //
 //  RoutineModels.swift
-//  ANSD_APP
+//  Group_4-ANSD_App
 //
 
 import Foundation
@@ -22,6 +22,5 @@ struct RoutineConversation: Codable, Identifiable {
 // MARK: - Section Model
 struct RoutineSection {
     let category: String
-    // 'var' allows us to delete/move items within the section
     var items: [RoutineConversation]
 }
