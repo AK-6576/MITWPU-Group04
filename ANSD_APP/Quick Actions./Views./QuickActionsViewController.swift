@@ -143,9 +143,6 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
 // MARK: - AddActionDelegate Implementation
 extension QuickActionsViewController: AddActionDelegate {
     func didCreateNewAction(_ action: RoutineConversation) {
-        // 1. Add to the Singleton Repository
-        QuickActionsRepository.shared.addAction(action)
-        
         // 2. Reloading triggers the Repository to re-fetch, Group, and Sort by time
         loadData()
         

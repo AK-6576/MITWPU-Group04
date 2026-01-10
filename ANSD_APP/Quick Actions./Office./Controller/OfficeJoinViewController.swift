@@ -142,7 +142,7 @@ class OfficeJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-            let storyboard = UIStoryboard(name: "RoutineConvo", bundle: nil)
+            let storyboard = UIStoryboard(name: "Office.", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
                let summaryVC = summaryNav.topViewController as? OfficeSummaryViewController {

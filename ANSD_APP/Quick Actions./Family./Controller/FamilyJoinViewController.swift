@@ -143,7 +143,7 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
             // Make sure the storyboard name is correct (check if it's "RoutineConvo 2" or "RoutineConvo")
-            let storyboard = UIStoryboard(name: "RoutineConvo 2", bundle: nil)
+            let storyboard = UIStoryboard(name: "Family.", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
                let summaryVC = summaryNav.topViewController as? FamilySummaryViewController {

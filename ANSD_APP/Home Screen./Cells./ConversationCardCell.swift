@@ -129,7 +129,7 @@ class ConversationCardCell: UITableViewCell {
         descriptionLabel.text = item.description ?? item.status
         
         // 2. Metadata Labels
-        dateLabel.text = item.date ?? "No Date"
+        dateLabel.text = item.date ?? "Today"
         timeLabel.text = item.startTime
         
         // 3. Static Icons setup

@@ -43,24 +43,21 @@ class HomeViewController: UIViewController {
     }
 
     func loadData() {
-            // 1. Fetch all items (Source of Truth)
-            let allItems = QuickActionsRepository.shared.getAllActions()
+            // 1. Fetch all valid items (Source of Truth)
+            // We filter out "Done" items first so they don't take up slots.
+            let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
             
-            // 2. Configure "Quick Actions" (Top Section)
-            // Keep existing logic: Show all active/scheduled items
-            self.quickActions = allItems.filter { $0.status != "Done" }
+            // 2. Configure "View Conversations" (The Priority List)
+            // Request: The first 2 items go here.
+            self.routineConversations = Array(allItems.prefix(2))
             
-            // 3. Configure "View Conversations" (Bottom Section)
-            // Request: Show the first 2 items from the "All Conversations" list.
-            // We take the first 2 items from the main list directly.
-            if allItems.count >= 2 {
-                self.routineConversations = Array(allItems.prefix(2))
-            } else {
-                self.routineConversations = allItems
-            }
+            // 3. Configure "Quick Actions" (The Remainder)
+            // Request: The rest of the items (after the first 2) go here.
+            self.quickActions = Array(allItems.dropFirst(2))
             
             self.tableView.reloadData()
         }
+
     // MARK: - Actions & Navigation
     @objc func headerChevronTapped(_ sender: UIButton) {
         let segueID = (sender.tag == 0) ? "showQuickActions" : "viewConvo"
