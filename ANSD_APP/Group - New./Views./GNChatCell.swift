@@ -48,15 +48,14 @@ class GNIncomingCell: UICollectionViewCell {
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
         bubbleView.layer.cornerRadius = 16
-        // Incoming style: Bubble points to top-left or bottom-left depending on preference
+
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
         
-        // NEW: Style the Profile Image
-        // Ensure you have set Width/Height constraints (e.g., 40x40) in Storyboard
+
         if let profileImg = profileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
             profileImg.clipsToBounds = true

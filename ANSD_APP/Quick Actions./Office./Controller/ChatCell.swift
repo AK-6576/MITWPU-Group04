@@ -10,7 +10,6 @@ import UIKit
 class OutgoingCell: UICollectionViewCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
-    private var widthConstraint: NSLayoutConstraint?
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -19,26 +18,20 @@ class OutgoingCell: UICollectionViewCell {
         messageLabel.textColor = .white
         bubbleView.layer.cornerRadius = 16
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let screenWidth = windowScene.screen.bounds.width
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
     }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        let screenWidth: CGFloat
-        if let screen = window?.windowScene?.screen {
-            screenWidth = screen.bounds.width
-        } else if let w = window {
-            screenWidth = w.bounds.width
-        } else {
-            screenWidth = contentView.superview?.bounds.width ?? contentView.bounds.width
-        }
-        let targetWidth = max(0, screenWidth - 32)
-        if let widthConstraint = widthConstraint {
-            widthConstraint.constant = targetWidth
-        } else {
-            let c = contentView.widthAnchor.constraint(equalToConstant: targetWidth)
-            c.isActive = true
-            widthConstraint = c
-        }
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
     }
 }
 
@@ -46,58 +39,47 @@ class IncomingCell: UICollectionViewCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
-    
-    // NEW: Outlet for the profile image
     @IBOutlet weak var profileImageView: UIImageView!
-    
-    private var widthConstraint: NSLayoutConstraint?
     
     var onLabelTapped: (() -> Void)?
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
-        
         bubbleView.layer.cornerRadius = 16
-        bubbleView.layer.maskedCorners = [
-            .layerMinXMinYCorner,
-            .layerMaxXMinYCorner,
-            .layerMaxXMaxYCorner
-        ]
-        
-        // Circular Image Setup
-        if let iv = profileImageView {
-            iv.layer.cornerRadius = iv.frame.width / 2
-            iv.clipsToBounds = true
-            iv.contentMode = .scaleAspectFill
-        }
+
+        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
+        
+
+        if let profileImg = profileImageView {
+            profileImg.layer.cornerRadius = profileImg.frame.height / 2
+            profileImg.clipsToBounds = true
+            profileImg.contentMode = .scaleAspectFill
+            profileImg.backgroundColor = .systemGray4 // Placeholder color
+        }
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let screenWidth = windowScene.screen.bounds.width
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
     }
     
-    @objc func handleTap() { onLabelTapped?() }
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
+    }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        let screenWidth: CGFloat
-        if let screen = window?.windowScene?.screen {
-            screenWidth = screen.bounds.width
-        } else if let w = window {
-            screenWidth = w.bounds.width
-        } else {
-            screenWidth = contentView.superview?.bounds.width ?? contentView.bounds.width
-        }
-        let targetWidth = max(0, screenWidth - 32)
-        if let widthConstraint = widthConstraint {
-            widthConstraint.constant = targetWidth
-        } else {
-            let c = contentView.widthAnchor.constraint(equalToConstant: targetWidth)
-            c.isActive = true
-            widthConstraint = c
-        }
+    @objc func handleTap() {
+        onLabelTapped?()
     }
 }

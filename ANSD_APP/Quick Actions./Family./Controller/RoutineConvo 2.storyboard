@@ -987,6 +987,7 @@
                                                     <outlet property="bubbleView" destination="Emo-Xe-YWZ" id="PKf-Yw-u5M"/>
                                                     <outlet property="messageLabel" destination="lul-yq-d8i" id="1U5-Tf-40V"/>
                                                     <outlet property="nameLabel" destination="eoS-WA-e12" id="tOY-ou-WQx"/>
+                                                    <outlet property="profileImageView" destination="EYl-vb-XEb" id="iiu-nK-qrN"/>
                                                 </connections>
                                             </collectionViewCell>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="vxw-B5-KsC" customClass="OutgoingCell1" customModule="ANSD_APP" customModuleProvider="target">
