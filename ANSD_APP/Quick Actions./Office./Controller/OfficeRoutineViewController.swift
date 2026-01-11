@@ -90,10 +90,6 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
         }
     }
     
-    @objc private func didTapInfoButton(_ sender: UIButton) {
-        performSegue(withIdentifier: "ShowInfo", sender: sender.tag)
-    }
-    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
             var destinationVC: OfficeInfoViewController?

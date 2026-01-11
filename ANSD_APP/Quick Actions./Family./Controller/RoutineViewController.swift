@@ -85,9 +85,6 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         
         if let rightButton = navigationItem.rightBarButtonItem {
             rightButton.menu = mainMenu
-        } else {
-            let moreButton = UIBarButtonItem(title: nil, image: UIImage(systemName: "ellipsis.circle"), primaryAction: nil, menu: mainMenu)
-            navigationItem.rightBarButtonItem = moreButton
         }
     }
     

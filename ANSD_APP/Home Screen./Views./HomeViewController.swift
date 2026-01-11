@@ -144,7 +144,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                     
                 default:
                     print("No segue configured for category: \(item.categoryTitle)")
-                    return // Stop execution so the app doesn't crash
+                    return
                 }
                 
             } else {

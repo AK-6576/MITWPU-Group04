@@ -12,22 +12,22 @@ class RoutineRepository1 {
         return [
             FamilyRoutineItem(
                 title: "Breakfast",
-                time: "08:00 - 09:00 AM",
+                time: "08:00 AM",
                 notes: ""
             ),
             FamilyRoutineItem(
                 title: "Lunch Coordination",
-                time: "12:00 - 01:00 PM",
+                time: "12:00 PM",
                 notes: ""
             ),
             FamilyRoutineItem(
                 title: "Evening Tea & Snacks",
-                time: "04:30 - 05:30 PM",
+                time: "04:30 PM",
                 notes: ""
             ),
             FamilyRoutineItem(
                 title: "Dinner",
-                time: "07:30 - 09:00 PM",
+                time: "07:30 PM",
                 notes: ""
             )
         ]
