@@ -7,7 +7,6 @@ import UIKit
 
 class HomeViewController: UIViewController {
     
-    @IBOutlet weak var usernameLabel: UILabel!
     @IBOutlet weak var tableView: UITableView!
 
     var quickActions: [RoutineConversation] = []
@@ -73,7 +72,6 @@ class HomeViewController: UIViewController {
         
         if segue.identifier == "showProfile" {
             let destinationVC = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
-            destinationVC?.incomingName = usernameLabel?.text
         }
         else if segue.identifier == "viewConvoCell" {
             guard let destVC = segue.destination as? ChatHistory2ViewController,
