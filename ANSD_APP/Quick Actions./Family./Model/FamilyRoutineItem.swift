@@ -7,8 +7,8 @@
 import Foundation
 
 struct FamilyRoutineItem {
-    let title: String
-    let time: String
+    var title: String
+    var time: String
     var notes: String
 }
 

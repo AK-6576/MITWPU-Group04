@@ -43,7 +43,7 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
     }
     
     func setupNavigationBarMenu() {
-        let deleteAction = UIAction(title: "Select", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
+        let selectAction = UIAction(title: "Select Conversations", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
             guard let self = self else { return }
             let isEditing = !self.tableView.isEditing
             self.tableView.setEditing(isEditing, animated: true)
@@ -80,9 +80,14 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
             sortNewest
         ])
         
+        let groupAction = UIAction(title: "Group By Date", image: UIImage(systemName: "calendar")) { _ in
+            print("Group By Date tapped")
+        }
+        
         let mainMenu = UIMenu(title: "", children: [
-            deleteAction,
-            sortByMenu
+            selectAction,
+            sortByMenu,
+            groupAction
         ])
         
         if let rightButton = navigationItem.rightBarButtonItem {
@@ -139,14 +144,50 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
         return cell
     }
     
-    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return true
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
+            guard let self = self else { return }
+            self.routineList.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .fade)
+            completion(true)
+        }
+        deleteAction.backgroundColor = .systemRed
+        deleteAction.image = UIImage(systemName: "trash")
+        
+        let editAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
+            guard let self = self else { return }
+            let item = self.routineList[indexPath.row]
+            self.showRenameAlert(for: item, at: indexPath)
+            completion(true)
+        }
+        editAction.backgroundColor = .systemOrange
+        editAction.image = UIImage(systemName: "pencil")
+        
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
+        config.performsFirstActionWithFullSwipe = false
+        return config
     }
     
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            routineList.remove(at: indexPath.row)
-            tableView.deleteRows(at: [indexPath], with: .fade)
+    private func showRenameAlert(for item: RoutineItem, at indexPath: IndexPath) {
+        let alert = UIAlertController(title: "Edit Title", message: nil, preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.text = item.title
         }
+        
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            var updatedItem = item
+            updatedItem.title = newName
+            self.routineList[indexPath.row] = updatedItem
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
     }
 }

@@ -92,15 +92,12 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         performSegue(withIdentifier: "ShowInfo", sender: sender.tag)
     }
     
-    // MARK: - Updated Segue Logic (Half-Modal)
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
-            
             if let sheet = segue.destination.sheetPresentationController {
                 sheet.detents = [.medium(), .large()]
                 sheet.prefersGrabberVisible = true
             }
-            
         }
     }
     
@@ -126,11 +123,50 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
         return cell
     }
     
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            routineList.remove(at: indexPath.row)
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
+            guard let self = self else { return }
+            self.routineList.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)
+            completion(true)
         }
+        deleteAction.backgroundColor = .systemRed
+        deleteAction.image = UIImage(systemName: "trash")
+        
+        let editAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
+            guard let self = self else { return }
+            let item = self.routineList[indexPath.row]
+            self.showRenameAlert(for: item, at: indexPath)
+            completion(true)
+        }
+        editAction.backgroundColor = .systemOrange
+        editAction.image = UIImage(systemName: "pencil")
+        
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
+        config.performsFirstActionWithFullSwipe = false
+        return config
+    }
+    
+    private func showRenameAlert(for item: FamilyRoutineItem, at indexPath: IndexPath) {
+        let alert = UIAlertController(title: "Edit Title", message: nil, preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.text = item.title
+        }
+        
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            var updatedItem = item
+            updatedItem.title = newName
+            self.routineList[indexPath.row] = updatedItem
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
     }
 }
-

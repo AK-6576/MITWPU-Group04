@@ -7,6 +7,6 @@
 
 import Foundation
 struct SessionModel {
-    let title: String
+    var title: String
     let subtitle: String
 }

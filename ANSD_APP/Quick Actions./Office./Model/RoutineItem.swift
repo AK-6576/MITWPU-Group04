@@ -7,7 +7,7 @@
 import Foundation
 
 struct RoutineItem {
-    let title: String
+    var title: String
     let time: String
     var notes: String
 }
