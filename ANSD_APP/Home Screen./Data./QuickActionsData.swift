@@ -75,7 +75,16 @@ class QuickActionsRepository {
     func addAction(_ action: RoutineConversation) {
         quickActionBubbles.append(action)
     }
-    
+
+    func deleteAction(_ action: RoutineConversation) {
+        self.quickActionBubbles.removeAll { $0.id == action.id }
+    }
+
+    func updateAction(_ action: RoutineConversation) {
+        if let index = self.quickActionBubbles.firstIndex(where: { $0.id == action.id }) {
+            self.quickActionBubbles[index] = action
+        }
+    }
     private func compareTimes(time1: String, time2: String) -> Bool {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"

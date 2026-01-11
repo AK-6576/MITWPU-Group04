@@ -22,9 +22,10 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
     }
     
     private func loadData() {
+        // 1. Get the latest data from the Repository
         let allSections = QuickActionsRepository.shared.getGroupedSections()
         
-        // Filter out items marked as "Done"
+        // 2. Filter out items marked as "Done" and empty sections
         self.sections = allSections.compactMap { section in
             let activeItems = section.items.filter { $0.status != "Done" }
             
@@ -50,72 +51,55 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         }
         
         // 2. Handle Chat Screen Segues (Cell Taps)
-        // We check if the identifier is one of our specific chat segues
         let chatSegueIDs = ["officeChat", "familyChat", "friendsChat"]
         
         if let segueID = segue.identifier, chatSegueIDs.contains(segueID) {
             
-            // Retrieve the data item passed from didSelectRowAt
             if let selectedItem = sender as? RoutineConversation {
                 print("Opening Chat for: \(selectedItem.conversationTopic) via segue: \(segueID)")
-                
-                // TODO: Pass data to your specific Chat View Controller here.
-                // Example:
-                // if let chatVC = segue.destination as? ChatViewController {
-                //     chatVC.conversationData = selectedItem
-                // }
+                // Pass data to destination VC here if needed
             }
         }
     }
     
-    // MARK: - TableView Delegate (Cell Selection)
+    // MARK: - TableView Delegate (Selection)
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        // 1. Get the item and category
         let sectionData = sections[indexPath.section]
         let item = sectionData.items[indexPath.row]
         let category = sectionData.category
         
-        // 2. Determine Segue ID for CHAT (Unique from Header Segues)
         var segueID = ""
         
         switch category {
         case "Office":
             segueID = "officeChat"
-            
         case "Family":
             segueID = "familyChat"
-            
         case "Friends":
             segueID = "friendsChat"
-            
         default:
             print("No chat segue configured for category: \(category)")
             return
         }
         
-        // 3. Perform Segue passing the item data
         performSegue(withIdentifier: segueID, sender: item)
     }
     
-    // MARK: - Header Delegate (Section Header Taps)
+    // MARK: - Header Delegate
     
     func didTapHeader(sectionIndex: Int, categoryName: String) {
-        
         var segueID = ""
         
         switch categoryName {
         case "Office":
             segueID = "office"
-            
         case "Family":
             segueID = "family"
-            
         case "Friends":
             segueID = "friends"
-            
         default:
             print("No list segue configured for category: \(categoryName)")
             return
@@ -160,10 +144,14 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
-            // Remove from local array
+            
+            // 1. Remove from Repository (Crucial for persistence)
+            QuickActionsRepository.shared.deleteAction(item)
+            
+            // 2. Remove from local array
             self.sections[indexPath.section].items.remove(at: indexPath.row)
             
-            // Handle empty section removal
+            // 3. Update UI
             if self.sections[indexPath.section].items.isEmpty {
                 self.sections.remove(at: indexPath.section)
                 tableView.deleteSections([indexPath.section], with: .fade)
@@ -201,8 +189,13 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         alert.addTextField { $0.text = item.conversationTopic }
         let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            // 1. Update Repository
             var updatedItem = item
             updatedItem.conversationTopic = newName
+            QuickActionsRepository.shared.updateAction(updatedItem)
+            
+            // 2. Update Local UI
             self.sections[section].items[row] = updatedItem
             self.tableView.reloadRows(at: [IndexPath(row: row, section: section)], with: .automatic)
         }
@@ -216,7 +209,12 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
 
 extension QuickActionsViewController: AddActionDelegate {
     func didCreateNewAction(_ action: RoutineConversation) {
+        // 1. Add to Repository to ensure persistence
+        QuickActionsRepository.shared.addAction(action)
+        
+        // 2. Refresh data
         loadData()
-        print("Action Added: \(action.conversationTopic) at \(action.startTime)")
+        
+        print("Action Added and Saved: \(action.conversationTopic)")
     }
 }
