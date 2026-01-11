@@ -55,7 +55,6 @@ class GJIncomingCell: UICollectionViewCell {
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         GJnameLabel.addGestureRecognizer(tap)
         
-        // NEW: Style the Profile Image
         if let profileImg = GJprofileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
             profileImg.clipsToBounds = true
