@@ -32,7 +32,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             firstNameTextField.textColor = .label
         } else {
             firstNameTextField.text = "Steve"
-            firstNameTextField.textColor = .systemGray3
+            firstNameTextField.textColor = .black
         }
         
         if let image = incomingImage { profileImageView.image = image }

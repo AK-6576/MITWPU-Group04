@@ -138,7 +138,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                     segueID = "family"
                     
                 case "Friends":
-                    segueID = "friends"
+                    segueID = "family"
                     
                 default:
                     print("No segue configured for category: \(item.categoryTitle)")

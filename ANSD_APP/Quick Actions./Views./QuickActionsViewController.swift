@@ -79,7 +79,7 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         case "Family":
             segueID = "familyChat"
         case "Friends":
-            segueID = "friendsChat"
+            segueID = "familyChat"
         default:
             print("No chat segue configured for category: \(category)")
             return
@@ -99,7 +99,7 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         case "Family":
             segueID = "family"
         case "Friends":
-            segueID = "friends"
+            segueID = "family"
         default:
             print("No list segue configured for category: \(categoryName)")
             return
