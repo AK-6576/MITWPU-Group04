@@ -49,31 +49,37 @@ class ParticipantsViewController: UITableViewController {
     }
     
     func getContacts(from store: CNContactStore) {
-            let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactIdentifierKey] as [CNKeyDescriptor]
-            let request = CNContactFetchRequest(keysToFetch: keys)
-            request.sortOrder = .userDefault
-            
+        let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactIdentifierKey] as [CNKeyDescriptor]
+        let request = CNContactFetchRequest(keysToFetch: keys)
+        request.sortOrder = .userDefault
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
             do {
                 var newContacts = [CNContact]()
                 try store.enumerateContacts(with: request) { (contact, stop) in
                     newContacts.append(contact)
-                    
+
                     let fullName = "\(contact.givenName) \(contact.familyName)"
                     if self.initialSelectedNames.contains(fullName) {
                         self.selectedContactIDs.insert(contact.identifier)
                     }
                 }
-                
+
                 self.contacts = newContacts
-                
-                DispatchQueue.main.async {
+
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
                     self.tableView.reloadData()
                 }
             } catch {
                 print("Failed to fetch contacts: \(error)")
+                DispatchQueue.main.async { [weak self] in
+                    self?.tableView.reloadData()
+                }
             }
         }
-
+    }
     // MARK: - Actions
     @objc func doneTapped() {
 

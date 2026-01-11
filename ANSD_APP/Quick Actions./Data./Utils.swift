@@ -3,11 +3,6 @@
 //  ANSD_APP
 //
 
-//
-//  Utils.swift
-//  ANSD_APP
-//
-
 import UIKit
 
 // MARK: - Color Logic (For Icons Only)
@@ -51,4 +46,21 @@ func getSymbolForCategory(_ name: String) -> String {
     case "bank", "finance": return "banknote.fill"
     default: return "tag.fill"
     }
+}
+
+func compareTimes(time1: String, time2: String) -> Bool {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    
+    formatter.dateFormat = "h:mm a"
+    if let date1 = formatter.date(from: time1), let date2 = formatter.date(from: time2) {
+        return date1 < date2
+    }
+    
+    formatter.dateFormat = "HH:mm"
+    if let date1 = formatter.date(from: time1), let date2 = formatter.date(from: time2) {
+        return date1 < date2
+    }
+    
+    return false
 }

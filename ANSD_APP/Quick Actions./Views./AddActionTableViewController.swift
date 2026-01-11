@@ -188,12 +188,14 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     // Creates and saves a new routine conversation action
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
         guard let name = nameTextField.text, !name.isEmpty else { return }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        formatter.amSymbol = "AM"
-        formatter.pmSymbol = "PM"
-        let timeString = formatter.string(from: startTimePicker.date)
+            
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            formatter.amSymbol = "AM"
+            formatter.pmSymbol = "PM"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            
+            let timeString = formatter.string(from: startTimePicker.date)
        
         let iconName = getSymbolForCategory(selectedCategory)
         let dateString = getFormattedDateString()
