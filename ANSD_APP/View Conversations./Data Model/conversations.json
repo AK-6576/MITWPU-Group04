@@ -20,8 +20,8 @@
       ],
       "date": "Today",
       "cal": "2025-10-15T18:00:00Z",
-      "start_time": "06:00 AM",
-      "end_time": "07:00 AM",
+      "start_time": "08:00 AM",
+      "end_time": "09:00 AM",
       "category": "friends",
       "icon": "figure.run",
       "info": false,
@@ -93,7 +93,7 @@
           "image": "avatar_1"
         }
       ],
-      "date": "Today",
+      "date": "6 Oct 2025",
       "cal": "2025-10-15T12:30:00Z",
       "start_time": "08:00 AM",
       "end_time": "09:30 AM",

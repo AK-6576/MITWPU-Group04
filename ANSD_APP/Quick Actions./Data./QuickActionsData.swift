@@ -47,12 +47,12 @@ class QuickActionsRepository {
             RoutineConversation(
                 id: "conv_6", iconName: "figure.run", categoryTitle: "Friends",
                 status: "Scheduled", conversationTopic: "Morning Jog", topicImage: "figure.run",
-                startTime: "07:00 AM", description: "Running path discussion with neighbor.", date: nil, timeImage: "clock"
+                startTime: "08:00 AM", description: "Running path discussion with neighbor.", date: nil, timeImage: "clock"
             ),
             RoutineConversation(
                 id: "3", iconName: "person.3.fill", categoryTitle: "Friends",
                 status: "Scheduled", conversationTopic: "Breakfast At VL", topicImage: "cup.and.saucer.fill",
-                startTime: "06:00 AM", description: "Breakfast with Sarah and Mike.", date: nil, timeImage: "clock"
+                startTime: "08:00 AM", description: "Breakfast with Sarah and Mike.", date: "6 Oct 2025", timeImage: "clock"
             )
         ]
     }
