@@ -6,16 +6,27 @@
 //
 
 import UIKit
+import FirebaseCore
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
-        return true
-    }
+            
+            // 1. Load the default options from your plist
+            guard let filePath = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+                  let options = FirebaseOptions(contentsOfFile: filePath) else {
+                fatalError("GoogleService-Info.plist not found")
+            }
+            
+            // 2. Explicitly set your Asia-Southeast database URL
+            options.databaseURL = "https://ansd-f90fc-default-rtdb.asia-southeast1.firebasedatabase.app/"
+            
+            // 3. Configure Firebase with these specific options
+            FirebaseApp.configure(options: options)
+            
+            return true
+        }
 
     // MARK: UISceneSession Lifecycle
 
