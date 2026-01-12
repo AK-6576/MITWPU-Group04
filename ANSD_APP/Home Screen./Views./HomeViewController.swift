@@ -31,7 +31,7 @@ class HomeViewController: UIViewController {
             tableView.sectionHeaderTopPadding = 0
         }
         
-        tableView.backgroundColor = .systemGray6
+        tableView.backgroundColor = .systemBackground
         tableView.separatorStyle = .none
         tableView.tableFooterView = UIView()
         tableView.estimatedRowHeight = 80
@@ -154,7 +154,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
-        headerView.backgroundColor = .clear
+        headerView.backgroundColor = .systemBackground
         
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
