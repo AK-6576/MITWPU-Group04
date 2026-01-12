@@ -156,10 +156,10 @@ class ConversationCardCell: UITableViewCell {
         switch categoryString.lowercased() {
         case "family":
             iconName = "figure.2.and.child.holdinghands"
-            tintColor = .systemPink
+            tintColor = .systemPurple
         case "friends":
-            iconName = "person.2.fill"
-            tintColor = .systemOrange
+            iconName = "person.3.fill"
+            tintColor = .systemGreen
         case "office", "work":
             iconName = "briefcase.fill"
             tintColor = .systemBlue

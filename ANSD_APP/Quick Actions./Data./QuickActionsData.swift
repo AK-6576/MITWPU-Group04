@@ -23,17 +23,17 @@ class QuickActionsRepository {
             ),
             RoutineConversation(
                 id: "2", iconName: "figure.2.and.child.holdinghands", categoryTitle: "Family",
-                status: "Scheduled", conversationTopic: "Brunch with Amanda", topicImage: "fork.knife.circle.fill",
+                status: "Scheduled", conversationTopic: "Brunch", topicImage: "fork.knife.circle.fill",
                 startTime: "11:00 AM", description: "Weekly catch-up at The Toast Cafe.", date: nil, timeImage: "clock"
             ),
             RoutineConversation(
                 id: "3_cafeteria", iconName: "person.3.fill", categoryTitle: "Friends",
-                status: "Scheduled", conversationTopic: "Cafeteria Hangout", topicImage: "cup.and.saucer.fill",
+                status: "Scheduled", conversationTopic: "Lunch", topicImage: "cup.and.saucer.fill",
                 startTime: "12:30 PM", description: nil, date: nil, timeImage: "clock"
             ),
             RoutineConversation(
                 id: "conv_3", iconName: "figure.2.and.child.holdinghands", categoryTitle: "Family",
-                status: "Scheduled", conversationTopic: "Movie Watch", topicImage: "film.stack.fill",
+                status: "Scheduled", conversationTopic: "Date Night", topicImage: "film.stack.fill",
                 startTime: "06:00 PM", description: "Discussed whether to see The Mandalorian movie.", date: "2025-10-05", timeImage: "clock"
             ),
             RoutineConversation(
