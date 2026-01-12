@@ -13,11 +13,14 @@ class RoutineTableViewCell: UITableViewCell {
     
     var onInfoTapped: (() -> Void)?
     
+    // Create the view for the custom line
     private let bottomBorder = UIView()
     
     override func awakeFromNib() {
         super.awakeFromNib()
         setupDesign()
+        // CHANGED: We must call this to actually add the line to the view
+        setupCustomSeparator()
     }
 
     func setupDesign() {
@@ -43,9 +46,13 @@ class RoutineTableViewCell: UITableViewCell {
         contentView.addSubview(bottomBorder)
         
         NSLayoutConstraint.activate([
-            bottomBorder.heightAnchor.constraint(equalToConstant: 1),
-            bottomBorder.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            bottomBorder.heightAnchor.constraint(equalToConstant: 1), // 1px height
+            bottomBorder.bottomAnchor.constraint(equalTo: contentView.bottomAnchor), // Stick to bottom
+            
+            // Align with the Title Label (Standard iOS look)
             bottomBorder.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            
+            // Extend to the right edge
             bottomBorder.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
         ])
     }
@@ -53,6 +60,9 @@ class RoutineTableViewCell: UITableViewCell {
     func configure(with item: RoutineConversation, isLast: Bool) {
         titleLabel.text = item.conversationTopic
         timeLabel.text = item.startTime
+        
+        // CHANGED: This toggles the line.
+        // If it's the last cell, the line is HIDDEN.
         bottomBorder.isHidden = isLast
         
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)

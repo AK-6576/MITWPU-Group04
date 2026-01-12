@@ -30,7 +30,7 @@ class SectionHeaderView: UITableViewHeaderFooterView {
         let iv = UIImageView()
         iv.image = UIImage(systemName: "chevron.right")
         iv.contentMode = .scaleAspectFit
-        iv.tintColor = .systemGray3
+        iv.tintColor = .systemGray
         iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
     }()
@@ -65,9 +65,6 @@ class SectionHeaderView: UITableViewHeaderFooterView {
             
             chevronImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             chevronImageView.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
-            chevronImageView.widthAnchor.constraint(equalToConstant: 12),
-            chevronImageView.heightAnchor.constraint(equalToConstant: 16),
-            
             tapButton.topAnchor.constraint(equalTo: contentView.topAnchor),
             tapButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             tapButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),

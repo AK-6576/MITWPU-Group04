@@ -31,7 +31,7 @@ class SimpleMonthHeaderView: UICollectionReusableView {
             label.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
         
-        label.font = UIFont.boldSystemFont(ofSize: 22)
+        label.font = UIFont.boldSystemFont(ofSize: 22) // CHANGE
         label.textColor = .label
     }
 }

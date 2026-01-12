@@ -314,8 +314,6 @@ class ChatHistory2ViewController: UIViewController {
             emptyChatLabel.centerYAnchor.constraint(equalTo: chatContainerView.centerYAnchor)
         ])
     }
-
-    // MARK: - Edit/Highlight Helpers
     
     // Presents an alert dialog allowing the user to edit a message
     private func showEditAlert(for indexPath: IndexPath) {

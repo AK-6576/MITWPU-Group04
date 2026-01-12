@@ -33,6 +33,7 @@ class HomeViewController: UIViewController {
         
         tableView.backgroundColor = .systemBackground
         tableView.separatorStyle = .none
+        
         tableView.tableFooterView = UIView()
         tableView.estimatedRowHeight = 80
         tableView.rowHeight = UITableView.automaticDimension
@@ -111,7 +112,13 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         if indexPath.section == 0 {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? RoutineTableViewCell else { return UITableViewCell() }
             let item = quickActions[indexPath.row]
-            cell.configure(with: item, isLast: indexPath.row == quickActions.count - 1)
+            
+            // Calculate if this is the last row in the section
+            let isLastRow = indexPath.row == quickActions.count - 1
+            
+            // Pass that info to the cell so it can hide the line
+            cell.configure(with: item, isLast: isLastRow)
+            
             cell.onInfoTapped = { [weak self] in self?.presentInfoScreen(for: item) }
             return cell
         } else {

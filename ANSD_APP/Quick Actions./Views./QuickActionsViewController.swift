@@ -145,13 +145,11 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
             
-            // 1. Remove from Repository (Crucial for persistence)
             QuickActionsRepository.shared.deleteAction(item)
             
-            // 2. Remove from local array
+
             self.sections[indexPath.section].items.remove(at: indexPath.row)
             
-            // 3. Update UI
             if self.sections[indexPath.section].items.isEmpty {
                 self.sections.remove(at: indexPath.section)
                 tableView.deleteSections([indexPath.section], with: .fade)

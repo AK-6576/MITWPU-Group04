@@ -133,7 +133,7 @@
                                 <rect key="frame" x="0.0" y="70" width="393" height="723"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qLf-GO-AHM" userLabel="ContentView">
-                                        <rect key="frame" x="0.0" y="0.0" width="393" height="323"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="303"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="25" translatesAutoresizingMaskIntoConstraints="NO" id="JSb-le-JDQ">
                                                 <rect key="frame" x="20" y="20" width="353" height="283"/>
@@ -422,17 +422,24 @@
                                                         </userDefinedRuntimeAttributes>
                                                     </view>
                                                 </subviews>
+                                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                             </stackView>
                                         </subviews>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <constraints>
                                             <constraint firstAttribute="trailing" secondItem="JSb-le-JDQ" secondAttribute="trailing" constant="20" id="1ie-8s-gjq"/>
                                             <constraint firstItem="JSb-le-JDQ" firstAttribute="top" secondItem="qLf-GO-AHM" secondAttribute="top" constant="20" id="Brx-l8-Xz9"/>
-                                            <constraint firstAttribute="bottom" secondItem="JSb-le-JDQ" secondAttribute="bottom" constant="20" id="TSb-c9-Th4"/>
+                                            <constraint firstAttribute="bottom" secondItem="JSb-le-JDQ" secondAttribute="bottom" id="TSb-c9-Th4"/>
                                             <constraint firstItem="JSb-le-JDQ" firstAttribute="leading" secondItem="qLf-GO-AHM" secondAttribute="leading" constant="20" id="p4Z-D3-aAT"/>
                                         </constraints>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="keyPath.cornerRadius">
+                                                <integer key="value" value="20"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
                                     </view>
                                 </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstItem="qLf-GO-AHM" firstAttribute="centerX" secondItem="1Na-4e-CdM" secondAttribute="centerX" id="3ge-LI-nav"/>
                                     <constraint firstItem="qLf-GO-AHM" firstAttribute="top" secondItem="1Na-4e-CdM" secondAttribute="top" id="IS1-Q5-f2j"/>
