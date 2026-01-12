@@ -10,7 +10,7 @@ func getColorForCategory(_ name: String) -> UIColor {
     let lower = name.lowercased().trimmingCharacters(in: .whitespaces)
     
     switch lower {
-    case "family", "date", "partner", "home": return .systemPurple
+    case "family", "date", "partner", "home": return .systemPink
     case "office", "work", "coding":          return .systemBlue
     case "friends", "gaming", "party":        return .systemGreen
     case "gym", "health", "medical":          return .systemOrange
