@@ -10,6 +10,7 @@
 		0212FE7E2F14BE8A006845A3 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 0212FE7D2F14BE8A006845A3 /* FirebaseAuth */; };
 		0212FE802F14BE8A006845A3 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0212FE7F2F14BE8A006845A3 /* FirebaseCore */; };
 		0212FE822F14BE8A006845A3 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 0212FE812F14BE8A006845A3 /* FirebaseDatabase */; };
+		19D43FA02F1601F60015F915 /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = 19D43F9F2F1601F60015F915 /* GoogleGenerativeAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 				0212FE822F14BE8A006845A3 /* FirebaseDatabase in Frameworks */,
 				0212FE802F14BE8A006845A3 /* FirebaseCore in Frameworks */,
 				0212FE7E2F14BE8A006845A3 /* FirebaseAuth in Frameworks */,
+				19D43FA02F1601F60015F915 /* GoogleGenerativeAI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +104,7 @@
 				0212FE7D2F14BE8A006845A3 /* FirebaseAuth */,
 				0212FE7F2F14BE8A006845A3 /* FirebaseCore */,
 				0212FE812F14BE8A006845A3 /* FirebaseDatabase */,
+				19D43F9F2F1601F60015F915 /* GoogleGenerativeAI */,
 			);
 			productName = ANSD_APP;
 			productReference = 02AE994B2ED5711C0079EA2B /* ANSD_APP.app */;
@@ -133,6 +136,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0212FE7C2F14BE8A006845A3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				19D43F9E2F1601F60015F915 /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 02AE994C2ED5711C0079EA2B /* Products */;
@@ -172,7 +176,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3Q2Q39D24W;
+				DEVELOPMENT_TEAM = B5Z494VBT6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to add participants to the conversation.";
@@ -207,7 +211,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3Q2Q39D24W;
+				DEVELOPMENT_TEAM = B5Z494VBT6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to add participants to the conversation.";
@@ -390,6 +394,14 @@
 				minimumVersion = 12.7.0;
 			};
 		};
+		19D43F9E2F1601F60015F915 /* XCRemoteSwiftPackageReference "generative-ai-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/generative-ai-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.6;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -407,6 +419,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0212FE7C2F14BE8A006845A3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseDatabase;
+		};
+		19D43F9F2F1601F60015F915 /* GoogleGenerativeAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 19D43F9E2F1601F60015F915 /* XCRemoteSwiftPackageReference "generative-ai-swift" */;
+			productName = GoogleGenerativeAI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
