@@ -1,21 +1,24 @@
-//
-//  SpeechManager.swift
-//  ANSD_APP
-//
-//  Created by Daiwiik on 12/01/26.
-//
-
 import Foundation
 import Speech
 
 class SpeechManager: NSObject {
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    // 1. Change to optional 'var' so we can re-initialize it with different languages
+    private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
 
-    func startTranscribing(completion: @escaping (String) -> Void) {
-        // 1. Cancel any existing task
+    // 2. Added languageCode parameter (e.g., "en-US", "hi-IN", "es-ES")
+    func startTranscribing(languageCode: String, completion: @escaping (String) -> Void) {
+        
+        // 3. Initialize with the chosen language
+        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: languageCode))
+        
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            print("Error: Language \(languageCode) is not supported on this device.")
+            return
+        }
+
         recognitionTask?.cancel()
         
         let audioSession = AVAudioSession.sharedInstance()
@@ -25,13 +28,12 @@ class SpeechManager: NSObject {
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         let inputNode = audioEngine.inputNode
         
-        // 2. Configure request to report intermediate results (real-time typing)
         recognitionRequest?.shouldReportPartialResults = true
         
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { result, error in
+        recognitionTask = recognizer.recognitionTask(with: recognitionRequest!) { result, error in
             if let result = result {
                 let transcribedText = result.bestTranscription.formattedString
-                completion(transcribedText) // This sends the text back to your VC
+                completion(transcribedText)
             }
             
             if error != nil || result?.isFinal == true {
@@ -40,7 +42,6 @@ class SpeechManager: NSObject {
             }
         }
 
-        // 3. Setup Audio Buffer
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             self.recognitionRequest?.append(buffer)
@@ -53,5 +54,6 @@ class SpeechManager: NSObject {
     func stopTranscribing() {
         audioEngine.stop()
         recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
     }
 }

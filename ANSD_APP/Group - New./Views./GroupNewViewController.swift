@@ -17,6 +17,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     
     let speechManager = SpeechManager()
     var isRecording = false             // Add this
+    var selectedLanguageCode = "en-US" // Default
     var messages: [GNChatMessage] = []
     let fullConversation = GNChatData.fullConversation
     var currentMessageIndex = 0
@@ -24,7 +25,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     var otherPersonName = "Person 1"
     
     // 2. Define Firebase properties
-    let ref = Database.database(url: "https://ansd-f90fc-default-rtdb.asia-southeast1.firebasedatabase.app").reference().child("chat_sessions").child("session_01")
+        let ref = Database.database(url: "https://ansd-f90fc-default-rtdb.asia-southeast1.firebasedatabase.app").reference().child("chat_sessions").child("session_01")
     // Change "Me" to a variable you can set
     var myName = UIDevice.current.name // This will use the iPhone's name (e.g., "Anshul's iPhone")
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
@@ -209,7 +210,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     
     // MARK: - Transcription Logic
     func startLiveTranscription() {
-        // Create a specific ID for this new "bubble"
         let newMessage = GNChatMessage(text: "Listening...", isIncoming: false, sender: self.myName, senderID: currentUserID)
         self.messages.append(newMessage)
         
@@ -217,15 +217,15 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         self.collectionView.insertItems(at: [lastIndex])
         self.scrollToBottom()
 
-        speechManager.startTranscribing { [weak self] transcribedText in
+        // --- UPDATED LINE BELOW ---
+        speechManager.startTranscribing(languageCode: self.selectedLanguageCode) { [weak self] transcribedText in
             guard let self = self else { return }
             
-            // Update the very last message in the list with the live text
             if !self.messages.isEmpty {
                 self.messages[self.messages.count - 1] = GNChatMessage(
                     text: transcribedText,
                     isIncoming: false,
-                    sender: "Me",
+                    sender: self.myName, // Using self.myName for consistency
                     senderID: self.currentUserID
                 )
                 
