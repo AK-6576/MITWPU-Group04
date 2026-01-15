@@ -1,6 +1,6 @@
 //
 //  HomeViewController.swift
-//  Group_4-ANSD_App
+//  ANSD_APP
 //
 
 import UIKit
@@ -27,34 +27,29 @@ class HomeViewController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         
+        // Remove extra system padding above headers
         if #available(iOS 15.0, *) {
             tableView.sectionHeaderTopPadding = 0
         }
         
         tableView.backgroundColor = .systemBackground
         tableView.separatorStyle = .none
-        
         tableView.tableFooterView = UIView()
         tableView.estimatedRowHeight = 80
         tableView.rowHeight = UITableView.automaticDimension
     }
 
     func loadData() {
+        // Filter out "Done" items
+        let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
 
-            let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
-
-            self.routineConversations = Array(allItems.prefix(2))
-            
-            self.quickActions = Array(allItems.dropFirst(2))
-            
-            self.tableView.reloadData()
-        }
-
-    // MARK: - Actions & Navigation
-    @objc func headerChevronTapped(_ sender: UIButton) {
-        let segueID = (sender.tag == 0) ? "showQuickActions" : "viewConvo"
-        performSegue(withIdentifier: segueID, sender: self)
+        self.routineConversations = Array(allItems.prefix(2))
+        self.quickActions = Array(allItems.dropFirst(2))
+        
+        self.tableView.reloadData()
     }
+
+    // MARK: - Actions (Profile / Footer Buttons)
     
     @IBAction func didTapNewConversation(_ sender: UITapGestureRecognizer) {
         performSegue(withIdentifier: "showNewConversation", sender: self)
@@ -71,10 +66,14 @@ class HomeViewController: UIViewController {
     // MARK: - Navigation Preparation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
+        // Note: Header button segues ("showQuickActions" and "viewConvo") are handled automatically by Storyboard.
+        // They fall through this function without needing specific code.
+        
         if segue.identifier == "showProfile" {
-            let destinationVC = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
+            let _ = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
         }
         else if segue.identifier == "viewConvoCell" {
+            // This handles tapping a Conversation Card row
             guard let destVC = segue.destination as? ChatHistory2ViewController,
                   let selectedItem = sender as? RoutineConversation else { return }
             
@@ -108,17 +107,39 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         return (section == 0) ? quickActions.count : routineConversations.count
     }
     
+    // MARK: - Header Configuration
+    // This connects your code to the Storyboard Header Cells
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        
+        let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"
+        
+        // 2. Dequeue the cell
+        guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else {
+            return nil
+        }
+        
+        // 3. Configure the Text
+        if section == 0 {
+            header.titleLabel.text = "Quick Actions"
+            header.subtitleLabel?.text = "Upcoming"
+        } else {
+            header.titleLabel.text = "View Conversations"
+        }
+        
+        return header.contentView
+    }
+    
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return (section == 0) ? 70 : 50
+    }
+    
+    // MARK: - Row Configuration
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? RoutineTableViewCell else { return UITableViewCell() }
             let item = quickActions[indexPath.row]
-            
-            // Calculate if this is the last row in the section
             let isLastRow = indexPath.row == quickActions.count - 1
-            
-            // Pass that info to the cell so it can hide the line
             cell.configure(with: item, isLast: isLastRow)
-            
             cell.onInfoTapped = { [weak self] in self?.presentInfoScreen(for: item) }
             return cell
         } else {
@@ -130,65 +151,23 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            tableView.deselectRow(at: indexPath, animated: true)
-            
-            let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
-            
-            var segueID = ""
-            
-            if indexPath.section == 0 {
-                switch item.categoryTitle {
-                case "Office":
-                    segueID = "office"
-                    
-                case "Family":
-                    segueID = "family"
-                    
-                case "Friends":
-                    segueID = "family"
-                    
-                default:
-                    print("No segue configured for category: \(item.categoryTitle)")
-                    return
-                }
-                
-            } else {
-                segueID = "viewConvoCell"
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
+        
+        var segueID = ""
+        if indexPath.section == 0 {
+            switch item.categoryTitle {
+            case "Office": segueID = "office"
+            case "Family": segueID = "family"
+            case "Friends": segueID = "family"
+            default: return
             }
-
-            performSegue(withIdentifier: segueID, sender: item)
+        } else {
+            segueID = "viewConvoCell"
         }
-    
-    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let headerView = UIView()
-        headerView.backgroundColor = .systemBackground
-        
-        let titleLabel = UILabel()
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
-        
-        let chevronButton = UIButton(type: .system)
-        chevronButton.translatesAutoresizingMaskIntoConstraints = false
-        chevronButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        chevronButton.tintColor = .systemGray
-        chevronButton.tag = section
-        chevronButton.addTarget(self, action: #selector(headerChevronTapped(_:)), for: .touchUpInside)
-        
-        headerView.addSubview(titleLabel)
-        headerView.addSubview(chevronButton)
-        
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
-            titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
-            chevronButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
-            chevronButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor)
-        ])
-        
-        return headerView
+        performSegue(withIdentifier: segueID, sender: item)
     }
-    
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { return 50 }
     
     func presentInfoScreen(for item: RoutineConversation) {
         let alert = UIAlertController(title: item.conversationTopic, message: item.description, preferredStyle: .alert)
