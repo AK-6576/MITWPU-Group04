@@ -25,17 +25,22 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        setupCollectionView()
+        processNextMessage()
+    }
+    
+    private func setupCollectionView() {
         collectionView.dataSource = self
         collectionView.delegate = self
         
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            // Enable self-sizing cells
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
             layout.minimumLineSpacing = 4
             layout.sectionInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
         }
         
         collectionView.keyboardDismissMode = .interactive
-        processNextMessage()
     }
     
     // MARK: - Animation Logic
@@ -63,12 +68,10 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     
     // MARK: - CollectionView DataSource
     
-    // Returns the total number of messages to display
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
     
-    // Configures and returns the appropriate cell for incoming or outgoing messages
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = messages[indexPath.row]
         
@@ -105,8 +108,10 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
             tf.autocapitalizationType = .words
         }
         
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+            guard let self = self else { return }
+            
+            if let newName = alert?.textFields?.first?.text, !newName.isEmpty {
                 self.otherPersonName = newName
                 self.collectionView.reloadData()
             }
@@ -114,18 +119,18 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
         }
         
         alert.addAction(saveAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
+            self?.togglePauseState()
+        })
         self.present(alert, animated: true)
     }
 
     // MARK: - Button Actions
     
-    // Toggles the pause state when pause button is tapped
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         togglePauseState()
     }
     
-    // Switches between paused and playing states and updates button icon
     private func togglePauseState() {
         isPaused = !isPaused
         let config = UIImage.SymbolConfiguration(scale: .small)
@@ -135,13 +140,14 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
         if !isPaused { processNextMessage() }
     }
     
-    // Handles end session button tap with confirmation dialog
     @IBAction func didTapStopButton(_ sender: UIButton) {
         if !isPaused { togglePauseState() }
         
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         
-        let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            
             let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
@@ -165,21 +171,22 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
         }
         
         actionSheet.addAction(endAction)
-        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
+            self?.togglePauseState()
+        })
         
         self.present(actionSheet, animated: true)
     }
 
     // MARK: - Layout Helpers
     
-    // Scrolls the collection view to show the most recent message
     private func scrollToBottom() {
         guard messages.count > 0 else { return }
-        collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
+        let lastItemIndex = messages.count - 1
+        let indexPath = IndexPath(item: lastItemIndex, section: 0)
+        collectionView.scrollToItem(at: indexPath, at: .bottom, animated: true)
     }
     
-    // Returns fixed size for message cells
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width, height: 100)
-    }
+    // NOTE: sizeForItemAt removed to allow automatic self-sizing cells
+    // as defined in viewDidLoad (layout.estimatedItemSize).
 }

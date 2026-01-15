@@ -8,6 +8,12 @@
 import UIKit
 import PDFKit
 
+// MARK: - Extensions
+
+extension Notification.Name {
+    static let conversationUpdated = Notification.Name("ConversationUpdated")
+}
+
 // MARK: - Protocols
 
 // Delegate for handling text updates in notes card cells
@@ -246,21 +252,17 @@ class ChatHistory2ViewController: UIViewController {
     private func setupShareButton() {
         if let shareBtn = menuButton {
             shareBtn.menu = nil
-            shareBtn.target = self
-            shareBtn.action = #selector(shareTapped)
+            shareBtn.primaryAction = UIAction { [weak self] _ in
+                self?.shareAsPDF()
+            }
         }
-    }
-    
-    // Initiates PDF generation and sharing when share button is tapped
-    @objc private func shareTapped() {
-        shareAsPDF()
     }
     
     // Posts notification when conversation data changes to update other views
     private func notifyDataChanged() {
         if let updatedConvo = self.histconversationData {
             NotificationCenter.default.post(
-                name: NSNotification.Name("ConversationUpdated"),
+                name: .conversationUpdated,
                 object: nil,
                 userInfo: ["updatedConversation": updatedConvo]
             )
@@ -464,8 +466,8 @@ extension ChatHistory2ViewController: UITableViewDelegate, UITableViewDataSource
         if cell.notesTextView.text != cell.placeholderText {
             self.histconversationData?.notes = cell.notesTextView.text
             
-            tableView.beginUpdates()
-            tableView.endUpdates()
+            // Modern alternative to beginUpdates/endUpdates
+            tableView.performBatchUpdates(nil, completion: nil)
             
             self.notifyDataChanged()
         }

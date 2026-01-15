@@ -7,7 +7,6 @@
 
 import Foundation
 
-// Represents participant information for quick-caption conversations
 struct QCParticipantData: Sendable {
     var name: String
     var summary: String

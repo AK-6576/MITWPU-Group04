@@ -19,19 +19,6 @@ protocol QCSummaryCardDelegate: AnyObject {
     func didChangeTitle(text: String)
 }
 
-// MARK: - Styling Helper
-
-// Applies consistent card styling to views with shadow and corner radius
-private func styleCard(view: UIView?) {
-    guard let card = view else { return }
-    card.layer.cornerRadius = 12
-    card.backgroundColor = .white
-    card.layer.shadowColor = UIColor.black.cgColor
-    card.layer.shadowOpacity = 0.05
-    card.layer.shadowOffset = CGSize(width: 0, height: 2)
-    card.layer.shadowRadius = 4
-}
-
 // MARK: - Header Cells
 
 // Header cell for summary section with icon and label
@@ -43,6 +30,11 @@ class QCSummarySectionHeaderCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        selectionStyle = .none
+        
+        // Accessibility
+        headerLabel.isAccessibilityElement = true
+        headerLabel.accessibilityTraits = .header
     }
 }
 
@@ -55,13 +47,18 @@ class QCParticipantsSummaryHeaderCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        selectionStyle = .none
+        
+        // Accessibility
+        participantLabel.isAccessibilityElement = true
+        participantLabel.accessibilityTraits = .header
     }
 }
 
 // MARK: - Content Cells
 
 // Card cell displaying conversation summary with editable title field
-class QCSummaryCardCell: UITableViewCell {
+class QCSummaryCardCell: UITableViewCell, UITextFieldDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var dateLabel: UILabel!
@@ -71,13 +68,37 @@ class QCSummaryCardCell: UITableViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
+        setupAppearance()
+        titleTextField.delegate = self
+        selectionStyle = .none
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        // Refresh shadow color when switching Light/Dark mode
+        if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            mainCardView.applyCardShadow()
+        }
+    }
+    
+    private func setupAppearance() {
         backgroundColor = .clear
-        styleCard(view: mainCardView)
+        mainCardView.applyCardStyle()
+        
+        // Accessibility
+        titleTextField.accessibilityLabel = "Conversation Title"
+        titleTextField.accessibilityHint = "Double tap to edit the title"
     }
     
     // Notifies delegate when conversation title is changed
     @IBAction func titleChanged(_ sender: UITextField) {
         delegate?.didChangeTitle(text: sender.text ?? "")
+    }
+    
+    // Dismiss keyboard on Return
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
     }
 }
 
@@ -89,8 +110,21 @@ class QCParticipantCardCell: UITableViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
+        setupAppearance()
+        selectionStyle = .none
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            mainCardView.applyCardShadow()
+        }
+    }
+    
+    private func setupAppearance() {
         backgroundColor = .clear
-        styleCard(view: mainCardView)
+        mainCardView.applyCardStyle()
+        
         avatarImageView.layer.cornerRadius = 4
         avatarImageView.clipsToBounds = true
         avatarImageView.tintColor = .systemGray
@@ -99,6 +133,14 @@ class QCParticipantCardCell: UITableViewCell {
     // Populates the cell with participant data
     func configure(with data: QCParticipantData) {
         detailsLabel.text = data.summary
+        
+        // Accessibility
+        mainCardView.isAccessibilityElement = true
+        mainCardView.accessibilityLabel = "Participant: \(data.name). Summary: \(data.summary)"
+        
+        // Hide sub-elements from VoiceOver since the container reads the full context
+        detailsLabel.isAccessibilityElement = false
+        avatarImageView.isAccessibilityElement = false
     }
 }
 
@@ -112,22 +154,42 @@ class QCNotesCardCell: UITableViewCell, UITextViewDelegate {
     
     override func awakeFromNib() {
         super.awakeFromNib()
+        setupAppearance()
+        setupTextView()
+        selectionStyle = .none
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            mainCardView.applyCardShadow()
+        }
+    }
+    
+    private func setupAppearance() {
         backgroundColor = .clear
-        styleCard(view: mainCardView)
+        mainCardView.applyCardStyle()
+    }
+    
+    private func setupTextView() {
         notesTextView.delegate = self
         notesTextView.text = placeholderText
-        notesTextView.textColor = .lightGray
+        notesTextView.textColor = .placeholderText // Modern iOS dynamic gray
         notesTextView.font = UIFont.systemFont(ofSize: 15)
         notesTextView.isScrollEnabled = false
         notesTextView.textContainerInset = .zero
         notesTextView.textContainer.lineFragmentPadding = 0
+        notesTextView.backgroundColor = .clear
+        
+        // Accessibility
+        notesTextView.accessibilityLabel = "Notes"
     }
     
     // Removes placeholder text when user begins editing
     func textViewDidBeginEditing(_ textView: UITextView) {
         if textView.text == placeholderText {
             textView.text = nil
-            textView.textColor = UIColor.label
+            textView.textColor = .label // Adapts to Dark/Light mode
         }
     }
     
@@ -135,12 +197,35 @@ class QCNotesCardCell: UITableViewCell, UITextViewDelegate {
     func textViewDidEndEditing(_ textView: UITextView) {
         if textView.text.isEmpty {
             textView.text = placeholderText
-            textView.textColor = .lightGray
+            textView.textColor = .placeholderText
         }
     }
     
     // Notifies delegate of text changes for dynamic height adjustment
     func textViewDidChange(_ textView: UITextView) {
         delegate?.didUpdateText(in: self)
+    }
+}
+
+// MARK: - Styling Extensions
+
+private extension UIView {
+    func applyCardStyle() {
+        self.layer.cornerRadius = 12
+        // Use system background colors for Dark Mode support
+        self.backgroundColor = .secondarySystemGroupedBackground
+        
+        self.applyCardShadow()
+        
+        // Performance optimization
+        self.layer.shouldRasterize = true
+        self.layer.rasterizationScale = UIScreen.main.scale
+    }
+    
+    func applyCardShadow() {
+        self.layer.shadowColor = UIColor.black.cgColor
+        self.layer.shadowOpacity = 0.05
+        self.layer.shadowOffset = CGSize(width: 0, height: 2)
+        self.layer.shadowRadius = 4
     }
 }

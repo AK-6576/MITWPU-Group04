@@ -76,22 +76,6 @@ class HomeViewController: UIViewController {
             // This handles tapping a Conversation Card row
             guard let destVC = segue.destination as? ChatHistory2ViewController,
                   let selectedItem = sender as? RoutineConversation else { return }
-            
-            if let fullData = DataManager.shared.getConversation(byId: selectedItem.id) {
-                destVC.histconversationData = fullData
-            } else {
-                let fallbackConv = Conversation(
-                    id: selectedItem.id,
-                    title: selectedItem.conversationTopic,
-                    messages: [],
-                    participants: [],
-                    notes: selectedItem.description ?? "",
-                    startTime: selectedItem.startTime,
-                    category: selectedItem.categoryTitle,
-                    icon: selectedItem.iconName
-                )
-                destVC.histconversationData = fallbackConv
-            }
         }
     }
 }

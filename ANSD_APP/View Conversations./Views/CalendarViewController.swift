@@ -12,7 +12,7 @@ protocol CalendarDelegate: AnyObject {
     func didSelectDate(_ date: Date)
 }
 
-class CalenderViewController: UIViewController {
+class CalendarViewController: UIViewController {
 
     @IBOutlet weak var datePicker: UIDatePicker!
     
@@ -32,16 +32,17 @@ class CalenderViewController: UIViewController {
         }
     }
 
-    // Sets up the date picker with inline calendar style and change detection
+    // Sets up the date picker with inline calendar style and modern action handling
     private func setupDatePicker() {
         datePicker.preferredDatePickerStyle = .inline
         datePicker.datePickerMode = .date
-        datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
-    }
-
-    // Notifies the delegate when the user selects a different date
-    @objc private func dateChanged(_ sender: UIDatePicker) {
-        delegate?.didSelectDate(sender.date)
+        
+        // Modern UIControl API (iOS 14+)
+        // Replaces addTarget(_:action:for:) and the @objc selector
+        datePicker.addAction(UIAction { [weak self] action in
+            guard let self = self, let sender = action.sender as? UIDatePicker else { return }
+            self.delegate?.didSelectDate(sender.date)
+        }, for: .valueChanged)
     }
 
     // Dismisses the calendar sheet when the exit button is tapped
