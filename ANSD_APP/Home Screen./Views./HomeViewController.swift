@@ -65,15 +65,13 @@ class HomeViewController: UIViewController {
     
     // MARK: - Navigation Preparation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
-        // Note: Header button segues ("showQuickActions" and "viewConvo") are handled automatically by Storyboard.
-        // They fall through this function without needing specific code.
+
         
         if segue.identifier == "showProfile" {
             let _ = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
         }
         else if segue.identifier == "viewConvoCell" {
-            // This handles tapping a Conversation Card row
+
             guard let destVC = segue.destination as? ChatHistory2ViewController,
                   let selectedItem = sender as? RoutineConversation else { return }
             
@@ -108,7 +106,6 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     // MARK: - Header Configuration
-    // This connects your code to the Storyboard Header Cells
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
         let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"

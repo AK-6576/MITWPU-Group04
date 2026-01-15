@@ -5,15 +5,22 @@
 
 import UIKit
 
-class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
+class QuickActionsViewController: UITableViewController {
     
+    // Assumes RoutineSection is your model struct found in DataManager/Models
     var sections: [RoutineSection] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Quick Actions"
-        tableView.register(SectionHeaderView.self, forHeaderFooterViewReuseIdentifier: SectionHeaderView.identifier)
+
+        
         tableView.tableHeaderView = UIView()
+        
+        // Remove padding for cleaner headers (iOS 15+)
+        if #available(iOS 15.0, *) {
+            tableView.sectionHeaderTopPadding = 0
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -58,6 +65,10 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
             if let selectedItem = sender as? RoutineConversation {
                 print("Opening Chat for: \(selectedItem.conversationTopic) via segue: \(segueID)")
                 // Pass data to destination VC here if needed
+                // Example:
+                // if let destVC = segue.destination as? ChatHistory2ViewController {
+                //     destVC.histconversationData = ...
+                // }
             }
         }
     }
@@ -88,24 +99,30 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         performSegue(withIdentifier: segueID, sender: item)
     }
     
-    // MARK: - Header Delegate
+    // MARK: - Header Logic
     
+    // This function remains to handle the logic, but it is now called via Closure
+    // MARK: - Header Navigation
     func didTapHeader(sectionIndex: Int, categoryName: String) {
+        
         var segueID = ""
         
         switch categoryName {
         case "Office":
-            segueID = "office"
-        case "Family":
-            segueID = "family"
-        case "Friends":
-            segueID = "family"
+            segueID = "office"  // Matches the identifier you set for the Office screen
+            
+        case "Family", "Friends":
+            segueID = "family"  // Matches the identifier you set for the Family screen
+            
         default:
-            print("No list segue configured for category: \(categoryName)")
+            print("No segue configured for category: \(categoryName)")
             return
         }
-        
-        performSegue(withIdentifier: segueID, sender: self)
+        if shouldPerformSegue(withIdentifier: segueID, sender: self) {
+            performSegue(withIdentifier: segueID, sender: self)
+        } else {
+            print("Error: Segue identifier '\(segueID)' not found in Storyboard.")
+        }
     }
     
     // MARK: - TableView Data Source
@@ -118,16 +135,38 @@ class QuickActionsViewController: UITableViewController, SectionHeaderDelegate {
         return sections[section].items.count
     }
     
+    // UPDATED: Uses the Storyboard "CategoryHeaderCell"
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        guard let header = tableView.dequeueReusableHeaderFooterView(withIdentifier: SectionHeaderView.identifier) as? SectionHeaderView else { return nil }
+        
+        // 1. Dequeue the cell designed in Storyboard
+        guard let header = tableView.dequeueReusableCell(withIdentifier: "CategoryTableViewCell") as? CategoryTableViewCell else {
+            return nil
+        }
+        
         let categoryName = sections[section].category
-        header.configure(title: categoryName, section: section)
-        header.delegate = self
+        
+        // 2. Configure UI using the Outlets
+        header.titleLabel.text = categoryName
+        
+        // 3. Connect the Closure to our Navigation Logic
+        header.onChevronTapped = { [weak self] in
+            self?.didTapHeader(sectionIndex: section, categoryName: categoryName)
+        }
+        
         return header
     }
     
-    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { return 50 }
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { return 75 }
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return UITableView.automaticDimension
+    }
+    
+    override func tableView(_ tableView: UITableView, estimatedHeightForHeaderInSection section: Int) -> CGFloat {
+        return 50
+    }
+
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 75
+    }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "QuickActionCell", for: indexPath) as? QuickActionCell else { return UITableViewCell() }

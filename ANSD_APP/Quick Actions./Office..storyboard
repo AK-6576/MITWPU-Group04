@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="X8X-Y1-YSL">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
@@ -108,7 +108,7 @@
                             <constraint firstItem="Tc3-Gd-Ah9" firstAttribute="top" secondItem="vDu-zF-Fre" secondAttribute="top" id="tP3-gV-E8V"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" title="Office" largeTitleDisplayMode="always" id="ASl-Yh-yRT">
+                    <navigationItem key="navigationItem" title="Office" largeTitleDisplayMode="never" id="ASl-Yh-yRT">
                         <barButtonItem key="rightBarButtonItem" title="Item" image="ellipsis" catalog="system" id="l1U-ay-p7h">
                             <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         </barButtonItem>
@@ -1126,7 +1126,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="cZN-SB-jLP"/>
+        <segue reference="VTr-V3-AAX"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="calendar" catalog="system" width="128" height="107"/>
