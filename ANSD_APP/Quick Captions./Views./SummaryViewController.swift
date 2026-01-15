@@ -22,8 +22,19 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         view.backgroundColor = .systemGroupedBackground
         
-        setupTableView()
-        setupShareButton()
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = .clear
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 120
+        
+        if let shareBtn = optionsButton {
+            shareBtn.target = self
+            shareBtn.action = #selector(shareTapped)
+        } else {
+            print("WARNING: optionsButton is nil. Check Storyboard connection.")
+        }
         
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
@@ -35,27 +46,12 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         view.endEditing(true)
     }
     
-    private func setupTableView() {
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.separatorStyle = .none
-        tableView.backgroundColor = .clear
-        tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 120
-    }
-    
-    // Configures the options button using modern UIAction
-    private func setupShareButton() {
-        if let shareBtn = optionsButton {
-            shareBtn.primaryAction = UIAction { [weak self] _ in
-                self?.shareAsPDF()
-            }
-        } else {
-            print("WARNING: optionsButton is nil. Check Storyboard connection.")
-        }
-    }
-    
     // MARK: - Actions
+    
+    // Initiates PDF sharing when share button is tapped
+    @objc private func shareTapped() {
+        shareAsPDF()
+    }
     
     // Navigates back to home screen with cross-dissolve transition
     @IBAction func backTapped(_ sender: Any) {
@@ -66,7 +62,6 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         navController.isNavigationBarHidden = false
         navController.modalPresentationStyle = .fullScreen
         
-        // Window transition logic
         if let window = self.view.window {
             UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
                 window.rootViewController = navController
@@ -112,11 +107,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         }
         
         let tempFolder = FileManager.default.temporaryDirectory
-        
-        // Sanitize filename to prevent path errors (e.g. converting "Date 1/12" to "Date 1-12")
-        let safeTitle = conversationTitle.replacingOccurrences(of: "/", with: "-")
-        let fileName = "\(safeTitle) - Summary.pdf"
-        
+        let fileName = "\(conversationTitle) - Summary.pdf"
         let fileURL = tempFolder.appendingPathComponent(fileName)
         
         do {
@@ -184,9 +175,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // Adjusts table view height dynamically when notes text is updated
     func didUpdateText(in cell: QCNotesCardCell) {
-        // Modern approach to animating height changes
         tableView.performBatchUpdates(nil, completion: nil)
-        
         if let indexPath = tableView.indexPath(for: cell) {
             tableView.scrollToRow(at: indexPath, at: .bottom, animated: false)
         }

@@ -7,12 +7,14 @@
 
 import Foundation
 
+// Represents a single quick-caption chat message with sender information
 struct QCChatMessage: Sendable {
     let text: String
     let isIncoming: Bool
     let sender: String
 }
 
+// Container for pre-defined quick-caption conversation data
 struct QCChatData {
     static let fullConversation: [QCChatMessage] = [
         QCChatMessage(text: "Bucky Barnes, right? How do you spell your surname?", isIncoming: false, sender: "Me"),
