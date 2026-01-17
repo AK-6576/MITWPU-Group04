@@ -16,8 +16,6 @@ class RoutineViewController1: UIViewController, UITableViewDataSource, UITableVi
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.navigationBar.prefersLargeTitles = true
-        navigationItem.largeTitleDisplayMode = .always
         setupTableView()
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 60

@@ -157,7 +157,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             switch item.categoryTitle {
             case "Office": segueID = "office"
             case "Family": segueID = "family"
-            case "Friends": segueID = "family"
+            case "Friends": segueID = "friends"
             default: return
             }
         } else {

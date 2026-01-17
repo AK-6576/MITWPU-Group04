@@ -1,5 +1,5 @@
 //
-//  RoutineViewController.swift
+//  RoutineViewController1.swift
 //  ANSD_APP
 //
 //  Created by Dhiraj Bodake on 27/11/25.
@@ -7,12 +7,12 @@
 
 import UIKit
 
-class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class FriendsRoutineViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     
-    var routineList: [RoutineItem] = []
-    var originalList: [RoutineItem] = []
+    var routineList: [FriendRoutineItem] = []
+    var originalList: [FriendRoutineItem] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,7 +35,7 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
     }
     
     func loadData() {
-        self.routineList = RoutineRepository.getMockData()
+        self.routineList = RoutineRepository2.getMockData1()
         self.originalList = self.routineList
         tableView.reloadData()
     }
@@ -72,42 +72,29 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
         }
         
         let sortByMenu = UIMenu(title: "Sort By", image: UIImage(systemName: "arrow.up.arrow.down"), children: [
-            sortCustom,
-            sortTitle,
-            sortTime,
-            sortNewest
+            sortCustom, sortTitle, sortTime, sortNewest
         ])
         
         let groupAction = UIAction(title: "Group By Date", image: UIImage(systemName: "calendar")) { _ in
             print("Group By Date tapped")
         }
         
-        let mainMenu = UIMenu(title: "", children: [
-            selectAction,
-            sortByMenu,
-            groupAction
-        ])
+        let mainMenu = UIMenu(title: "", children: [selectAction, sortByMenu, groupAction])
         
         if let rightButton = navigationItem.rightBarButtonItem {
             rightButton.menu = mainMenu
         }
     }
     
+    @objc private func didTapInfoButton(_ sender: UIButton) {
+        performSegue(withIdentifier: "ShowInfo", sender: sender.tag)
+    }
+    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo" {
-            var destinationVC: OfficeInfoViewController?
-            
-            if let nav = segue.destination as? UINavigationController {
-                destinationVC = nav.topViewController as? OfficeInfoViewController
-            } else if let infoVC = segue.destination as? OfficeInfoViewController {
-                destinationVC = infoVC
-            }
-            
-            if let infoVC = destinationVC, let rowIndex = sender as? Int {
-                infoVC.existingNote = routineList[rowIndex].notes
-                infoVC.onSave = { [weak self] newNote in
-                    self?.routineList[rowIndex].notes = newNote
-                }
+            if let sheet = segue.destination.sheetPresentationController {
+                sheet.detents = [.medium(), .large()]
+                sheet.prefersGrabberVisible = true
             }
         }
     }
@@ -120,16 +107,8 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
         return 72
     }
     
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return .leastNormalMagnitude
-    }
-    
-    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return .leastNormalMagnitude
-    }
-    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as? OfficeRoutineTableViewCell else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as? FriendsRoutineTableViewCell else {
             return UITableViewCell()
         }
         
@@ -166,7 +145,7 @@ class OfficeRoutineViewController: UIViewController, UITableViewDataSource, UITa
         return config
     }
     
-    private func showRenameAlert(for item: RoutineItem, at indexPath: IndexPath) {
+    private func showRenameAlert(for item: FriendRoutineItem, at indexPath: IndexPath) {
         let alert = UIAlertController(title: "Edit Title", message: nil, preferredStyle: .alert)
         alert.addTextField { textField in
             textField.text = item.title

@@ -28,7 +28,7 @@ class QuickActionsRepository {
             ),
             RoutineConversation(
                 id: "3_cafeteria", iconName: "person.3.fill", categoryTitle: "Friends",
-                status: "Scheduled", conversationTopic: "Lunch", topicImage: "cup.and.saucer.fill",
+                status: "Scheduled", conversationTopic: "Coffee Runs", topicImage: "cup.and.saucer.fill",
                 startTime: "12:30 PM", description: nil, date: nil, timeImage: "clock"
             ),
             RoutineConversation(

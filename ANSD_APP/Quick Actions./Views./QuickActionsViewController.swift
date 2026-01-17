@@ -90,7 +90,7 @@ class QuickActionsViewController: UITableViewController {
         case "Family":
             segueID = "familyChat"
         case "Friends":
-            segueID = "familyChat"
+            segueID = "friendChat"
         default:
             print("No chat segue configured for category: \(category)")
             return
@@ -111,8 +111,11 @@ class QuickActionsViewController: UITableViewController {
         case "Office":
             segueID = "office"  // Matches the identifier you set for the Office screen
             
-        case "Family", "Friends":
-            segueID = "family"  // Matches the identifier you set for the Family screen
+        case "Family":
+            segueID = "family"
+            
+        case "Friends":
+            segueID = "friends"
             
         default:
             print("No segue configured for category: \(categoryName)")

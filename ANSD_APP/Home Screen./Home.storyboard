@@ -527,6 +527,7 @@
                         <segue destination="V9a-Kk-xxE" kind="show" identifier="viewConvoCell" id="Say-oD-Yz5"/>
                         <segue destination="UXL-8h-Ov3" kind="show" identifier="office" id="xpu-rv-kyD"/>
                         <segue destination="mhO-eJ-wrA" kind="show" identifier="family" id="lCt-AV-NyE"/>
+                        <segue destination="W6O-tf-pBt" kind="show" identifier="friends" id="BL1-1Z-8fF"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="WS3-2k-O8Z" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -590,6 +591,16 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="uJP-CY-4LW" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="3351" y="-162"/>
+        </scene>
+        <!--FriendsNewViewController-->
+        <scene sceneID="Mho-WT-InF">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Friends." referencedIdentifier="FriendsNewViewController" id="W6O-tf-pBt" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="6az-sd-dZD"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="02U-qn-0eG" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="3354" y="-116"/>
         </scene>
         <!--About Me-->
         <scene sceneID="h8I-CM-OAq">
@@ -1318,6 +1329,16 @@
             </objects>
             <point key="canvasLocation" x="3399.2366412213737" y="-455.63380281690144"/>
         </scene>
+        <!--Friends-->
+        <scene sceneID="MfO-Aa-vzU">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Friends." referencedIdentifier="Friends" id="dtu-wv-7gh" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="cl6-NB-Fpu"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="rII-TS-V6j" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="686" y="306"/>
+        </scene>
         <!--Family-->
         <scene sceneID="gi3-Yr-eAb">
             <objects>
@@ -1429,7 +1450,7 @@
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" tag="3" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="star.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="Oji-wp-bSQ">
-                                            <rect key="frame" x="20" y="14.666666666666668" width="45" height="44.666666666666643"/>
+                                            <rect key="frame" x="20" y="14.666666666666668" width="45" height="44.666666666666657"/>
                                             <color key="backgroundColor" systemColor="systemGray6Color"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="45" id="n8L-Vb-KX7"/>
@@ -1482,6 +1503,8 @@
                         <segue destination="fhN-Zk-fUh" kind="show" identifier="familyChat" id="Q7A-QP-k3o"/>
                         <segue destination="H6f-Ko-ZHl" kind="show" identifier="family" id="Njz-zT-iYZ"/>
                         <segue destination="fKX-Jl-CZP" kind="show" identifier="office" id="sK3-pA-ItA"/>
+                        <segue destination="vSB-kN-Fx0" kind="show" identifier="friendChat" id="GMx-eU-hUA"/>
+                        <segue destination="dtu-wv-7gh" kind="show" identifier="friends" id="Qht-dg-9l0"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F8T-D9-LtR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1537,7 +1560,6 @@
         <!--Navigation Controller-->
         <scene sceneID="gCZ-82-Zw2">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="Szk-SW-otg" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="OJY-fB-PIh" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationItem key="navigationItem" id="mFx-yI-Twl"/>
@@ -1550,8 +1572,19 @@
                         <segue destination="sX3-WR-o7v" kind="relationship" relationship="rootViewController" id="F5J-84-Eup"/>
                     </connections>
                 </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Szk-SW-otg" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1359.5419847328244" y="-249.29577464788733"/>
+        </scene>
+        <!--FriendsNewViewController-->
+        <scene sceneID="eI9-Bb-XaS">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Friends." referencedIdentifier="FriendsNewViewController" id="vSB-kN-Fx0" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="SeS-zh-yFK"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="csm-5I-UUb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="469" y="594"/>
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>

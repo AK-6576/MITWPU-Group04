@@ -24,9 +24,14 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     var incomingName: String?
     var incomingImage: UIImage?
     
+    // Keys for saving data
+    private let genderKey = "user_gender"
+    private let dobKey = "user_dob"
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // 1. Setup incoming data (Name/Image)
         if let name = incomingName, !name.isEmpty {
             firstNameTextField.text = name
             firstNameTextField.textColor = .label
@@ -37,30 +42,22 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         
         if let image = incomingImage { profileImageView.image = image }
         
+        // 2. Setup standard UI
         setupHideKeyboardOnTap()
         setupGenderMenu()
         setupTextFieldListeners()
+        
+        // 3. Setup Date Picker & Load Saved Data
+        setupDatePicker()
+        loadPersistentData()
     }
     
-    func setupTextFieldListeners() {
-        firstNameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
-        firstNameTextField.addTarget(self, action: #selector(textFieldDidBeginEditing), for: .editingDidBegin)
-    }
-
-    @objc func textFieldDidBeginEditing() {
-        firstNameTextField.textColor = .label
-    }
-
-    @objc func textFieldDidChange() {
-        performAutoSave()
-        firstNameTextField.textColor = .label
-        performAutoSave()
-    }
-
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         setupProfileDesign()
     }
+    
+    // MARK: - Setup & Configuration
     
     func setupProfileDesign() {
         guard let profileImageView = profileImageView else { return }
@@ -71,24 +68,72 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         profileImageView.layer.borderColor = UIColor.systemGray5.cgColor
     }
     
+    func setupTextFieldListeners() {
+        firstNameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+        firstNameTextField.addTarget(self, action: #selector(textFieldDidBeginEditing), for: .editingDidBegin)
+    }
+    
+    func setupDatePicker() {
+        // Listen for changes on the date picker
+        datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
+    }
+    
+    // MARK: - Persistence (Saving & Loading)
+    
+    func loadPersistentData() {
+        // Load Gender
+        if let savedGender = UserDefaults.standard.string(forKey: genderKey) {
+            genderButton.setTitle(savedGender, for: .normal)
+        }
+        
+        // Load Date of Birth
+        if let savedDate = UserDefaults.standard.object(forKey: dobKey) as? Date {
+            datePicker.date = savedDate
+        }
+    }
+
+    // MARK: - Actions & Handlers
+
+    @objc func datePickerChanged(_ sender: UIDatePicker) {
+        // Save DOB immediately when changed
+        UserDefaults.standard.set(sender.date, forKey: dobKey)
+    }
+
     func setupGenderMenu() {
         guard genderButton != nil else { return }
-        let male = UIAction(title: "Male", handler: { _ in self.updateGenderTitle("Male") })
-        let female = UIAction(title: "Female", handler: { _ in self.updateGenderTitle("Female") })
-        let other = UIAction(title: "Prefer not to say", handler: { _ in self.updateGenderTitle("Prefer not to say") })
+        
+        let male = UIAction(title: "Male", handler: { _ in self.updateGender("Male") })
+        let female = UIAction(title: "Female", handler: { _ in self.updateGender("Female") })
+        let other = UIAction(title: "Prefer not to say", handler: { _ in self.updateGender("Prefer not to say") })
+        
         genderButton.menu = UIMenu(children: [male, female, other])
         genderButton.showsMenuAsPrimaryAction = true
     }
     
-    func updateGenderTitle(_ title: String) {
+    func updateGender(_ title: String) {
+        // Update UI
         genderButton.setTitle(title, for: .normal)
+        // Save to Persistence
+        UserDefaults.standard.set(title, forKey: genderKey)
+    }
+    
+    @objc func textFieldDidBeginEditing() {
+        firstNameTextField.textColor = .label
+    }
+
+    @objc func textFieldDidChange() {
+        performAutoSave()
+        firstNameTextField.textColor = .label
     }
     
     func performAutoSave() {
         let name = firstNameTextField.text ?? "User"
         let image = profileImageView.image
+        // Notify the previous screen (if needed)
         delegate?.didUpdateProfile(firstName: name, image: image)
     }
+    
+    // MARK: - Button Actions
     
     @IBAction func closeButtonTapped(_ sender: Any) {
         if let nav = navigationController, nav.viewControllers.count > 1 {
@@ -115,6 +160,8 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             dismiss(animated: true, completion: nil)
         }
     }
+    
+    // MARK: - Utilities
     
     func setupHideKeyboardOnTap() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))

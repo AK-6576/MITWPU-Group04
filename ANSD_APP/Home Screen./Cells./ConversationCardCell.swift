@@ -98,11 +98,6 @@ class ConversationCardCell: UITableViewCell {
 
         cardContainer.layer.borderWidth = 1
         cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
-        
-        cardContainer.layer.shadowColor = UIColor.black.cgColor
-        cardContainer.layer.shadowOpacity = 0.08
-        cardContainer.layer.shadowOffset = CGSize(width: 0, height: 4)
-        cardContainer.layer.shadowRadius = 6
     }
 
     func configure(with item: RoutineConversation) {
