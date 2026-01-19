@@ -183,7 +183,7 @@ class QuickActionsViewController: UITableViewController {
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
         
-        let renameAction = UIContextualAction(style: .normal, title: "Rename") { [weak self] (_, _, completion) in
+        let renameAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
             self?.showRenameAlert(for: item, section: indexPath.section, row: indexPath.row)
             completion(true)
         }
