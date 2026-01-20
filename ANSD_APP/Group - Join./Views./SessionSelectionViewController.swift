@@ -35,7 +35,7 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
             if let chatVC = segue.destination as? GroupJoinViewController {
                 chatVC.modalPresentationStyle = .fullScreen
                 if let sessionData = sender as? GJSessionModel {
-                    chatVC.sessionTitle = sessionData.title
+                    chatVC.title = sessionData.title
                 }
             }
         }

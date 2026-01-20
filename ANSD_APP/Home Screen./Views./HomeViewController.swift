@@ -63,7 +63,41 @@ class HomeViewController: UIViewController {
     }
 
     @IBAction func didTapJoinConversation(_ sender: UITapGestureRecognizer) {
-        performSegue(withIdentifier: "showJoinConversation", sender: self)
+        let alert = UIAlertController(title: "Join Session",
+                                      message: "Please enter the 4-digit room code",
+                                      preferredStyle: .alert)
+        
+        alert.addTextField { textField in
+            textField.placeholder = "0000"
+            textField.keyboardType = .numberPad
+            textField.textAlignment = .center
+            // Monospaced font ensures digits don't shift widths while typing
+            textField.font = UIFont.monospacedDigitSystemFont(ofSize: 25, weight: .bold)
+            
+            // Add a target to limit the input to exactly 4 characters
+            textField.addTarget(self, action: #selector(self.textFieldDidChange(_:)), for: .editingChanged)
+        }
+        
+        let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
+            guard let self = self,
+                  let code = alert.textFields?.first?.text,
+                  code.count == 4 else { return }
+            
+            // Pass the code as the 'sender' so prepare(for:segue:) can use it
+            self.performSegue(withIdentifier: "showJoinConversation", sender: code)
+        }
+        
+        alert.addAction(joinAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        present(alert, animated: true)
+    }
+
+    // Helper to limit text to 4 digits
+    @objc func textFieldDidChange(_ textField: UITextField) {
+        if let text = textField.text, text.count > 4 {
+            textField.text = String(text.prefix(4))
+        }
     }
 
     @IBAction func didTapQuickCaption(_ sender: UITapGestureRecognizer) {

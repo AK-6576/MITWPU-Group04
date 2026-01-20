@@ -11,7 +11,7 @@ import FirebaseDatabaseInternal
 struct GNChatMessage {
     let text: String
     let isIncoming: Bool
-    let sender: String
+    var sender: String
     let senderID: String // Add this to distinguish between users
 
     // Convert to Dictionary for Firebase

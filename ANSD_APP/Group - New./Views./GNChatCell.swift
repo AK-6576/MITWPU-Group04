@@ -16,6 +16,9 @@ class GNOutgoingCell: UICollectionViewCell {
         bubbleView.backgroundColor = .systemBlue
         messageLabel.textColor = .white
         bubbleView.layer.cornerRadius = 16
+        // Add this inside awakeFromNib() for both GNOutgoingCell and GNIncomingCell
+        messageLabel.numberOfLines = 0
+        messageLabel.lineBreakMode = .byWordWrapping
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {

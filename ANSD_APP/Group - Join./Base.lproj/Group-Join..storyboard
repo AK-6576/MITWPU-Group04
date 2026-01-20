@@ -236,6 +236,9 @@
                                                         <buttonConfiguration key="configuration" style="gray">
                                                             <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="small"/>
                                                         </buttonConfiguration>
+                                                        <connections>
+                                                            <action selector="didTapMicButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="a7O-hd-mWq"/>
+                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wJW-FM-VSu">
                                                         <rect key="frame" x="252" y="0.0" width="110" height="50"/>
