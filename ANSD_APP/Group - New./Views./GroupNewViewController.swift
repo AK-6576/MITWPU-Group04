@@ -21,6 +21,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     var ref: DatabaseReference!
     var currentSessionID: String = ""
     var myName = UIDevice.current.name
+    var isHost = true // Default to true when starting a new session
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
     
     override func viewDidLoad() {
@@ -31,10 +32,10 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         // Setup UI Layout
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = CGSize(width: view.frame.width - 32, height: 80)
-            layout.estimatedItemSize = .zero
-            layout.minimumLineSpacing = 10
-        }
+                // Use automaticSize to let constraints determine the height
+                layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
+                layout.minimumLineSpacing = 10
+            }
 
         self.messages.removeAll()
 
@@ -43,21 +44,49 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         setupFirebaseRef()
         
         self.title = "Host: \(currentSessionID)"
+        
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("JoinRoom"), object: nil, queue: .main) { [weak self] notification in
+            if let roomID = notification.object as? String {
+                self?.isHost = false // User is joining, NOT hosting
+                self?.currentSessionID = roomID
+                self?.messages.removeAll()
+                self?.setupFirebaseRef()
+                self?.collectionView.reloadData()
+                self?.title = "Joined: \(roomID)"
+            }
+        }
     }
     
     func setupFirebaseRef() {
         let baseURL = "https://ansd-f90fc-default-rtdb.asia-southeast1.firebasedatabase.app"
         self.ref = Database.database(url: baseURL).reference().child("chat_sessions").child(currentSessionID)
         
-        // Host clears old data to start fresh
-        self.ref.removeValue()
+        // ONLY clear data if this user is the Host
+        if isHost {
+            self.ref.removeValue()
+            print("DEBUG: Room Created as Host: \(currentSessionID)")
+        } else {
+            print("DEBUG: Joined Room as Guest: \(currentSessionID)")
+        }
         
-        print("DEBUG: Room Created Automatically: \(currentSessionID)")
         observeFirebaseMessages()
     }
     
     // MARK: - Firebase Sync Logic
     func observeFirebaseMessages() {
+        // 1. First, fetch all existing messages once
+            ref.observeSingleEvent(of: .value) { [weak self] snapshot in
+                guard let self = self, let allMessages = snapshot.value as? [String: [String: Any]] else { return }
+                
+                // Clear local array to avoid duplicates during initial sync
+                self.messages.removeAll()
+                
+                // Sort and add existing messages here...
+                DispatchQueue.main.async {
+                    self.collectionView.reloadData()
+                    self.scrollToBottom()
+                }
+            }
         ref.observe(.childAdded) { [weak self] snapshot in
             guard let self = self,
                   let value = snapshot.value as? [String: Any],
@@ -145,13 +174,19 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             "timestamp": ServerValue.timestamp()
         ]
         
-        ref.childByAutoId().setValue(dictToSend) { error, _ in
-            if let error = error {
-                print("DEBUG: Firebase Save Failed: \(error.localizedDescription)")
+        ref.childByAutoId().setValue(dictToSend) { [weak self] error, _ in
+            if error == nil {
+                DispatchQueue.main.async {
+                    // Final layout pass to ensure the bubble is sized correctly after syncing
+                    self?.collectionView.collectionViewLayout.invalidateLayout()
+                }
             }
         }
     }
-    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        // Force the cell to be the full width of the screen
+        return CGSize(width: collectionView.frame.width, height: 100)
+    }
     // MARK: - Helpers & CollectionView
     func scrollToBottom() {
         guard messages.count > 0 else { return }
@@ -185,9 +220,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width - 32, height: 100)
-    }
+//    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+//        return CGSize(width: collectionView.bounds.width - 32, height: 100)
+//    }
     
     func showRenameAlert() {
         // 1. Pause transcription logic if needed while typing
@@ -269,13 +304,12 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             self.present(alert, animated: true)
         }
         
-        // MARK: - Sharing Logic
+    // MARK: - Sharing Logic
     func shareRoomInvitation() {
-        // Generate a unique ID if you haven't already, or use the existing one
-        // let roomID = UUID().uuidString // Use this for a truly unique room every time
+        // 1. Get the current active session ID
         let roomID = self.currentSessionID
         
-        // This creates a clickable link (requires URL Scheme setup in Info.plist)
+        // 2. Format the message exactly as you requested
         let invitationMessage = """
         I've started a live transcription session. 
         Click the link to join:
@@ -284,8 +318,18 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         Or enter Room Code: \(roomID)
         """
         
+        // 3. Initialize the Activity View Controller (Share Sheet)
         let activityVC = UIActivityViewController(activityItems: [invitationMessage], applicationActivities: nil)
-            self.present(activityVC, animated: true)
+        
+        // 4. Specifically for iPad support (prevents crashing)
+        if let popoverController = activityVC.popoverPresentationController {
+            popoverController.sourceView = self.view
+            popoverController.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 0, height: 0)
+            popoverController.permittedArrowDirections = []
+        }
+        
+        // 5. Present the share sheet
+        self.present(activityVC, animated: true)
     }
         
         // MARK: - Helper to keep code clean
@@ -314,9 +358,10 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         alert.addAction(UIAlertAction(title: "Join", style: .default, handler: { _ in
             if let code = alert.textFields?.first?.text, !code.isEmpty {
+                self.isHost = false // Set this to false here too!
                 self.currentSessionID = code
                 self.messages.removeAll()
-                self.setupFirebaseRef() // Re-connects Firebase to the new room
+                self.setupFirebaseRef()
                 self.collectionView.reloadData()
             }
         }))

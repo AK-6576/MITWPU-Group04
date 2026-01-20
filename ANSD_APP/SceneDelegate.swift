@@ -22,4 +22,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidEnterBackground(_ scene: UIScene) {
     }
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
+        
+        // Check if the scheme is ours
+        if url.scheme == "ansdapp" {
+            let urlString = url.absoluteString
+            // Extract the ID after 'join/'
+            if let roomID = urlString.components(separatedBy: "join/").last {
+                print("Joining room: \(roomID)")
+                
+                // Post a notification or call a method to update your GroupNewViewController
+                NotificationCenter.default.post(name: NSNotification.Name("JoinRoom"), object: roomID)
+            }
+        }
+    }
 }

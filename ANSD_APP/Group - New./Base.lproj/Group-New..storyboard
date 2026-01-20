@@ -167,8 +167,8 @@
                                                             <color key="backgroundColor" systemColor="systemBlueColor"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="trailing" secondItem="Gdq-wY-1VW" secondAttribute="trailing" constant="10" id="4Go-8H-A7j"/>
-                                                                <constraint firstAttribute="bottom" secondItem="Gdq-wY-1VW" secondAttribute="bottom" constant="10" id="OeI-0m-jHX"/>
-                                                                <constraint firstItem="Gdq-wY-1VW" firstAttribute="top" secondItem="iYN-0c-W0S" secondAttribute="top" constant="10" id="xEj-u1-cNE"/>
+                                                                <constraint firstItem="Gdq-wY-1VW" firstAttribute="top" secondItem="iYN-0c-W0S" secondAttribute="top" constant="10" id="91U-3I-q6D"/>
+                                                                <constraint firstAttribute="bottom" secondItem="Gdq-wY-1VW" secondAttribute="bottom" constant="10" id="dnO-gS-cpL"/>
                                                                 <constraint firstItem="Gdq-wY-1VW" firstAttribute="leading" secondItem="iYN-0c-W0S" secondAttribute="leading" constant="10" id="xRZ-vh-1Sv"/>
                                                             </constraints>
                                                         </view>
@@ -176,8 +176,8 @@
                                                     <constraints>
                                                         <constraint firstAttribute="trailing" secondItem="iYN-0c-W0S" secondAttribute="trailing" constant="16" id="CQP-6o-tac"/>
                                                         <constraint firstAttribute="bottom" secondItem="iYN-0c-W0S" secondAttribute="bottom" constant="10" id="NPg-jw-o2L"/>
+                                                        <constraint firstItem="iYN-0c-W0S" firstAttribute="top" secondItem="19T-BB-fo0" secondAttribute="top" constant="10" id="e4c-DX-B5h"/>
                                                         <constraint firstItem="iYN-0c-W0S" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="19T-BB-fo0" secondAttribute="leading" constant="80" id="fSD-Hh-xhx"/>
-                                                        <constraint firstItem="iYN-0c-W0S" firstAttribute="top" secondItem="19T-BB-fo0" secondAttribute="top" constant="10" id="n02-Ww-2s9"/>
                                                     </constraints>
                                                 </collectionViewCellContentView>
                                                 <size key="customSize" width="181" height="147"/>
