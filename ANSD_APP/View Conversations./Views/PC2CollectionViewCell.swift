@@ -13,6 +13,8 @@ class PC2IncomingViewCell: UICollectionViewCell {
     @IBOutlet var nameLabel: UILabel!
     @IBOutlet var messageLabel: UILabel!
     
+    @IBOutlet var editedLabel: UILabel!
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         bubbleView.layer.cornerRadius = 16
@@ -39,6 +41,7 @@ class PC2IncomingViewCell: UICollectionViewCell {
 class PCOutgoing2Cell: UICollectionViewCell {
     @IBOutlet weak var PCmessageLabel: UILabel!
     @IBOutlet var pcBubbleView: UIView!
+    @IBOutlet var editedLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()

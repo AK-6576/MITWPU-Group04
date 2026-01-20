@@ -25,6 +25,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         collectionView.dataSource = self
         collectionView.delegate = self
         
+        
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
             layout.minimumLineSpacing = 4
@@ -35,7 +36,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         processNextMessage()
     }
     
-    // MARK: - Helper to match Names to Avatar Assets
     func getImageName(for name: String) -> String {
         let lowerName = name.lowercased()
         
@@ -69,8 +69,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
-    // MARK: - CollectionView Data Source
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
@@ -78,6 +76,16 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = messages[indexPath.row]
         
+        // 1. Handle System Messages
+        if message.sender == "System" {
+            guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "SystemCell", for: indexPath) as? GNCollectionViewCell else {
+                return UICollectionViewCell()
+            }
+            cell.messageLabel.text = message.text
+            return cell
+        }
+        
+        // 2. Handle Incoming Messages
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! GNIncomingCell
             
@@ -103,6 +111,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                 self?.showRenameAlert()
             }
             return cell
+            
+        // 3. Handle Outgoing Messages
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! GNOutgoingCell
             cell.messageLabel.text = message.text
@@ -197,8 +207,23 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         if let selectionVC = storyboard.instantiateViewController(withIdentifier: "ParticipantSelectionViewController") as? ParticipantSelectionViewController {
             selectionVC.unavailableContacts = ["Peter", "Bruce"]
-            selectionVC.onPeopleAdded = { newNames in
-                print("User added: \(newNames)")
+            
+            selectionVC.onPeopleAdded = { [weak self] newNames in
+                guard let self = self else { return }
+                
+                for name in newNames {
+                    let joinMessage = GNChatMessage(
+                        text: "\(name) joined the conversation",
+                        isIncoming: true,
+                        sender: "System"
+                    )
+                    
+                    self.messages.append(joinMessage)
+                    
+                    let newIndexPath = IndexPath(item: self.messages.count - 1, section: 0)
+                    self.collectionView.insertItems(at: [newIndexPath])
+                    self.scrollToBottom()
+                }
             }
             
             let navWrapper = UINavigationController(rootViewController: selectionVC)

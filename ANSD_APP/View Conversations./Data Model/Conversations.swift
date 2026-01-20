@@ -17,12 +17,13 @@ struct Message: Codable, Identifiable, Sendable {
     var isHighlighted: Bool = false
     var senderId: String = "other"
     var timestamp: Date = Date()
+    var isEdited: Bool = false
     
     enum CodingKeys: String, CodingKey {
-        case text, senderName, isIncoming, isHighlighted, id
+        case text, senderName, isIncoming, isHighlighted, id , isEdited
     }
     
-    init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false) {
+    init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false,isEdited: Bool = false) {
         self.id = id
         self.text = text
         self.senderId = senderId
@@ -30,6 +31,7 @@ struct Message: Codable, Identifiable, Sendable {
         self.isIncoming = isIncoming
         self.timestamp = timestamp
         self.isHighlighted = isHighlighted
+        self.isEdited = isEdited
     }
     
     init(from decoder: Decoder) throws {
@@ -38,6 +40,8 @@ struct Message: Codable, Identifiable, Sendable {
         senderName = try container.decode(String.self, forKey: .senderName)
         isIncoming = try container.decode(Bool.self, forKey: .isIncoming)
         isHighlighted = try container.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
+        isEdited = try container.decodeIfPresent(Bool.self, forKey: .isEdited) ?? false
+        
         id = UUID()
         senderId = isIncoming ? "other" : "me"
         timestamp = Date()
@@ -50,6 +54,7 @@ struct Message: Codable, Identifiable, Sendable {
         try container.encode(isIncoming, forKey: .isIncoming)
         try container.encode(isHighlighted, forKey: .isHighlighted)
         try container.encode(id.uuidString, forKey: .id)
+        try container.encode(isEdited, forKey: .isEdited)
     }
 }
 

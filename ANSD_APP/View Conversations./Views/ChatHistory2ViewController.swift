@@ -155,6 +155,7 @@ class ChatHistory2ViewController: UIViewController {
     var transcript: [Message] {
         return histconversationData?.messages ?? []
     }
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -226,7 +227,7 @@ class ChatHistory2ViewController: UIViewController {
     
     private func setupShareButton() {
         if let shareBtn = menuButton {
-            shareBtn.menu = nil
+    
             shareBtn.target = self
             shareBtn.action = #selector(shareTapped)
         }
@@ -297,7 +298,13 @@ class ChatHistory2ViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newText = alert.textFields?.first?.text {
+                // 1. Update the text
                 self.histconversationData?.messages?[indexPath.row].text = newText
+                
+                // 2. Set the edited flag to true
+                self.histconversationData?.messages?[indexPath.row].isEdited = true
+                
+                // 3. Refresh the UI
                 self.collectionView.reloadItems(at: [indexPath])
                 self.notifyDataChanged()
             }
@@ -386,6 +393,7 @@ extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionView
                 cell.messageLabel.text = message.text
             }
             cell.nameLabel.text = message.senderName
+            cell.editedLabel.isHidden = !message.isEdited
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCOutCell", for: indexPath) as! PCOutgoing2Cell
@@ -398,6 +406,7 @@ extension ChatHistory2ViewController: UICollectionViewDelegate, UICollectionView
             } else {
                 cell.PCmessageLabel.attributedText = nil
                 cell.PCmessageLabel.text = message.text
+                cell.editedLabel.isHidden = !message.isEdited
             }
             return cell
         }
