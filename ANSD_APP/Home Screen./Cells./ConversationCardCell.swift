@@ -26,11 +26,9 @@ class RoutineTableViewCell: UITableViewCell {
         iconImageView.contentMode = .center
         iconImageView.clipsToBounds = true
         
-        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = .label
+  
         
-        timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
-        timeLabel.textColor = .secondaryLabel
+      
         
         self.selectionStyle = .default
 

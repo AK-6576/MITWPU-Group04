@@ -157,7 +157,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PUMDFHHYD3;
+				DEVELOPMENT_TEAM = B5Z494VBT6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to add participants to the group.";
@@ -173,7 +173,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ansd.app.co;
+				PRODUCT_BUNDLE_IDENTIFIER = ansdom.app.co;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -192,7 +192,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PUMDFHHYD3;
+				DEVELOPMENT_TEAM = B5Z494VBT6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to add participants to the group.";
@@ -208,7 +208,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ansd.app.co;
+				PRODUCT_BUNDLE_IDENTIFIER = ansdom.app.co;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
