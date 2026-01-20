@@ -6,6 +6,8 @@
 import UIKit
 
 // MARK: - Color Logic (For Icons Only)
+
+// Function - Determines and returns a specific UIColor based on the provided category name string, using a hash fallback for unknown categories.
 func getColorForCategory(_ name: String) -> UIColor {
     let lower = name.lowercased().trimmingCharacters(in: .whitespaces)
     
@@ -28,6 +30,8 @@ func getColorForCategory(_ name: String) -> UIColor {
 }
 
 // MARK: - Icon Logic
+
+// Function - Retrieves the corresponding SF Symbol string identifier based on the provided category name, defaulting to a tag icon if no match is found.
 func getSymbolForCategory(_ name: String) -> String {
     let lower = name.lowercased().trimmingCharacters(in: .whitespaces)
     
@@ -48,6 +52,7 @@ func getSymbolForCategory(_ name: String) -> String {
     }
 }
 
+// Function - Compares two time strings in either 12-hour or 24-hour format to determine if the first time occurs strictly before the second.
 func compareTimes(time1: String, time2: String) -> Bool {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US_POSIX")

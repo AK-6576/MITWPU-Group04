@@ -10,6 +10,7 @@ class QuickActionsViewController: UITableViewController {
     
     var sections: [RoutineSection] = []
 
+    // Function - Initializes the view lifecycle, setting the title and removing default header padding.
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Quick Actions"
@@ -22,11 +23,13 @@ class QuickActionsViewController: UITableViewController {
         }
     }
     
+    // Function - Called when the view is about to appear, triggering the data load process.
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadData()
     }
     
+    // Function - Fetches grouped sections from the repository, filters out completed items, and reloads the table view.
     private func loadData() {
         let allSections = QuickActionsRepository.shared.getGroupedSections()
         self.sections = allSections.compactMap { section in
@@ -46,6 +49,7 @@ class QuickActionsViewController: UITableViewController {
     
     // MARK: - Navigation & Segues
     
+    // Function - Prepares for navigation, setting delegates for the add screen or logging chat transitions.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         if let addVC = segue.destination as? AddActionTableViewController {
@@ -64,6 +68,7 @@ class QuickActionsViewController: UITableViewController {
     
     // MARK: - TableView Delegate (Selection)
     
+    // Function - Handles row selection, determining the specific chat segue identifier based on the category and performing the navigation.
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
@@ -89,6 +94,8 @@ class QuickActionsViewController: UITableViewController {
     }
     
     // MARK: - Header Navigation
+    
+    // Function - Handles taps on section headers to navigate to the full category view using specific segue identifiers.
     func didTapHeader(sectionIndex: Int, categoryName: String) {
         
         var segueID = ""
@@ -114,14 +121,17 @@ class QuickActionsViewController: UITableViewController {
     
     // MARK: - TableView Data Source
     
+    // Function - Returns the total number of sections in the table view.
     override func numberOfSections(in tableView: UITableView) -> Int {
         return sections.count
     }
     
+    // Function - Returns the number of rows (items) in a specific section.
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return sections[section].items.count
     }
     
+    // Function - Dequeues and configures a custom header view with the category title and a tap handler.
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
         guard let header = tableView.dequeueReusableCell(withIdentifier: "CategoryTableViewCell") as? CategoryTableViewCell else {
@@ -139,18 +149,22 @@ class QuickActionsViewController: UITableViewController {
         return header
     }
     
+    // Function - Returns the automatic height for section headers.
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return UITableView.automaticDimension
     }
     
+    // Function - Returns an estimated height for section headers to improve scrolling performance.
     override func tableView(_ tableView: UITableView, estimatedHeightForHeaderInSection section: Int) -> CGFloat {
         return 50
     }
 
+    // Function - Returns the fixed height for table view rows.
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75
     }
 
+    // Function - Dequeues and configures a cell with the specific action data and info button handler.
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "QuickActionCell", for: indexPath) as? QuickActionCell else { return UITableViewCell() }
         let item = sections[indexPath.section].items[indexPath.row]
@@ -161,6 +175,7 @@ class QuickActionsViewController: UITableViewController {
     
     // MARK: - Swipe Actions
     
+    // Function - Configures swipe actions for deleting and renaming items within the table.
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let item = self.sections[indexPath.section].items[indexPath.row]
         
@@ -197,6 +212,7 @@ class QuickActionsViewController: UITableViewController {
     
     // MARK: - Helper Methods
     
+    // Function - Displays an alert with details about the selected action.
     private func showActionDetails(for item: RoutineConversation) {
         let message = item.description ?? "Status: \(item.status)"
         let alert = UIAlertController(title: item.conversationTopic, message: message, preferredStyle: .alert)
@@ -204,6 +220,7 @@ class QuickActionsViewController: UITableViewController {
         present(alert, animated: true)
     }
     
+    // Function - Presents an alert with a text field to rename the selected action and updates the repository.
     private func showRenameAlert(for item: RoutineConversation, section: Int, row: Int) {
         let alert = UIAlertController(title: "Rename", message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = item.conversationTopic }
@@ -226,6 +243,8 @@ class QuickActionsViewController: UITableViewController {
 // MARK: - AddActionDelegate Implementation
 
 extension QuickActionsViewController: AddActionDelegate {
+    
+    // Function - Delegate method called when a new action is created; adds it to the repository and reloads the data.
     func didCreateNewAction(_ action: RoutineConversation) {
         QuickActionsRepository.shared.addAction(action)
         loadData()

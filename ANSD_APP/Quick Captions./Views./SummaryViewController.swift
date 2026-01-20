@@ -16,6 +16,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     var conversationTitle = "Conversation 1"
     var participantsData: [QCParticipantData] = []
     
+    // Function - Initializes the view lifecycle, setting up the table view properties, button targets, and gesture recognizers for keyboard handling.
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -40,15 +41,19 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         view.addGestureRecognizer(tap)
     }
     
+    // Function - Dismisses the keyboard by resigning the first responder status on the view.
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
     
     // MARK: - Actions
+    
+    // Function - Triggered when the share button is tapped, initiating the PDF generation and sharing process.
     @objc private func shareTapped() {
         shareAsPDF()
     }
     
+    // Function - Navigates back to the Home screen by resetting the window's root view controller with a transition animation.
     @IBAction func backTapped(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
@@ -68,6 +73,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
 
     // MARK: - PDF Generation
     
+    // Function - Compiles the conversation data into a string, generates a PDF, and presents the share sheet.
     private func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         for person in participantsData {
@@ -80,6 +86,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         }
     }
     
+    // Function - Renders the provided text string into a PDF file saved in the temporary directory and returns its URL.
     private func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
@@ -114,15 +121,18 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Table View Data Source
     
+    // Function - Returns the total number of sections in the table view structure (Headers, Cards, etc.).
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
 
+    // Function - Returns the number of rows for a specific section, allowing for multiple participant rows in section 3.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 3 { return participantsData.count }
         return 1
     }
     
+    // Function - Dequeues and configures the appropriate cell type based on the section index (Headers, Summaries, Participants, Notes).
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
@@ -163,6 +173,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Delegates
     
+    // Function - Updates the table view layout dynamically when text is entered into the notes cell.
     func didUpdateText(in cell: QCNotesCardCell) {
         tableView.performBatchUpdates(nil, completion: nil)
         if let indexPath = tableView.indexPath(for: cell) {
@@ -170,6 +181,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         }
     }
 
+    // Function - Updates the local conversation title variable whenever the user edits the title text field.
     func didChangeTitle(text: String) {
         conversationTitle = text
     }

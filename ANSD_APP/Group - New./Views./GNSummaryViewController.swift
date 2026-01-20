@@ -16,6 +16,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
     var conversationTitle = "New Conversation"
     var participantsData: [GNParticipantData] = []
     
+    // Function - Initializes the view lifecycle, setting up the table view properties, options button target, and keyboard dismissal gesture.
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
@@ -38,14 +39,17 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         view.addGestureRecognizer(tap)
     }
     
+    // Function - Resigns the first responder status to dismiss the keyboard when the user taps outside.
     @objc func dismissKeyboard() {
         view.endEditing(true)
     }
     
+    // Function - Action triggered by the options button to initiate the PDF sharing process.
     @objc func shareTapped() {
         shareAsPDF()
     }
     
+    // Function - Navigates back to the Home screen using a cross-dissolve transition on the window's root view controller.
     @IBAction func backTapped(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
@@ -61,6 +65,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
+    // Function - Compiles the conversation details into a string, generates a PDF, and presents the share sheet.
     func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         for person in participantsData {
@@ -73,6 +78,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
+    // Function - Renders the provided text content into a PDF file in the temporary directory and returns its URL.
     func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
@@ -102,15 +108,18 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
+    // Function - Returns the total number of sections in the table view (Headers, Summary, Participants, Notes).
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
     
+    // Function - Returns the number of rows for each section, handling the dynamic count for the participants section.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 3 { return participantsData.count }
         return 1
     }
     
+    // Function - Dequeues and configures the specific cell type required for each section (Header, Summary Card, Participant Card, Notes Card).
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
@@ -143,6 +152,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
+    // Function - Updates the table view layout dynamically as the user types in the notes cell to adjust height.
     func didUpdateText(in cell: GNNotesCardCell) {
         tableView.performBatchUpdates(nil, completion: nil)
         if let indexPath = tableView.indexPath(for: cell) {
@@ -150,6 +160,7 @@ class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
+    // Function - Updates the local conversation title variable when the user edits the title text field.
     func didChangeTitle(text: String) {
         conversationTitle = text
     }

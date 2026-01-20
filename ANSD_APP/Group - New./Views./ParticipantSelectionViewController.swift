@@ -23,6 +23,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     var selectedIndices: Set<Int> = []
     var onPeopleAdded: (([String]) -> Void)?
     
+    // Function - Initializes the view lifecycle, setting up the table view delegates and navigation bar configuration.
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.delegate = self
@@ -31,6 +32,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         setupNavigationBar()
     }
     
+    // Function - Configures the navigation bar title and buttons based on the context (adding participants vs connecting).
     func setupNavigationBar() {
         if onPeopleAdded != nil {
             self.title = "Add Participants"
@@ -40,10 +42,12 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         }
     }
     
+    // Function - Dismisses the current view controller when the close button is tapped.
     @objc func closeTapped() {
         self.dismiss(animated: true, completion: nil)
     }
 
+    // Function - Handles the completion of selection, either triggering a callback with selected names or performing a segue to the chat.
     @IBAction func doneTapped(_ sender: Any) {
         if let callback = onPeopleAdded {
             let selectedNames = selectedIndices.map { contacts[$0].name }
@@ -54,6 +58,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         }
     }
 
+    // Function - Prepares for the segue to the chat view controller, ensuring it presents in full screen.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToChat" {
             if let chatVC = segue.destination as? GroupNewViewController {
@@ -64,16 +69,19 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
 
     // MARK: - TableView Data Source
 
+    // Function - Returns the total number of contacts available in the list.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return contacts.count
     }
     
+    // Function - Dequeues and configures the contact cell, handling name, image, availability status, and selection highlighting.
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath) as! ContactCell
         
         let contact = contacts[indexPath.row]
 
         cell.nameLabel.text = contact.name
+        
         
         if let image = UIImage(named: contact.imageName) {
             cell.profileImageView.image = image
@@ -103,6 +111,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         return cell
     }
     
+    // Function - Toggles the selection state of a contact when the row is selected and updates the UI.
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if selectedIndices.contains(indexPath.row) {
             selectedIndices.remove(indexPath.row)

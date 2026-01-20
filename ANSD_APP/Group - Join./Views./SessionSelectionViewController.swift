@@ -18,11 +18,13 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GJSessionModel(title: "Assignment Completion", subtitle: "Peter Parker")
     ]
     
+    // Function - Initializes the view lifecycle and triggers the table view setup.
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
     }
     
+    // Function - Configures the table view's delegate, data source, background color, and footer.
     func setupTableView() {
         GJtableView.delegate = self
         GJtableView.dataSource = self
@@ -30,6 +32,7 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GJtableView.tableFooterView = UIView()
     }
 
+    // Function - Prepares for the segue to the chat view controller, passing the selected session title.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToChat" {
             if let chatVC = segue.destination as? GroupJoinViewController {
@@ -41,20 +44,24 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         }
     }
     
+    // Function - Returns the number of sections in the table view.
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
+    // Function - Returns a custom view for the section header.
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
         headerView.backgroundColor = .systemGroupedBackground
         return headerView
     }
     
+    // Function - Returns the number of session items to display in the section.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return sessions.count
     }
     
+    // Function - Dequeues and configures a cell with the session title and subtitle using default content configuration.
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
         let session = sessions[indexPath.row]
@@ -69,6 +76,7 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         return cell
     }
     
+    // Function - Handles row selection, triggers the segue to the chat, and deselects the row.
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let selectedSession = sessions[indexPath.row]
         performSegue(withIdentifier: "goToChat", sender: selectedSession)

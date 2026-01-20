@@ -15,6 +15,7 @@ class PC2IncomingViewCell: UICollectionViewCell {
     
     @IBOutlet var editedLabel: UILabel!
     
+    // Function - Initializes the incoming cell UI, setting the gray bubble color and rounded corners.
     override func awakeFromNib() {
         super.awakeFromNib()
         bubbleView.layer.cornerRadius = 16
@@ -27,6 +28,7 @@ class PC2IncomingViewCell: UICollectionViewCell {
         }
     }
     
+    // Function - Calculates the preferred size for the cell based on Auto Layout constraints to support dynamic height.
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -43,6 +45,7 @@ class PCOutgoing2Cell: UICollectionViewCell {
     @IBOutlet var pcBubbleView: UIView!
     @IBOutlet var editedLabel: UILabel!
     
+    // Function - Initializes the outgoing cell UI, setting the blue bubble color and rounded corners.
     override func awakeFromNib() {
         super.awakeFromNib()
         pcBubbleView.layer.cornerRadius = 16

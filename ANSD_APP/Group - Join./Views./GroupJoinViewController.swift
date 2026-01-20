@@ -21,6 +21,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     var isPaused = false
     var otherPersonName = "Person 1"
     
+    // Function - Initializes the view lifecycle, setting the title, configuring the collection view delegate and data source, and starting the message simulation.
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = sessionTitle
@@ -38,6 +39,8 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     // MARK: - Helper to match Names to Avatar Assets
+    
+    // Function - Determines the appropriate avatar image name based on the participant's name string.
     func getImageName(for name: String) -> String {
         let lowerName = name.lowercased()
         
@@ -53,6 +56,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         return "person.circle.fill"
     }
     
+    // Function - Recursively processes and displays the next message in the conversation queue with a delay, checking for pause state.
     func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -71,10 +75,12 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
+    // Function - Returns the total number of messages currently in the display array.
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
     
+    // Function - Dequeues and configures the appropriate cell type (incoming or outgoing) for the given index path.
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = messages[indexPath.row]
         
@@ -108,6 +114,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
+    // Function - Displays an alert controller allowing the user to rename the other participant, pausing the chat during input.
     func showRenameAlert() {
         if !isPaused { togglePauseState() }
         
@@ -130,10 +137,12 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         self.present(alert, animated: true)
     }
     
+    // Function - Action triggered by the pause button to toggle the chat simulation state.
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         togglePauseState()
     }
     
+    // Function - Toggles the internal pause state and updates the button UI, resuming the chat if applicable.
     func togglePauseState() {
         isPaused = !isPaused
         let config = UIImage.SymbolConfiguration(scale: .small)
@@ -142,6 +151,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         if !isPaused { processNextMessage() }
     }
     
+    // Function - Action triggered by the stop button; pauses the chat and presents a confirmation sheet to end the session and navigate to summary.
     @IBAction func didTapStopButton(_ sender: UIButton) {
         if !isPaused { togglePauseState() }
         
@@ -183,11 +193,13 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         self.present(actionSheet, animated: true)
     }
     
+    // Function - Scrolls the collection view to the bottom-most item to ensure the latest message is visible.
     func scrollToBottom() {
         guard messages.count > 0 else { return }
         GJcollectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
     }
     
+    // Function - Returns the size for each item in the collection view layout.
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 100)
     }

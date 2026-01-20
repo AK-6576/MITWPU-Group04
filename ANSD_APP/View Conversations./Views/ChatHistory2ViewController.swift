@@ -24,6 +24,7 @@ class PCSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
     
+    // Function - Prepares the receiver for service after it has been loaded from an Interface Builder archive.
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
@@ -156,7 +157,7 @@ class ChatHistory2ViewController: UIViewController {
         return histconversationData?.messages ?? []
     }
 
-    
+    // Function - Initializes the view lifecycle, setting up the table view properties and gesture recognizers.
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground

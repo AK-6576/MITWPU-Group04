@@ -21,6 +21,7 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     var isPaused = false
     var otherPersonName = "Person 1"
     
+    // Function - Initializes the view lifecycle, setting up delegates, layout properties, and starting the message simulation.
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -39,6 +40,7 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     
     // MARK: - Animation Logic
     
+    // Function - Recursively processes and displays the next message in the conversation queue with a delay, respecting the pause state.
     private func processNextMessage() {
         if currentMessageIndex >= fullConversation.count { return }
         if isPaused { return }
@@ -61,10 +63,12 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     
     // MARK: - CollectionView DataSource
     
+    // Function - Returns the total number of message items currently displayed in the collection view.
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
     
+    // Function - Dequeues and configures the appropriate cell type (incoming or outgoing) based on the message sender.
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = messages[indexPath.row]
         
@@ -91,6 +95,7 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
     
     // MARK: - Rename Alert
     
+    // Function - Displays an alert allowing the user to rename the other participant, pausing the simulation during input.
     private func showRenameAlert() {
         if !isPaused { togglePauseState() }
         
@@ -115,10 +120,12 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
 
     // MARK: - Button Actions
     
+    // Function - Action triggered when the pause button is tapped, calling the toggle state logic.
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         togglePauseState()
     }
     
+    // Function - Toggles the paused state of the message simulation and updates the button icon accordingly.
     private func togglePauseState() {
         isPaused = !isPaused
         let config = UIImage.SymbolConfiguration(scale: .small)
@@ -128,6 +135,7 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
         if !isPaused { processNextMessage() }
     }
 
+    // Function - Action triggered when the stop button is tapped; pauses the session and presents a confirmation alert to end the session.
     @IBAction func didTapStopButton(_ sender: UIButton) {
         if !isPaused { togglePauseState() }
         
@@ -164,11 +172,13 @@ class QuickCaptioningViewController: UIViewController, UICollectionViewDelegate,
 
     // MARK: - Layout Helpers
     
+    // Function - Automatically scrolls the collection view to the bottom-most item to show the latest message.
     private func scrollToBottom() {
         guard messages.count > 0 else { return }
         collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
     }
     
+    // Function - Returns the size for each item in the collection view.
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 100)
     }

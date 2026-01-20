@@ -21,6 +21,7 @@ class SimpleMonthHeaderView: UICollectionReusableView {
         setupView()
     }
     
+    // Function - Configures the header view layout, adding the label and setting constraints.
     private func setupView() {
         addSubview(label)
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -156,6 +157,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         }, completion: nil)
     }
     
+    // Function - Configures the search bar’s visual style and enables the bookmark button for the calendar.
     func setupSearchBarUI() {
         searchBar.backgroundImage = UIImage()
         searchBar.barTintColor = .clear

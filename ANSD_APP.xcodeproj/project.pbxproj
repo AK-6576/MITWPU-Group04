@@ -149,6 +149,7 @@
 				DEVELOPMENT_TEAM = QJ5443JB92;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Group-4.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = STT.;
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = STT.;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -183,6 +184,7 @@
 				DEVELOPMENT_TEAM = QJ5443JB92;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Group-4.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = STT.;
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = STT.;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
