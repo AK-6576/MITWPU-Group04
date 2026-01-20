@@ -163,30 +163,66 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     func stopLiveTranscription() {
-        speechManager.stopTranscribing()
-        
-        guard let lastMsg = messages.last, lastMsg.text != "Listening..." else { return }
-        
-        let dictToSend: [String: Any] = [
-            "text": lastMsg.text,
-            "sender": self.myName,
-            "senderID": self.currentUserID,
-            "timestamp": ServerValue.timestamp()
-        ]
-        
-        ref.childByAutoId().setValue(dictToSend) { [weak self] error, _ in
-            if error == nil {
-                DispatchQueue.main.async {
-                    // Final layout pass to ensure the bubble is sized correctly after syncing
-                    self?.collectionView.collectionViewLayout.invalidateLayout()
+            speechManager.stopTranscribing()
+            
+            // 1. Safety Check: Ensure a message exists
+            guard let lastMsg = messages.last else { return }
+            
+            // 2. Clean the text to check for real content
+            let cleanedText = lastMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 3. LOGIC FIX: If text is empty OR still says "Listening...", DELETE IT.
+            if cleanedText.isEmpty || cleanedText == "Listening..." {
+                print("DEBUG: Discarding empty voice message.")
+                
+                // Remove from local data source
+                messages.removeLast()
+                
+                // Remove from the screen immediately (removes the "ghost" bubble)
+                let lastIndexPath = IndexPath(item: messages.count, section: 0)
+                
+                // Perform the deletion safely
+                if collectionView.numberOfItems(inSection: 0) > 0 {
+                    collectionView.deleteItems(at: [lastIndexPath])
+                }
+                
+                return // Stop here. Do not send to Firebase.
+            }
+            
+            // 4. If we are here, the text is valid. Prepare to send.
+            let dictToSend: [String: Any] = [
+                "text": lastMsg.text,
+                "sender": self.myName,
+                "senderID": self.currentUserID,
+                "timestamp": ServerValue.timestamp()
+            ]
+            
+            // 5. Send to Firebase
+            ref.childByAutoId().setValue(dictToSend) { [weak self] error, _ in
+                if error == nil {
+                    DispatchQueue.main.async {
+                        // Update layout to fit the text exactly
+                        self?.collectionView.collectionViewLayout.invalidateLayout()
+                    }
                 }
             }
         }
-    }
+    
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        // Force the cell to be the full width of the screen
-        return CGSize(width: collectionView.frame.width, height: 100)
-    }
+            // 1. Get the text for this message
+            let text = messages[indexPath.row].text
+            
+            // 2. estimate the height based on the font you use in your cell (e.g., system font 17)
+            let approximateWidth = collectionView.frame.width - 60 // Allow for padding/margins
+            let size = CGSize(width: approximateWidth, height: 1000)
+            let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 17)] // Make sure this matches your Cell Font
+            
+            let estimatedFrame = NSString(string: text).boundingRect(with: size, options: .usesLineFragmentOrigin, attributes: attributes, context: nil)
+            
+            // 3. Return dynamic height (+40 for padding)
+            return CGSize(width: collectionView.frame.width, height: estimatedFrame.height + 40)
+        }
+    
     // MARK: - Helpers & CollectionView
     func scrollToBottom() {
         guard messages.count > 0 else { return }

@@ -186,6 +186,7 @@
 				DEVELOPMENT_TEAM = 3Q2Q39D24W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Firebase;
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to add participants to the conversation.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for live chat.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need to transcribe your speech into the chat.";
@@ -221,6 +222,7 @@
 				DEVELOPMENT_TEAM = 3Q2Q39D24W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Firebase;
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to add participants to the conversation.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for live chat.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need to transcribe your speech into the chat.";

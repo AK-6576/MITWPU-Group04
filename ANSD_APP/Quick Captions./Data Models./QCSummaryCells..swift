@@ -1,5 +1,5 @@
 //
-//  SummaryCells.swift
+//  QCSummaryCells.swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
@@ -8,6 +8,7 @@
 import UIKit
 
 // MARK: - Protocols
+
 protocol QCNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: QCNotesCardCell)
 }
@@ -27,24 +28,34 @@ private func styleCard(view: UIView?) {
     card.layer.shadowRadius = 4
 }
 
-// MARK: - Headers
+// MARK: - Header Cells
+
 class QCSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
-    override func awakeFromNib() { super.awakeFromNib(); backgroundColor = .clear; contentView.backgroundColor = .clear }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
 class QCParticipantsSummaryHeaderCell: UITableViewCell {
     @IBOutlet weak var participantIcon: UIImageView!
     @IBOutlet weak var participantLabel: UILabel!
-    override func awakeFromNib() { super.awakeFromNib(); backgroundColor = .clear; contentView.backgroundColor = .clear }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
-// MARK: - 1. Conversation Card (Title Only)
+// MARK: - Content Cells
+
 class QCSummaryCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
-    
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
@@ -62,9 +73,7 @@ class QCSummaryCardCell: UITableViewCell {
     }
 }
 
-// MARK: - 2. Participant Card (Display Label)
 class QCParticipantCardCell: UITableViewCell {
-    
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var detailsLabel: UILabel!
@@ -83,7 +92,6 @@ class QCParticipantCardCell: UITableViewCell {
     }
 }
 
-// MARK: - 3. Notes Card
 class QCNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
@@ -105,12 +113,20 @@ class QCNotesCardCell: UITableViewCell, UITextViewDelegate {
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
-        if textView.text == placeholderText { textView.text = nil; textView.textColor = UIColor.label }
+        if textView.text == placeholderText {
+            textView.text = nil
+            textView.textColor = UIColor.label
+        }
     }
-    
+
     func textViewDidEndEditing(_ textView: UITextView) {
-        if textView.text.isEmpty { textView.text = placeholderText; textView.textColor = .lightGray }
+        if textView.text.isEmpty {
+            textView.text = placeholderText
+            textView.textColor = .lightGray
+        }
     }
-    
-    func textViewDidChange(_ textView: UITextView) { delegate?.didUpdateText(in: self) }
+
+    func textViewDidChange(_ textView: UITextView) {
+        delegate?.didUpdateText(in: self)
+    }
 }

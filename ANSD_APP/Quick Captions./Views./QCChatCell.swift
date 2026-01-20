@@ -1,5 +1,5 @@
 //
-//  ChatCell.swift
+//  QCChatCell.swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
@@ -24,6 +24,7 @@ class QCOutgoingCell: UICollectionViewCell {
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }
+    
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -58,6 +59,7 @@ class QCIncomingCell: UICollectionViewCell {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
+        
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
@@ -72,5 +74,8 @@ class QCIncomingCell: UICollectionViewCell {
         layoutAttributes.frame = newFrame
         return layoutAttributes
     }
-    @objc func handleTap() { onLabelTapped?() }
+    
+    @objc private func handleTap() {
+        onLabelTapped?()
+    }
 }

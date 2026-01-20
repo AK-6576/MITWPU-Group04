@@ -8,7 +8,6 @@
 import UIKit
 import Foundation
 
-// MARK: - Header View Class
 class SimpleMonthHeaderView: UICollectionReusableView {
     let label = UILabel()
     
@@ -22,6 +21,7 @@ class SimpleMonthHeaderView: UICollectionReusableView {
         setupView()
     }
     
+    // Function - Configures the header view layout, adding the label and setting constraints.
     private func setupView() {
         addSubview(label)
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -31,39 +31,27 @@ class SimpleMonthHeaderView: UICollectionReusableView {
             label.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
         
-        label.font = UIFont.boldSystemFont(ofSize: 20)
+        label.font = UIFont.boldSystemFont(ofSize: 22)
         label.textColor = .label
     }
 }
 
-// MARK: - View Controller
 class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate {
     
-    // MARK: - Outlets
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet var searchBar: UISearchBar!
     @IBOutlet weak var searchBarBottomConstraint: NSLayoutConstraint!
     
-    
-    
-    // MARK: - Variables
-    
-    
     var allConversationSections: [ConversationSection] = []
     var conversationSections: [ConversationSection] = []
-    
     var originalBottomConstant: CGFloat = 0
     
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupNavBar()
         setupCollectionView()
         setupSearchBarUI()
-      
         loadConversationData()
-        
         originalBottomConstant = searchBarBottomConstraint.constant
     }
     
@@ -77,63 +65,45 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         super.viewWillDisappear(animated)
         NotificationCenter.default.removeObserver(self)
     }
-    // MARK: - Navigation/Selection Logic
-
-    // Add this function inside the ViewConversationCollection class
+    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
-          
+        
         let selectedConversation = conversationSections[indexPath.section].conversations[indexPath.row]
-          
-        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistoryViewController") as? ChatHistoryViewController else {
-            print("DIAGNOSTIC FAILURE: Could not instantiate ChatHistoryViewController. Check Storyboard ID.")
+        
+        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistory2ViewController") as? ChatHistory2ViewController else {
+            print("DIAGNOSTIC FAILURE: Could not instantiate chatHistory2ViewController. Check Storyboard ID.")
             return
         }
-          
+        
         chatVC.histconversationData = selectedConversation
-          
-        // THE CRITICAL CHECK
-        if let navController = self.navigationController {
-            // This is what we want!
-            navController.pushViewController(chatVC, animated: true)
-            print("DIAGNOSTIC SUCCESS: Successfully PUSHED to the next screen.")
-        } else {
-            // This is what is likely happening!
-            print("DIAGNOSTIC ALERT: self.navigationController is nil! Cannot PUSH.")
-            
-            // Falling back to MODAL presentation
-            chatVC.modalPresentationStyle = .fullScreen
-            self.present(chatVC, animated: true, completion: nil)
-            print("DIAGNOSTIC RESULT: Presented MODALLY instead.")
+        
+        guard let navController = self.navigationController else {
+            print("Error: Navigation Controller missing")
+            return
         }
-          
+        
+        navController.pushViewController(chatVC, animated: true)
         searchBar.resignFirstResponder()
     }
     
-    
-    
-    // MARK: - Context Menu (Long Press) Logic
     func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggestedActions in
             
-            // Action 1: Pin / Unpin
             let isPinned = self.conversationSections[indexPath.section].conversations[indexPath.row].isPinned
             let pinTitle = isPinned ? "Unpin" : "Pin"
             let pinImage = isPinned ? UIImage(systemName: "pin.slash") : UIImage(systemName: "pin")
             
             let pinAction = UIAction(title: pinTitle, image: pinImage) { action in
-                // Toggle Pin state
                 self.conversationSections[indexPath.section].conversations[indexPath.row].isPinned.toggle()
                 self.collectionView.reloadItems(at: [indexPath])
             }
             
-            // Action 2: Rename
             let renameAction = UIAction(title: "Rename", image: UIImage(systemName: "pencil")) { action in
                 self.showRenameAlert(for: indexPath)
             }
             
-            // Action 3: Delete
             let deleteAction = UIAction(title: "Delete", image: UIImage(systemName: "trash"), attributes: .destructive) { action in
                 self.showDeleteConfirmation(for: indexPath)
             }
@@ -142,7 +112,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         }
     }
     
-    // MARK: - Helper Alerts
     func showRenameAlert(for indexPath: IndexPath) {
         let currentTitle = conversationSections[indexPath.section].conversations[indexPath.row].title
         let alert = UIAlertController(title: "Rename Conversation", message: nil, preferredStyle: .alert)
@@ -188,9 +157,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         }, completion: nil)
     }
     
-
-    
-    // MARK: - Figma Styling Setup
+    // Function - Configures the search bar’s visual style and enables the bookmark button for the calendar.
     func setupSearchBarUI() {
         searchBar.backgroundImage = UIImage()
         searchBar.barTintColor = .clear
@@ -216,17 +183,11 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         }
     }
     
-    
-    // MARK: - Navbar
     func setupNavBar() {
-        navigationController?.setNavigationBarHidden(false, animated: true)
-        navigationItem.title = "View Conversations" // This is fine
         collectionView.backgroundColor = .systemGroupedBackground
         view.backgroundColor = .systemGroupedBackground
     }
     
-    // MARK: - Keyboard Handling (Final Robust, Non-Deprecated Implementation)
-
     @objc func keyboardWillShow(notification: NSNotification) {
         guard let userInfo = notification.userInfo,
               let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
@@ -235,7 +196,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let animationCurve = UIView.AnimationOptions(rawValue: curveValue.uintValue << 16)
         let targetHeight = keyboardFrame.height
-   
         let distanceToLift = targetHeight - view.safeAreaInsets.bottom
         
         UIView.animate(
@@ -243,19 +203,16 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             delay: 0,
             options: [animationCurve],
             animations: {
-            
                 self.searchBarBottomConstraint.constant = -distanceToLift + self.originalBottomConstant
                 let bottomInset = distanceToLift + self.searchBar.frame.height + 10
-                
                 self.collectionView.contentInset.bottom = bottomInset
                 self.collectionView.verticalScrollIndicatorInsets.bottom = bottomInset
-                
                 self.view.layoutIfNeeded()
             },
             completion: nil
         )
     }
-
+    
     @objc func keyboardWillHide(notification: NSNotification) {
         guard let userInfo = notification.userInfo,
               let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
@@ -263,7 +220,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let animationCurve = UIView.AnimationOptions(rawValue: curveValue.uintValue << 16)
         let originalBottomPadding: CGFloat = 100.0
-
+        
         UIView.animate(
             withDuration: duration,
             delay: 0,
@@ -278,7 +235,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         )
     }
     
-    // MARK: - CollectionView Setup
     func setupCollectionView() {
         collectionView.delegate = self
         collectionView.dataSource = self
@@ -291,21 +247,15 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             layout.estimatedItemSize = .zero
             layout.minimumLineSpacing = 8
-            
-            let horizontalPadding: CGFloat = 16.0 // Matches the usual cell padding
-                    let topSpacing: CGFloat = 8.0         // Reduced space from header to first card
-                    let bottomSpacing: CGFloat = 16.0     // Space between the last card and the next header
-                    
-                    layout.sectionInset = UIEdgeInsets(top: topSpacing,
-                                                       left: horizontalPadding,
-                                                       bottom: bottomSpacing,
-                                                       right: horizontalPadding)
+            let horizontalPadding: CGFloat = 16.0
+            let topSpacing: CGFloat = 0
+            let bottomSpacing: CGFloat = 12.0
+            layout.sectionInset = UIEdgeInsets(top: topSpacing, left: horizontalPadding, bottom: bottomSpacing, right: horizontalPadding)
         }
         
         collectionView.contentInset.bottom = 100
     }
     
-    // MARK: - Data Loading
     func loadConversationData() {
         let response = ConversationsResponse()
         var loadedSections: [ConversationSection] = []
@@ -323,15 +273,14 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         collectionView.reloadData()
     }
     
-    // MARK: - DataSource & Delegate
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return conversationSections.count
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return conversationSections[section].conversations.count
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "conversationCell", for: indexPath) as? ConversationCollectionViewCell else {
             return UICollectionViewCell()
@@ -339,11 +288,9 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let item = conversationSections[indexPath.section].conversations[indexPath.row]
         cell.configure(with: item)
-        
-        
         return cell
     }
-    // MARK: - HEADER Logic
+    
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         if kind == UICollectionView.elementKindSectionHeader {
             let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "headerId", for: indexPath) as! SimpleMonthHeaderView
@@ -352,18 +299,15 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         }
         return UICollectionReusableView()
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.frame.width - 32, height: 130)
+        return CGSize(width: collectionView.frame.width - 32, height: 110)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
         return CGSize(width: collectionView.frame.width, height: 50)
     }
     
-    
-    
-    // MARK: - Search Logic
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.isEmpty {
             self.conversationSections = self.allConversationSections
@@ -383,12 +327,59 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
     }
-    
-    
-    
-    // Helper Struct
+
     struct ConversationSection {
         let title: String
-        var conversations: [Conversation] // Must be var
+        var conversations: [Conversation]
+    }
+    
+    @IBAction func calenderbuttontapped(_ sender: Any) {
+        guard let calendarVC = self.storyboard?.instantiateViewController(withIdentifier: "calenderViewController") as? CalenderViewController else {
+            print("Error: Could not find calenderViewController in Storyboard. Check the Storyboard ID.")
+            return
+        }
+        
+        calendarVC.delegate = self
+        
+        if let sheet = calendarVC.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 24
+        }
+        
+        present(calendarVC, animated: true)
+    }
+}
+
+extension ViewConversationCollection: CalendarDelegate {
+    
+    func didSelectDate(_ date: Date) {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        let displayDate = formatter.string(from: date)
+        
+        self.conversationSections = self.allConversationSections.compactMap { section in
+            let filtered = section.conversations.filter { convo in
+                guard let convoDate = convo.cal else { return false }
+                return Calendar.current.isDate(convoDate, inSameDayAs: date)
+            }
+            return filtered.isEmpty ? nil : ConversationSection(title: section.title, conversations: filtered)
+        }
+
+        self.collectionView.reloadData()
+        self.navigationItem.title = displayDate
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Clear",
+            style: .plain,
+            target: self,
+            action: #selector(clearFilter)
+        )
+    }
+    
+    @objc func clearFilter() {
+        self.conversationSections = self.allConversationSections
+        self.navigationItem.title = "View Conversations"
+        self.navigationItem.rightBarButtonItem = nil
+        self.collectionView.reloadData()
     }
 }

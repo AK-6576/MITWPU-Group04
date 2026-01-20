@@ -9,8 +9,6 @@ import UIKit
 
 class ConversationCollectionViewCell: UICollectionViewCell {
     
-    @IBOutlet weak var containerView: UIView!
-    
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
@@ -25,41 +23,39 @@ class ConversationCollectionViewCell: UICollectionViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
 
-        // MARK: - Prominent Card Styling
-        self.backgroundColor = .secondarySystemGroupedBackground
-        self.layer.cornerRadius = 20
-        self.layer.masksToBounds = false
-        self.layer.shadowColor = UIColor.black.cgColor
-        self.layer.shadowOpacity = 0.15
-        self.layer.shadowOffset = CGSize(width: 0, height: 4)
-        self.layer.shadowRadius = 8
-        self.layer.borderWidth = 1
-        self.layer.borderColor = UIColor.systemGray5.cgColor
+        backgroundColor = .secondarySystemGroupedBackground
+        layer.cornerRadius = 20
+        layer.masksToBounds = false
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowOpacity = 0.15
+        layer.shadowOffset = CGSize(width: 0, height: 4)
+        layer.shadowRadius = 8
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.systemGray5.cgColor
     }
     
-   func configure(with conversation: Conversation) {
-        self.titleLabel.text = conversation.title
-        self.descriptionLabel.text = conversation.description
+    func configure(with conversation: Conversation) {
+        titleLabel.text = conversation.title
+        descriptionLabel.text = conversation.description
         
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
-        self.categoryLabel.text = capitalizedCategory
+        categoryLabel.text = capitalizedCategory
         
-        self.dateLabel.text = conversation.date
-        self.timeLabel.text = "\(conversation.startTime) - \(conversation.endTime)"
+        dateLabel.text = conversation.date
+        timeLabel.text = "\(conversation.startTime)"
         
-        self.calendarIcon.image = UIImage(systemName: "calendar")
-        self.clockIcon.image = UIImage(systemName: "clock")
-        self.calendarIcon.tintColor = .systemGray
-        self.clockIcon.tintColor = .systemGray
+        calendarIcon.image = UIImage(systemName: "calendar")
+        clockIcon.image = UIImage(systemName: "clock")
+        calendarIcon.tintColor = .systemGray
+        clockIcon.tintColor = .systemGray
         
-        // Dynamic Category Icon Logic
         let iconName: String
         let tintColor: UIColor
         
         switch categoryString.lowercased() {
         case "family":
-            iconName = "heart.fill"
+            iconName = "figure.2.and.child.holdinghands"
             tintColor = .systemRed
             categoryAccessibilityName = "Family"
         case "friends":
@@ -84,16 +80,16 @@ class ConversationCollectionViewCell: UICollectionViewCell {
             categoryAccessibilityName = "Uncategorized"
         }
         
-        self.categoryIcon.image = UIImage(systemName: iconName)
-        self.categoryIcon.tintColor = tintColor
+        categoryIcon.image = UIImage(systemName: iconName)
+        categoryIcon.tintColor = tintColor
         
-        self.calendarIcon.isAccessibilityElement = true
-        self.calendarIcon.accessibilityLabel = "Date: \(conversation.date)"
+        calendarIcon.isAccessibilityElement = true
+        calendarIcon.accessibilityLabel = "Date: \(conversation.date)"
         
-        self.clockIcon.isAccessibilityElement = true
-        self.clockIcon.accessibilityLabel = "Time from \(conversation.startTime) to \(conversation.endTime)"
+        clockIcon.isAccessibilityElement = true
+        clockIcon.accessibilityLabel = " \(conversation.startTime) to \(conversation.endTime)"
         
-        self.categoryIcon.isAccessibilityElement = true
-        self.categoryIcon.accessibilityLabel = "Category: \(categoryAccessibilityName)"
+        categoryIcon.isAccessibilityElement = true
+        categoryIcon.accessibilityLabel = "Category: \(categoryAccessibilityName)"
     }
 }

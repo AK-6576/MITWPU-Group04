@@ -1,71 +1,132 @@
 //
 //  Conversations.swift
-//  Group_4-ANSD_App
+//  ANSD_APP
 //
-//  Created by Omkar Varpe on 26/11/25.
+//  Created by SDC-USER on 06/01/26.
 //
 
 import Foundation
 
-// MARK: - Main Response
-struct ConversationsResponse: Codable {
+// MARK: - Message Model
 
-    var conversations: [Conversation] = []
-    var previousMonths: [PreviousMonth] = []
-
-    init() {
-        do {
-            let response = try load()
-            conversations = response.conversations
-            previousMonths = response.previousMonths
-        } catch {
-            print(error.localizedDescription)
-        }
+struct Message: Codable, Identifiable, Sendable {
+    var id: UUID = UUID()
+    var text: String
+    let senderName: String
+    let isIncoming: Bool
+    var isHighlighted: Bool = false
+    var senderId: String = "other"
+    var timestamp: Date = Date()
+    var isEdited: Bool = false
+    
+    enum CodingKeys: String, CodingKey {
+        case text, senderName, isIncoming, isHighlighted, id , isEdited
+    }
+    
+    init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false,isEdited: Bool = false) {
+        self.id = id
+        self.text = text
+        self.senderId = senderId
+        self.senderName = senderName
+        self.isIncoming = isIncoming
+        self.timestamp = timestamp
+        self.isHighlighted = isHighlighted
+        self.isEdited = isEdited
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decode(String.self, forKey: .text)
+        senderName = try container.decode(String.self, forKey: .senderName)
+        isIncoming = try container.decode(Bool.self, forKey: .isIncoming)
+        isHighlighted = try container.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
+        isEdited = try container.decodeIfPresent(Bool.self, forKey: .isEdited) ?? false
+        
+        id = UUID()
+        senderId = isIncoming ? "other" : "me"
+        timestamp = Date()
     }
 
-    enum CodingKeys: String, CodingKey {
-        case conversations
-        case previousMonths = "previous_months"
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .text)
+        try container.encode(senderName, forKey: .senderName)
+        try container.encode(isIncoming, forKey: .isIncoming)
+        try container.encode(isHighlighted, forKey: .isHighlighted)
+        try container.encode(id.uuidString, forKey: .id)
+        try container.encode(isEdited, forKey: .isEdited)
     }
 }
 
-// MARK: - Conversation
-struct Conversation: Codable, Identifiable {
+// MARK: - Participant Model
+
+struct PCParticipantData: Codable, Sendable {
+    let name: String
+    let summary: String
+}
+
+// MARK: - Conversation Model
+struct Conversation: Codable, Identifiable, Sendable {
     let id: String
-    var title: String        // Changed to var
-    var description: String  // Changed to var
+    var title: String
+    var description: String
     var date: String
     var startTime: String
     var endTime: String
     var category: String
     var icon: String
     var info: Bool?
-    
-    // NEW: For pinning functionality (defaults to false if not in JSON)
+    var cal: Date?
+    var notes: String?
+    var participants: [PCParticipantData]?
     var isPinned: Bool = false
+    var messages: [Message]?
 
     enum CodingKeys: String, CodingKey {
-        case id
-        case title
-        case description
-        case date
+        case id, title, description, date, category, icon, info, notes, participants, messages
         case startTime = "start_time"
         case endTime = "end_time"
-        case category
-        case icon
-        case info
+    }
+
+    init(id: String, title: String, messages: [Message] = [], participants: [PCParticipantData] = [], notes: String = "", description: String = "", date: String = "", startTime: String = "", endTime: String = "", category: String = "", icon: String = "") {
+        self.id = id
+        self.title = title
+        self.messages = messages
+        self.participants = participants
+        self.notes = notes
+        self.description = description
+        self.date = date
+        self.startTime = startTime
+        self.endTime = endTime
+        self.category = category
+        self.icon = icon
     }
 }
 
-// MARK: - Previous Month
-struct PreviousMonth: Codable {
+// MARK: - Response Container Models
+
+struct PreviousMonth: Codable, Sendable {
     let month: String
-    var conversations: [Conversation] // Changed to var
+    var conversations: [Conversation]
 }
 
-// MARK: - Loader
-extension ConversationsResponse {
-    func load(from filename: String = "conversations") throws -> ConversationsResponse {
+struct ConversationsResponse: Codable, Sendable {
+    var conversations: [Conversation] = []
+    var previousMonths: [PreviousMonth] = []
+
+    enum CodingKeys: String, CodingKey {
+        case conversations
+        case previousMonths = "previous_months"
+    }
+    
+    init() {
+        if let response = try? Self.load() {
+            self.conversations = response.conversations
+            self.previousMonths = response.previousMonths
+        }
+    }
+
+    static func load(from filename: String = "conversations") throws -> ConversationsResponse {
         guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
             throw NSError(domain: "ConversationsResponse", code: 404,
                           userInfo: [NSLocalizedDescriptionKey: "conversations.json not found"])

@@ -198,12 +198,34 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     func stopLiveTranscription() {
         speechManager.stopTranscribing()
         
-        guard let lastMsg = messages.last, lastMsg.text != "Listening..." else { return }
+        // 1. Get the very last message on screen
+        guard let lastMsg = messages.last else { return }
         
-        // Push to Firebase (Using the helper in your GJChatMessage struct)
+        // 2. Clean the text (remove accidental spaces)
+        let cleanedText = lastMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // 3. SAFETY CHECK:
+        // Only delete if the text is empty OR if it never changed from the placeholder
+        if cleanedText.isEmpty || cleanedText == "Listening..." {
+            print("DEBUG: No speech detected. Deleting empty bubble.")
+            
+            // Remove from local list so the blue pill disappears
+            messages.removeLast()
+            
+            // Update the screen immediately
+            let lastIndexPath = IndexPath(item: messages.count, section: 0)
+            GJcollectionView.deleteItems(at: [lastIndexPath])
+            
+            return // We stop here. Nothing is sent to Firebase.
+        }
+        
+        print("DEBUG: Saving message: \(cleanedText)")
+        
         ref.childByAutoId().setValue(lastMsg.toDictionary()) { error, _ in
             if let error = error {
                 print("DEBUG: Firebase Save Failed: \(error.localizedDescription)")
+            } else {
+                print("DEBUG: Message sent successfully!")
             }
         }
     }
@@ -226,6 +248,22 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         self.present(alert, animated: true)
     }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+            // 1. Get the text for this message
+            let text = messages[indexPath.row].text
+            
+            // 2. estimate the height based on the font you use in your cell (e.g., system font 17)
+            let approximateWidth = collectionView.frame.width - 60 // Allow for padding/margins
+            let size = CGSize(width: approximateWidth, height: 1000)
+            let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 17)] // Make sure this matches your Cell Font
+            
+            let estimatedFrame = NSString(string: text).boundingRect(with: size, options: .usesLineFragmentOrigin, attributes: attributes, context: nil)
+            
+            // 3. Return dynamic height (+40 for padding)
+            return CGSize(width: collectionView.frame.width, height: estimatedFrame.height + 40)
+        }
+
 
     // MARK: - Helpers
     func scrollToBottom() {

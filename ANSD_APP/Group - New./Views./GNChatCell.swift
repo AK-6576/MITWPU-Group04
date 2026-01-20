@@ -1,3 +1,10 @@
+//
+//  ChatCell.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//
+
 import UIKit
 
 class GNOutgoingCell: UICollectionViewCell {
@@ -6,29 +13,25 @@ class GNOutgoingCell: UICollectionViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        setupCell()
-    }
-    
-    private func setupCell() {
         bubbleView.backgroundColor = .systemBlue
         messageLabel.textColor = .white
         bubbleView.layer.cornerRadius = 16
-        
-        // Ensure the label wraps properly
-        messageLabel.numberOfLines = 0
-        messageLabel.lineBreakMode = .byWordWrapping
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         
-        // 1. Force the label to expand vertically
-        messageLabel.setContentCompressionResistancePriority(.required, for: .vertical)
-        
-        // 2. Fix the width of the contentView to prevent horizontal distortion
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            let widthConstraint = contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32)
-            widthConstraint.priority = UILayoutPriority(999)
-            widthConstraint.isActive = true
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
+    }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
     }
 }
 
@@ -36,37 +39,44 @@ class GNIncomingCell: UICollectionViewCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
+    @IBOutlet weak var profileImageView: UIImageView!
     
     var onLabelTapped: (() -> Void)?
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        setupCell()
-    }
-    
-    private func setupCell() {
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
         bubbleView.layer.cornerRadius = 16
+
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
-        
-        messageLabel.numberOfLines = 0
-        messageLabel.lineBreakMode = .byWordWrapping
-        
-        // Force label to expand vertically
-        messageLabel.setContentCompressionResistancePriority(.required, for: .vertical)
         
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
         
-        // Fix width
+
+        if let profileImg = profileImageView {
+            profileImg.layer.cornerRadius = profileImg.frame.height / 2
+            profileImg.clipsToBounds = true
+            profileImg.contentMode = .scaleAspectFill
+            profileImg.backgroundColor = .systemGray4 // Placeholder color
+        }
+        
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            let widthConstraint = contentView.widthAnchor.constraint(equalToConstant: screenWidth - 32)
-            widthConstraint.priority = UILayoutPriority(999)
-            widthConstraint.isActive = true
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
+    }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
+        var newFrame = layoutAttributes.frame
+        newFrame.size.height = ceil(size.height)
+        layoutAttributes.frame = newFrame
+        return layoutAttributes
     }
     
     @objc func handleTap() {
