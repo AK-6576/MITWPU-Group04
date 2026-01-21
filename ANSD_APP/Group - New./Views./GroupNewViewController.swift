@@ -32,10 +32,10 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         // Setup UI Layout
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-                // Use automaticSize to let constraints determine the height
-                layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-                layout.minimumLineSpacing = 10
-            }
+            // FIX: Set this to .zero to disable auto-layout sizing and use your manual calculation
+            layout.estimatedItemSize = .zero
+            layout.minimumLineSpacing = 10
+        }
 
         self.messages.removeAll()
 
@@ -131,6 +131,83 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         isRecording = !isRecording
     }
     
+    // MARK: - Pause / Resume Logic
+        @IBAction func didTapPauseButton(_ sender: UIButton) {
+            togglePauseState()
+        }
+        
+        func togglePauseState() {
+            isPaused = !isPaused
+            
+            // 1. Update UI Icon
+            let config = UIImage.SymbolConfiguration(scale: .small)
+            let imgName = isPaused ? "play.fill" : "pause.fill"
+            pauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
+            
+            // 2. Handle Transcription Logic
+            if isPaused {
+                // User hit PAUSE -> Stop listening
+                if isRecording {
+                    print("DEBUG: Pausing Session...")
+                    stopLiveTranscription() // This cleans up ghost bubbles & stops the mic
+                    
+                    // Update Mic UI to show it's off
+                    micButton.tintColor = .systemBlue
+                    micButton.setImage(UIImage(systemName: "mic"), for: .normal)
+                    isRecording = false
+                }
+            } else {
+                // User hit PLAY -> Resume listening
+                if !isRecording {
+                    print("DEBUG: Resuming Session...")
+                    startLiveTranscription() // This creates a new "Listening..." bubble
+                    
+                    // Update Mic UI to show it's on
+                    micButton.tintColor = .systemRed
+                    micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
+                    isRecording = true
+                }
+            }
+        }
+    
+    // MARK: - End Session Logic
+        @IBAction func didTapStopButton(_ sender: UIButton) {
+            // 1. Show Confirmation Alert
+            let actionSheet = UIAlertController(title: "End Session?", message: "This will stop transcription and generate a summary.", preferredStyle: .alert)
+            
+            let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
+                guard let self = self else { return }
+                
+                // 2. CRITICAL: Stop Transcription & Clean up Firebase
+                // This ensures no "Listening..." bubble is left hanging in the DB
+                if self.isRecording {
+                    self.stopLiveTranscription()
+                    self.isRecording = false
+                }
+                
+                // 3. Navigate to Summary
+                self.navigateToSummary()
+            }
+            
+            actionSheet.addAction(endAction)
+            actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            self.present(actionSheet, animated: true)
+        }
+
+    func navigateToSummary() {
+            let storyboard = UIStoryboard(name: "Group-New.", bundle: nil)
+            
+            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
+               let summaryVC = summaryNav.topViewController as? GNSummaryViewController {
+                
+                // FIX: Pass the REAL messages to the summary screen
+                summaryVC.transcriptMessages = self.messages
+                
+                summaryNav.modalPresentationStyle = .pageSheet
+                self.present(summaryNav, animated: true, completion: nil)
+            }
+        }
+    
     func startLiveTranscription() {
         let newMessage = GNChatMessage(text: "Listening...", isIncoming: false, sender: self.myName, senderID: currentUserID)
         self.messages.append(newMessage)
@@ -168,28 +245,28 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             // 1. Safety Check: Ensure a message exists
             guard let lastMsg = messages.last else { return }
             
-            // 2. Clean the text to check for real content
+            // 2. Clean the text
             let cleanedText = lastMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
             
             // 3. LOGIC FIX: If text is empty OR still says "Listening...", DELETE IT.
             if cleanedText.isEmpty || cleanedText == "Listening..." {
                 print("DEBUG: Discarding empty voice message.")
                 
-                // Remove from local data source
+                // Remove from local array
                 messages.removeLast()
                 
                 // Remove from the screen immediately (removes the "ghost" bubble)
                 let lastIndexPath = IndexPath(item: messages.count, section: 0)
-                
-                // Perform the deletion safely
                 if collectionView.numberOfItems(inSection: 0) > 0 {
-                    collectionView.deleteItems(at: [lastIndexPath])
+                    collectionView.performBatchUpdates({
+                        self.collectionView.deleteItems(at: [lastIndexPath])
+                    }, completion: nil)
                 }
                 
                 return // Stop here. Do not send to Firebase.
             }
             
-            // 4. If we are here, the text is valid. Prepare to send.
+            // 4. Send to Firebase (Only if text is valid)
             let dictToSend: [String: Any] = [
                 "text": lastMsg.text,
                 "sender": self.myName,
@@ -197,11 +274,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                 "timestamp": ServerValue.timestamp()
             ]
             
-            // 5. Send to Firebase
             ref.childByAutoId().setValue(dictToSend) { [weak self] error, _ in
                 if error == nil {
                     DispatchQueue.main.async {
-                        // Update layout to fit the text exactly
                         self?.collectionView.collectionViewLayout.invalidateLayout()
                     }
                 }
@@ -209,19 +284,27 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-            // 1. Get the text for this message
-            let text = messages[indexPath.row].text
-            
-            // 2. estimate the height based on the font you use in your cell (e.g., system font 17)
-            let approximateWidth = collectionView.frame.width - 60 // Allow for padding/margins
-            let size = CGSize(width: approximateWidth, height: 1000)
-            let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 17)] // Make sure this matches your Cell Font
-            
-            let estimatedFrame = NSString(string: text).boundingRect(with: size, options: .usesLineFragmentOrigin, attributes: attributes, context: nil)
-            
-            // 3. Return dynamic height (+40 for padding)
-            return CGSize(width: collectionView.frame.width, height: estimatedFrame.height + 40)
-        }
+        let text = messages[indexPath.row].text
+        
+        // 1. SAFE WIDTH CALCULATION
+        // Screen Width - (Avatar width + Left Margin + Right Margin + Bubble Padding)
+        // We subract 100 to be safe. If this number is too small, text gets cut off.
+        let approximateWidth = collectionView.frame.width - 100
+        
+        let size = CGSize(width: approximateWidth, height: 1000)
+        let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 17)]
+        
+        let estimatedFrame = NSString(string: text).boundingRect(
+            with: size,
+            options: .usesLineFragmentOrigin,
+            attributes: attributes,
+            context: nil
+        )
+        
+        // 2. HEIGHT CALCULATION
+        // We add +60 to account for the Name Label (top) and extra padding (bottom)
+        return CGSize(width: collectionView.frame.width, height: estimatedFrame.height + 60)
+    }
     
     // MARK: - Helpers & CollectionView
     func scrollToBottom() {

@@ -238,16 +238,48 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         GJpauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
     }
     
-    @IBAction func didTapStopButton(_ sender: UIButton) {
-        if isRecording { didTapMicButton(GJmicButton) }
+    // MARK: - Navigation Logic
+        @IBAction func didTapStopButton(_ sender: UIButton) {
+            // 1. Show Confirmation
+            let alert = UIAlertController(title: "Leave Session?", message: "This will end transcription and generate a summary.", preferredStyle: .alert)
+            
+            let leaveAction = UIAlertAction(title: "End & Summarize", style: .destructive) { [weak self] _ in
+                guard let self = self else { return }
+                
+                // 2. Stop Recording & Clean up
+                if self.isRecording {
+                    self.stopLiveTranscription()
+                    self.isRecording = false
+                }
+                
+                // 3. Navigate to Summary with Data
+                self.navigateToSummary()
+            }
+            
+            alert.addAction(leaveAction)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            self.present(alert, animated: true)
+        }
         
-        let alert = UIAlertController(title: "Leave Session?", message: "Are you sure you want to disconnect?", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Leave", style: .destructive, handler: { _ in
-            self.dismiss(animated: true)
-        }))
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        self.present(alert, animated: true)
-    }
+        func navigateToSummary() {
+            // NOTE: Ensure "Group-Join" matches your Storyboard filename exactly.
+            // If it is in the same storyboard as GroupNew, use "Group-New."
+            let storyboard = UIStoryboard(name: "Group-Join.", bundle: nil)
+            
+            // Ensure Identifier "GJSummaryNavController" exists in Storyboard
+            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "GJSummaryNavController") as? UINavigationController,
+               let summaryVC = summaryNav.topViewController as? GJSummaryViewController {
+                
+                // PASS THE REAL DATA
+                summaryVC.transcriptMessages = self.messages
+                summaryVC.conversationTitle = "Room \(self.currentSessionID)"
+                
+                summaryNav.modalPresentationStyle = .pageSheet
+                self.present(summaryNav, animated: true, completion: nil)
+            } else {
+                print("DEBUG: Could not instantiate GJSummaryViewController. Check Storyboard ID.")
+            }
+        }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
             // 1. Get the text for this message

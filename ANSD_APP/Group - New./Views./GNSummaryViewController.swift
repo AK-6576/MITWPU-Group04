@@ -1,6 +1,5 @@
 //  GNSummaryViewController.swift
 //  ANSD_APP
-//
 
 import UIKit
 import Foundation
@@ -16,7 +15,13 @@ final class GNSummaryViewController: UIViewController,
     @IBOutlet private weak var optionsButton: UIBarButtonItem!
 
     var conversationTitle: String = "New Conversation"
+    
+    // NEW: This will hold the real chat messages passed from the previous screen
+    var transcriptMessages: [GNChatMessage] = []
+    
+    // This is for the UI list of people
     var participantsData: [GNParticipantData] = []
+    
     private(set) var notesText: String = ""
     
     // Properties for on-device AI
@@ -27,7 +32,38 @@ final class GNSummaryViewController: UIViewController,
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
+        
+        // 1. Convert real messages into participant data for the UI
+        if !transcriptMessages.isEmpty {
+            prepareParticipantsFromMessages()
+        }
+        
+        // 2. Generate summary from real text
         generateAISummary()
+    }
+
+    // MARK: - Data Preparation
+    private func prepareParticipantsFromMessages() {
+        // Find unique senders
+        var uniqueSenders: [String: String] = [:] // [ID: Name]
+        
+        for msg in transcriptMessages {
+            // Check if we already have this sender
+            if uniqueSenders[msg.senderID] == nil {
+                uniqueSenders[msg.senderID] = msg.sender
+            }
+        }
+        
+        // Create participant objects for the table view
+        self.participantsData = uniqueSenders.map { (_, name) in
+            GNParticipantData(
+                name: name,
+                summary: "Participant", // We don't have individual summaries yet
+                //imageName: "avatar_1"   // Default avatar
+            )
+        }
+        
+        self.tableView.reloadData()
     }
 
     // MARK: - UI
@@ -51,10 +87,20 @@ final class GNSummaryViewController: UIViewController,
 
     // MARK: - AI Summarization Logic
     private func generateAISummary() {
-        // 1. Prepare the raw transcript from participants
-        let rawTranscript = self.participantsData
-            .map { $0.summary }
-            .joined(separator: "\n")
+        // 1. Prepare the raw transcript from REAL MESSAGES
+        var rawTranscript = ""
+        
+        if !transcriptMessages.isEmpty {
+            // Use real chat logs: "Name: Text"
+            rawTranscript = transcriptMessages
+                .map { "\($0.sender): \($0.text)" }
+                .joined(separator: "\n")
+        } else {
+            // Fallback to dummy data if no messages passed
+            rawTranscript = self.participantsData
+                .map { $0.summary }
+                .joined(separator: "\n")
+        }
 
         guard !rawTranscript.isEmpty else {
             updateNotes("No conversation data available.")
@@ -63,7 +109,7 @@ final class GNSummaryViewController: UIViewController,
 
         // 2. Check if the on-device model is available
         guard model.isAvailable else {
-            updateNotes(rawTranscript) // Fallback to raw text if AI is unavailable
+            updateNotes("AI Model unavailable. Raw Transcript:\n\n" + rawTranscript)
             return
         }
 
@@ -152,6 +198,7 @@ final class GNSummaryViewController: UIViewController,
 
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
+        // Only show participant rows if section 3
         section == 3 ? participantsData.count : 1
     }
 
