@@ -7,6 +7,7 @@
 
 import UIKit
 import PDFKit
+import FoundationModels // Required for Apple Intelligence
 
 class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, QCNotesCardCellDelegate, QCSummaryCardDelegate {
     
@@ -16,7 +17,16 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     var conversationTitle = "Conversation 1"
     var participantsData: [QCParticipantData] = []
     
-    // Function - Initializes the view lifecycle, setting up the table view properties, button targets, and gesture recognizers for keyboard handling.
+    // MARK: - AI Properties
+    // This receives the text from the QuickCaptioningVC
+    var rawTranscript: String = ""
+    private var notesText: String = ""
+    private var isProcessing = false
+    
+    // Apple Intelligence Model
+    private let model = SystemLanguageModel.default
+    
+    // Function - Initializes the view lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -39,21 +49,80 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+        
+        // Trigger AI Summarization immediately
+        generateAISummary()
     }
     
-    // Function - Dismisses the keyboard by resigning the first responder status on the view.
+    // MARK: - Apple Intelligence Logic
+    
+    private func generateAISummary() {
+        guard !rawTranscript.isEmpty else { return }
+        
+        // Safety check for device support
+        guard model.isAvailable else {
+            self.notesText = "AI Model unavailable on this device.\n\nRaw Transcript:\n\(rawTranscript)"
+            self.tableView.reloadSections(IndexSet(integer: 5), with: .automatic)
+            return
+        }
+
+        isProcessing = true
+        // Set placeholder text
+        self.notesText = "Apple Intelligence is analyzing the conversation..."
+        self.tableView.reloadData()
+        
+        Task {
+            let prompt = """
+            You are an helpful assistant. Read this chat transcript.
+            
+            Task:
+            1. Summarize the conversation.
+            2. Extract key entities (Names, Codes, Money/Prices).
+            
+            Transcript:
+            \(rawTranscript)
+            
+            Format:
+            Summary: [Your summary]
+            Details:
+            - Codes: [List codes]
+            - Cost: [List prices]
+            """
+
+            do {
+                let session = LanguageModelSession()
+                let response = try await session.respond(to: prompt)
+                
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.notesText = response.content
+                    self.updateNotesTable()
+                }
+            } catch {
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.notesText = "Summary failed: \(error.localizedDescription)"
+                    self.updateNotesTable()
+                }
+            }
+        }
+    }
+    
+    private func updateNotesTable() {
+        // Reloads the Notes section (Index 5)
+        self.tableView.reloadSections(IndexSet(integer: 5), with: .automatic)
+    }
+    
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
     
     // MARK: - Actions
     
-    // Function - Triggered when the share button is tapped, initiating the PDF generation and sharing process.
     @objc private func shareTapped() {
         shareAsPDF()
     }
     
-    // Function - Navigates back to the Home screen by resetting the window's root view controller with a transition animation.
     @IBAction func backTapped(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
@@ -70,23 +139,35 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             window.makeKeyAndVisible()
         }
     }
-
     // MARK: - PDF Generation
     
-    // Function - Compiles the conversation data into a string, generates a PDF, and presents the share sheet.
     private func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
+        
+        // Add AI Notes to PDF
+        pdfContent += "--- AI SUMMARY ---\n"
+        pdfContent += "\(notesText)\n\n"
+        
+        // Add Participant Data
+        pdfContent += "--- PARTICIPANTS ---\n"
         for person in participantsData {
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
         }
         
         if let pdfURL = createPDF(from: pdfContent) {
             let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
+            
+            // iPad crash fix
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = self.view
+                popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            
             self.present(activityVC, animated: true)
         }
     }
     
-    // Function - Renders the provided text string into a PDF file saved in the temporary directory and returns its URL.
     private func createPDF(from text: String) -> URL? {
         let pageWidth = 595.2
         let pageHeight = 841.8
@@ -121,18 +202,15 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Table View Data Source
     
-    // Function - Returns the total number of sections in the table view structure (Headers, Cards, etc.).
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
 
-    // Function - Returns the number of rows for a specific section, allowing for multiple participant rows in section 3.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 3 { return participantsData.count }
         return 1
     }
     
-    // Function - Dequeues and configures the appropriate cell type based on the section index (Headers, Summaries, Participants, Notes).
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
@@ -157,12 +235,19 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QCSummarySectionHeaderCell
-            cell.headerLabel.text = "Notes"
+            cell.headerLabel.text = "AI Notes"
             cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
             
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! QCNotesCardCell
+            
+            // --- AI DATA BINDING ---
+            cell.notesTextView.text = notesText
+            // Visual indicator if processing
+            cell.notesTextView.textColor = isProcessing ? .secondaryLabel : .label
+            // -----------------------
+            
             cell.delegate = self
             return cell
             
@@ -173,15 +258,16 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Delegates
     
-    // Function - Updates the table view layout dynamically when text is entered into the notes cell.
     func didUpdateText(in cell: QCNotesCardCell) {
+        // Save manual edits
+        notesText = cell.notesTextView.text
+        
         tableView.performBatchUpdates(nil, completion: nil)
         if let indexPath = tableView.indexPath(for: cell) {
             tableView.scrollToRow(at: indexPath, at: .bottom, animated: false)
         }
     }
 
-    // Function - Updates the local conversation title variable whenever the user edits the title text field.
     func didChangeTitle(text: String) {
         conversationTitle = text
     }

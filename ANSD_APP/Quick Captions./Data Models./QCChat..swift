@@ -29,3 +29,10 @@ struct QCChatData {
         QCChatMessage(text: "Public transport would have been cheaper.", isIncoming: false, sender: "Me")
     ]
 }
+
+// MARK: - AI Helper Extension
+extension Array where Element == QCChatMessage {
+    func toTranscriptString() -> String {
+        return self.map { "\($0.sender): \($0.text)" }.joined(separator: "\n")
+    }
+}
