@@ -116,22 +116,17 @@ class GJSummaryViewController: UIViewController, UITableViewDelegate, UITableVie
         // 3. Run the model asynchronously
         Task {
             let prompt = """
-            Summarize the following meeting transcript.
+            You are an expert meeting assistant. Analyze the following transcript of a conversation.
 
-            Requirements:
-            - Focus on key points, decisions, and action items.
-            - Do not add information that is not in the transcript.
-            - Keep it under 200 words.
+            Task:
+            1. Read every message in the transcript below.
+            2. Create a concise summary of the conversation's main purpose and outcome.
+            3. Extract and list key details such as specific access codes, dates/times, names of people involved, and any decisions made.
 
-            Format:
+            Format your response exactly as follows:
             Summary:
-            - 3–6 bullet points.
-
-            Decisions:
-            - Bullet list of decisions, or “None noted.”
-
-            Action Items:
-            - “• [Owner] – [Task] – [Deadline if given]”, or “None noted.”
+            [Provide a clear 2-3 sentence summary of the conversation]
+            
 
             Transcript:
             \(rawTranscript)
