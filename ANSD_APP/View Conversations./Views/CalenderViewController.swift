@@ -21,7 +21,7 @@ class CalenderViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupSheet()
-        setupDatePicker()
+
     }
 
     // Function - Configures the modal presentation style to be a medium detent (half-screen) with a visible grabber.
@@ -32,12 +32,6 @@ class CalenderViewController: UIViewController {
         }
     }
 
-    // Function - Sets the date picker style to inline (calendar grid) and adds a target for value changes.
-    private func setupDatePicker() {
-        datePicker.preferredDatePickerStyle = .inline
-        datePicker.datePickerMode = .date
-        datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
-    }
 
     // Function - Delegate method triggered when the user selects a date, passing the date back to the main controller.
     @objc private func dateChanged(_ sender: UIDatePicker) {
@@ -48,4 +42,8 @@ class CalenderViewController: UIViewController {
     @IBAction func exitButtonTapped(_ sender: UIButton) {
         dismiss(animated: true)
     }
+    
+    
+    
+    
 }

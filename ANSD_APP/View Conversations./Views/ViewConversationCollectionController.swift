@@ -166,7 +166,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         searchBar.isUserInteractionEnabled = true
         
         if let textField = searchBar.value(forKey: "searchField") as? UITextField {
-            textField.backgroundColor = .white
+            textField.backgroundColor = .clear
             textField.textColor = .black
             textField.layer.cornerRadius = 24
             textField.layer.masksToBounds = true
