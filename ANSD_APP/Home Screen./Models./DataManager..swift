@@ -27,3 +27,9 @@ class DataManager {
         return conversations.first { $0.id == id }
     }
 }
+
+// Data Model - SignUp screen.
+struct FormField {
+    let title: String
+    var value: String
+}

@@ -8,6 +8,7 @@
 import UIKit
 
 class WelcomeViewController: UIViewController {
+    
     @IBOutlet weak var logoImageView: UIImageView!
     @IBOutlet weak var getStartedButton: UIButton!
     
@@ -22,7 +23,7 @@ class WelcomeViewController: UIViewController {
     }
 
     @IBAction func getStartedTapped(_ sender: UIButton) {
-        print("Navigate to Sign Up")
+        performSegue(withIdentifier: "showHome", sender: self)
     }
     
     @IBAction func loginTapped(_ sender: UIButton) {
