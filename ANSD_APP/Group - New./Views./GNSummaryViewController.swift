@@ -84,7 +84,22 @@ final class GNSummaryViewController: UIViewController,
     @objc private func shareTapped() {
         shareAsPDF()
     }
-
+    
+    @IBAction func backTapped(_ sender: Any) {
+        let storyboard = UIStoryboard(name: "Home", bundle: nil)
+        let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
+        let navController = UINavigationController(rootViewController: homeVC)
+        navController.isNavigationBarHidden = false
+        navController.modalPresentationStyle = .fullScreen
+        if let window = self.view.window {
+            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = navController
+            }, completion: nil)
+            
+            window.makeKeyAndVisible()
+        }
+    }
+    
     // MARK: - AI Summarization Logic
     private func generateAISummary() {
         // 1. Prepare the raw transcript from REAL MESSAGES
