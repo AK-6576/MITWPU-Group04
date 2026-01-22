@@ -1205,15 +1205,15 @@
             </objects>
             <point key="canvasLocation" x="1361" y="-249"/>
         </scene>
-        <!--Test1-->
+        <!--QuickCaptionsScreen-->
         <scene sceneID="1dm-zH-fQV">
             <objects>
-                <viewControllerPlaceholder storyboardName="Quick Captions" referencedIdentifier="Test1" id="bgx-rp-Zfx" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="Quick Captions" referencedIdentifier="QuickCaptionsScreen" id="bgx-rp-Zfx" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="SMS-F1-y2b"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HJj-da-aKn" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3259.5419847328244" y="-570.42253521126759"/>
+            <point key="canvasLocation" x="3329" y="-570"/>
         </scene>
         <!--MeetSelectionViewController-->
         <scene sceneID="YV0-tX-3ra">
@@ -1233,7 +1233,7 @@
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ycz-OR-alE" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3399.2366412213737" y="-455.63380281690144"/>
+            <point key="canvasLocation" x="3392" y="-453"/>
         </scene>
         <!--Friends-->
         <scene sceneID="MfO-Aa-vzU">
