@@ -1,0 +1,206 @@
+//
+//  GroupJoinViewController.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//
+
+import UIKit
+
+class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    
+    @IBOutlet weak var GroupJoinCollectionView: UICollectionView!
+    @IBOutlet weak var GroupJoinPauseButton: UIButton!
+    @IBOutlet weak var GroupJoinMicButton: UIButton!
+    @IBOutlet weak var GroupJoinEndButton: UIButton!
+    
+    var sessionTitle: String = "Conversation"
+    var messages: [GroupJoin] = []
+    let fullConversation = GroupJoinChat.fullConversation
+    var currentMessageIndex = 0
+    var isPaused = false
+    var otherPersonName = "Person 1"
+    
+    // Function - Initializes the view lifecycle, setting the title, configuring the collection view delegate and data source, and starting the message simulation.
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.title = sessionTitle
+        GroupJoinCollectionView.dataSource = self
+        GroupJoinCollectionView.delegate = self
+        
+        if let layout = GroupJoinCollectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
+            layout.minimumLineSpacing = 4
+            layout.sectionInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
+        }
+        
+        GroupJoinCollectionView.keyboardDismissMode = .interactive
+        processNextMessage()
+    }
+    
+    // MARK: - Helper to match Names to Avatar Assets
+    
+    // Function - Determines the appropriate avatar image name based on the participant's name string.
+    func getImageName(for name: String) -> String {
+        let lowerName = name.lowercased()
+        
+        if lowerName.contains("steve") { return "avatar_1" }
+        if lowerName.contains("peter") { return "avatar_2" }
+        if lowerName.contains("bruce") { return "avatar_3" }
+        if lowerName.contains("tony") { return "avatar_4" }
+        if lowerName.contains("natasha") { return "avatar_5" }
+        if lowerName.contains("wanda") { return "avatar_6" }
+        if lowerName.contains("vision") { return "avatar_7" }
+        if lowerName.contains("bucky") { return "avatar_8" }
+
+        return "person.circle.fill"
+    }
+    
+    // Function - Recursively processes and displays the next message in the conversation queue with a delay, checking for pause state.
+    func processNextMessage() {
+        if currentMessageIndex >= fullConversation.count { return }
+        if isPaused { return }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self = self else { return }
+            if self.isPaused { return }
+            
+            let message = self.fullConversation[self.currentMessageIndex]
+            self.messages.append(message)
+            let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
+            self.GroupJoinCollectionView.insertItems(at: [indexPath])
+            self.scrollToBottom()
+            self.currentMessageIndex += 1
+            self.processNextMessage()
+        }
+    }
+    
+    // Function - Returns the total number of messages currently in the display array.
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return messages.count
+    }
+    
+    // Function - Dequeues and configures the appropriate cell type (incoming or outgoing) for the given index path.
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let message = messages[indexPath.row]
+        
+        if message.isIncoming {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! GroupJoinIncomingCell
+            cell.GroupJoinMessageLabel.text = message.text
+
+            let displayName: String
+            if message.sender == "Person 1" {
+                displayName = self.otherPersonName
+            } else {
+                displayName = message.sender
+            }
+            cell.GroupJoinNameLabel.text = displayName
+            
+            let imageName = getImageName(for: displayName)
+            if let image = UIImage(named: imageName) {
+                cell.GroupJoinProfileImageView.image = image
+            } else {
+                cell.GroupJoinProfileImageView.image = UIImage(systemName: "person.circle.fill")
+            }
+            
+            cell.onLabelTapped = { [weak self] in
+                self?.showRenameAlert()
+            }
+            return cell
+        } else {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! GroupJoinOutgoingCell
+            cell.GroupJoinMessageLabel.text = message.text
+            return cell
+        }
+    }
+    
+    // Function - Displays an alert controller allowing the user to rename the other participant, pausing the chat during input.
+    func showRenameAlert() {
+        if !isPaused { togglePauseState() }
+        
+        let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
+        alert.addTextField { tf in
+            tf.text = self.otherPersonName
+            tf.autocapitalizationType = .words
+        }
+        
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
+                self.otherPersonName = newName
+                self.GroupJoinCollectionView.reloadData()
+            }
+            self.togglePauseState()
+        }
+        
+        alert.addAction(saveAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        self.present(alert, animated: true)
+    }
+    
+    // Function - Action triggered by the pause button to toggle the chat simulation state.
+    @IBAction func didTapPauseButton(_ sender: UIButton) {
+        togglePauseState()
+    }
+    
+    // Function - Toggles the internal pause state and updates the button UI, resuming the chat if applicable.
+    func togglePauseState() {
+        isPaused = !isPaused
+        let config = UIImage.SymbolConfiguration(scale: .small)
+        let imgName = isPaused ? "play.fill" : "pause.fill"
+        GroupJoinPauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
+        if !isPaused { processNextMessage() }
+    }
+    
+    // Function - Action triggered by the stop button; pauses the chat and presents a confirmation sheet to end the session and navigate to summary.
+    @IBAction func didTapStopButton(_ sender: UIButton) {
+        if !isPaused { togglePauseState() }
+        
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
+            let storyboard = UIStoryboard(name: "Group-Join.", bundle: nil)
+            
+            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
+               let summaryVC = summaryNav.topViewController as? GroupJoinSummaryViewController {
+                
+                summaryVC.conversationTitle = self.sessionTitle
+                summaryVC.chatHistory = self.messages
+
+                summaryVC.participantsData = [
+                    GroupJoinParticipants(
+                        name: "Peter Parker",
+                        summary: "Peter has finished his assignment and is informing his friends about the same. He has a family outing at 4 PM and cannot help.",
+                        avatarTitle: "avatar_2"
+                    ),
+                    GroupJoinParticipants(
+                        name: "Bruce Banner",
+                        summary: "Bruce is having fun at Steve's misfortune and he hasn't started doing it as well. He is very relaxed about the whole thing.",
+                        avatarTitle: "avatar_3"
+                    ),
+                    GroupJoinParticipants(
+                        name: "Steve Parker",
+                        summary: "Steve is being smug about the whole thing and is scolding his friends for not having done the assignment in the past 3 weeks.",
+                        avatarTitle: "avatar_1"
+                    )
+                ]
+                
+                summaryNav.modalPresentationStyle = .pageSheet
+                self.present(summaryNav, animated: true, completion: nil)
+            }
+        }
+        
+        actionSheet.addAction(endAction)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        self.present(actionSheet, animated: true)
+    }
+    
+    // Function - Scrolls the collection view to the bottom-most item to ensure the latest message is visible.
+    func scrollToBottom() {
+        guard messages.count > 0 else { return }
+        GroupJoinCollectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
+    }
+    
+    // Function - Returns the size for each item in the collection view layout.
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: collectionView.bounds.width, height: 100)
+    }
+}
