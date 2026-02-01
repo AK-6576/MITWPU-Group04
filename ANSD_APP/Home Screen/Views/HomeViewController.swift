@@ -73,7 +73,6 @@ class HomeViewController: UIViewController {
     // Function - Prepares for segues by configuring destination view controllers with necessary data.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
 
-        
         if segue.identifier == "showProfile" {
             let _ = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
         }
@@ -81,7 +80,7 @@ class HomeViewController: UIViewController {
 
             guard let destVC = segue.destination as? ChatHistoryViewController,
                   let selectedItem = sender as? RoutineConversation else { return }
-            
+           
             if let fullData = DataManager.shared.getConversation(byId: selectedItem.id) {
                 destVC.histconversationData = fullData
             } else {
@@ -98,6 +97,21 @@ class HomeViewController: UIViewController {
                 destVC.histconversationData = fallbackConv
             }
         }
+        // MARK: New Halfway Modal Segue Logic
+        else if segue.identifier == "showInfoHalfway" {
+
+            // 2. Configure Halfway Sheet
+            if let sheet = segue.destination.sheetPresentationController {
+                // Allows the sheet to snap to halfway or full screen
+                sheet.detents = [.medium(), .large()]
+                
+                // Adds the grey drag handle at the top
+                sheet.prefersGrabberVisible = true
+                
+                // Optional: Round corners to match system look
+                sheet.preferredCornerRadius = 24
+            }
+        }
     }
     
     // MARK: - Helper Methods
@@ -109,13 +123,13 @@ class HomeViewController: UIViewController {
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
-            
+           
             var updatedItem = item
             updatedItem.conversationTopic = newName
-            
+           
             // Update Repo
             QuickActionsRepository.shared.updateAction(updatedItem)
-            
+           
             // Update Local
             self.quickActions[row] = updatedItem
             self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
@@ -175,6 +189,8 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             let item = quickActions[indexPath.row]
             let isLastRow = indexPath.row == quickActions.count - 1
             cell.configure(with: item, isLast: isLastRow)
+            
+            // Note: This is the existing closure for the cell's internal info button
             cell.onInfoTapped = { [weak self] in self?.presentInfoScreen(for: item) }
             return cell
         } else {
@@ -206,6 +222,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     // Function - Displays an alert containing details about the selected routine conversation.
+    // (Used by the cell's internal button, not the swipe action)
     func presentInfoScreen(for item: RoutineConversation) {
         let alert = UIAlertController(title: item.conversationTopic, message: item.description, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
@@ -214,12 +231,13 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     // MARK: - Swipe Actions
     
-    // Function - Configures swipe actions for deleting and renaming items, enabled only for the Quick Actions section.
+    // Function - Configures swipe actions for Delete, Edit, and Info (Halfway Modal).
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard indexPath.section == 0 else { return nil }
         
         let item = quickActions[indexPath.row]
         
+        // 1. Delete Action
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
             
@@ -237,6 +255,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
         
+        // 2. Rename Action
         let renameAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
             self?.showRenameAlert(for: item, row: indexPath.row)
             completion(true)
@@ -244,7 +263,16 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         renameAction.backgroundColor = .systemOrange
         renameAction.image = UIImage(systemName: "pencil")
         
-        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction])
+        // 3. Info Action (New Halfway Modal)
+        let infoAction = UIContextualAction(style: .normal, title: "Info") { [weak self] (_, _, completion) in
+            // This triggers the segue that is caught in prepare(for:) to set the sheet detents
+            self?.performSegue(withIdentifier: "showInfoHalfway", sender: item)
+            completion(true)
+        }
+        infoAction.backgroundColor = .systemBlue
+        infoAction.image = UIImage(systemName: "info.circle")
+        
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction, infoAction])
         config.performsFirstActionWithFullSwipe = false
         return config
     }

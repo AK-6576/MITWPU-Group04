@@ -124,7 +124,7 @@
         <!--Description-->
         <scene sceneID="jz5-ab-MEC">
             <objects>
-                <viewController title="Description" id="BLI-vU-eQC" customClass="InfoViewController1" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="FamilyAbout" title="Description" useStoryboardIdentifierAsRestorationIdentifier="YES" id="BLI-vU-eQC" customClass="InfoViewController1" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="AGc-M4-7Xz">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="793"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -493,7 +493,7 @@
         <!--Navigation Controller-->
         <scene sceneID="6Ft-7P-ReG">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="KpD-LA-Ex9" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="FamilyNav" automaticallyAdjustsScrollViewInsets="NO" useStoryboardIdentifierAsRestorationIdentifier="YES" id="KpD-LA-Ex9" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="cHV-pl-Exs">
                         <rect key="frame" x="0.0" y="16" width="393" height="54"/>
