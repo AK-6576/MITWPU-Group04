@@ -79,18 +79,19 @@ class QuickActionsViewController: UITableViewController {
         var segueID = ""
         
         switch category {
-        case "Office":
-            segueID = "officeChat"
         case "Family":
             segueID = "familyChat"
         case "Friends":
+           
             segueID = "friendChat"
+        case "Office": // Note: Fix the "Famiy" typo here too
+            segueID = "officeChat"
         default:
             print("No chat segue configured for category: \(category)")
             return
         }
         
-        performSegue(withIdentifier: segueID, sender: item)
+        performSegue(withIdentifier:segueID , sender: item)
     }
     
     // MARK: - Header Navigation

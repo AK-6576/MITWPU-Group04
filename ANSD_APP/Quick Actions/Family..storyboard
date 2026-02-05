@@ -511,7 +511,7 @@
         <!--Summary-->
         <scene sceneID="7oG-qk-NPI">
             <objects>
-                <viewController storyboardIdentifier="summaryScreen" id="jcz-Gl-4Jy" customClass="FamilySummaryViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="summaryScreen" useStoryboardIdentifierAsRestorationIdentifier="YES" id="jcz-Gl-4Jy" customClass="FamilySummaryViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="XsM-gM-Rd2">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -938,7 +938,7 @@
                                             <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="IncomingCell" id="GsR-MI-Lo5" customClass="IncomingCell1" customModule="ANSD_APP" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="IncomingCell" id="GsR-MI-Lo5" customClass="IncomingCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="85" y="0.0" width="191" height="147"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="0L1-xQ-FME">
@@ -946,7 +946,7 @@
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <subviews>
                                                         <view contentMode="scaleToFill" verticalCompressionResistancePriority="1000" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Emo-Xe-YWZ">
-                                                            <rect key="frame" x="45" y="4" width="61.333333333333343" height="40.333333333333336"/>
+                                                            <rect key="frame" x="36" y="4" width="61.333333333333343" height="40.333333333333336"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" ambiguous="YES" text="Label" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lul-yq-d8i">
                                                                     <rect key="frame" x="10" y="10" width="41.333333333333336" height="20.333333333333329"/>
@@ -983,7 +983,6 @@
                                                         <constraint firstAttribute="bottom" secondItem="eoS-WA-e12" secondAttribute="bottom" constant="8" id="JjD-Hr-SRV"/>
                                                         <constraint firstItem="eoS-WA-e12" firstAttribute="leading" secondItem="EYl-vb-XEb" secondAttribute="trailing" id="SgV-c7-lHB"/>
                                                         <constraint firstAttribute="bottom" secondItem="EYl-vb-XEb" secondAttribute="bottom" constant="8" id="gXl-Zh-hzz"/>
-                                                        <constraint firstItem="Emo-Xe-YWZ" firstAttribute="leading" secondItem="EYl-vb-XEb" secondAttribute="trailing" id="iWp-CS-v8k"/>
                                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Emo-Xe-YWZ" secondAttribute="trailing" constant="42" id="mSi-iz-oL0"/>
                                                         <constraint firstItem="EYl-vb-XEb" firstAttribute="leading" secondItem="0L1-xQ-FME" secondAttribute="leading" constant="15" id="ogx-ip-ki7"/>
                                                         <constraint firstItem="Emo-Xe-YWZ" firstAttribute="leading" secondItem="0L1-xQ-FME" secondAttribute="leading" constant="36" id="omh-N7-fF1"/>
@@ -998,7 +997,7 @@
                                                     <outlet property="profileImageView" destination="EYl-vb-XEb" id="iiu-nK-qrN"/>
                                                 </connections>
                                             </collectionViewCell>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="vxw-B5-KsC" customClass="OutgoingCell1" customModule="ANSD_APP" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="vxw-B5-KsC" customClass="OutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="90" y="157" width="181" height="147"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="JgV-ad-sE0">
@@ -1072,9 +1071,6 @@
                                                         <buttonConfiguration key="configuration" style="gray">
                                                             <imageReference key="image" image="pause.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
-                                                        <connections>
-                                                            <action selector="didTapPauseButton:" destination="9c8-7o-CVo" eventType="touchUpInside" id="r5n-Ua-ngZ"/>
-                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Rlb-tw-awO">
                                                         <rect key="frame" x="126" y="0.0" width="110" height="50"/>
@@ -1086,6 +1082,9 @@
                                                         <buttonConfiguration key="configuration" style="gray">
                                                             <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
+                                                        <connections>
+                                                            <action selector="micButtonTapped:" destination="9c8-7o-CVo" eventType="touchUpInside" id="8ZC-TQ-Y6X"/>
+                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="dIR-Wc-TEO">
                                                         <rect key="frame" x="252" y="0.0" width="110" height="50"/>
@@ -1098,7 +1097,7 @@
                                                             <imageReference key="image" image="square.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapStopButton:" destination="9c8-7o-CVo" eventType="touchUpInside" id="emg-kG-7xG"/>
+                                                            <action selector="endSessionTapped:" destination="9c8-7o-CVo" eventType="touchUpInside" id="rvp-Vb-qXY"/>
                                                         </connections>
                                                     </button>
                                                 </subviews>
@@ -1141,7 +1140,6 @@
                     <navigationItem key="navigationItem" title="Assignment Completion" largeTitleDisplayMode="never" id="RWe-GG-X2I">
                         <barButtonItem key="rightBarButtonItem" image="info" catalog="system" id="3Gw-2z-e2g">
                             <connections>
-                                <action selector="didTapInfoButton:" destination="9c8-7o-CVo" id="nax-in-nxx"/>
                                 <segue destination="KpD-LA-Ex9" kind="presentation" identifier="ShowInfo" id="IZT-pk-iJd"/>
                             </connections>
                         </barButtonItem>
@@ -1149,9 +1147,7 @@
                     <nil key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="collectionView" destination="0ch-lk-TKx" id="hlp-Hi-F1A"/>
-                        <outlet property="endButton" destination="dIR-Wc-TEO" id="VRP-om-cSc"/>
                         <outlet property="micButton" destination="Rlb-tw-awO" id="qKL-jk-wl4"/>
-                        <outlet property="pauseButton" destination="xbs-bf-Qaa" id="V2K-1U-4By"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Elh-wJ-GGh" sceneMemberID="firstResponder"/>

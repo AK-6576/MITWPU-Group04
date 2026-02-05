@@ -1,170 +1,133 @@
-//
-//  RoutineViewController1.swift
-//  ANSD_APP
-//
-//  Created by Dhiraj Bodake on 27/11/25.
-//
-
 import UIKit
 
-class RoutineViewController1: UIViewController, UITableViewDataSource, UITableViewDelegate {
+// MARK: - Protocol for Data Consistency
+protocol RoutineItemProtocol {
+    var title: String { get set }
+    var time: String { get }
+    var notes: String { get set }
+}
+
+
+
+// MARK: - Unified Routine View Controller
+class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     
-    var routineList: [FamilyRoutineItem] = []
-    var originalList: [FamilyRoutineItem] = []
+    // MARK: - Properties
+    /// Set this property when navigating to this screen to load correct data
+    var category: ChatCategory = .family
+    var routineList: [RoutineItemProtocol] = []
+    var originalList: [RoutineItemProtocol] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
-        tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 60
-        tableView.contentInset = .zero
-        tableView.separatorInset = .zero
-        tableView.layoutMargins = .zero
-        tableView.separatorStyle = .singleLine
-        loadData()
         setupNavigationBarMenu()
+        loadData()
     }
     
     func setupTableView() {
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.cellLayoutMarginsFollowReadableWidth = false
+        tableView.rowHeight = 72
         tableView.tableFooterView = UIView()
     }
     
+    // REDUNDANCY RESOLVED: Single load function using RoutineRepository
     func loadData() {
-        self.routineList = FamilyRepository.getMockData1()
-        self.originalList = self.routineList
+        let data = RoutineRepository.getRoutineData(for: category)
+        
+        // We add .map { $0 } to tell Swift to treat each RoutineItem as a Protocol item
+        self.routineList = data.map { $0 as! any RoutineItemProtocol as RoutineItemProtocol }
+        self.originalList = data.map { $0 as! any RoutineItemProtocol as RoutineItemProtocol }
+        
+        self.title = "\(category)".capitalized + " Routine"
         tableView.reloadData()
     }
     
+    // MARK: - Navigation & Menu
     func setupNavigationBarMenu() {
-        let selectAction = UIAction(title: "Select Conversations", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
-            guard let self = self else { return }
-            let isEditing = !self.tableView.isEditing
-            self.tableView.setEditing(isEditing, animated: true)
-        }
-        
-        let sortCustom = UIAction(title: "Custom (Reset)", image: UIImage(systemName: "arrow.counterclockwise"), state: .on) { [weak self] _ in
-            guard let self = self else { return }
-            self.routineList = self.originalList
-            self.tableView.reloadData()
+        let selectAction = UIAction(title: "Select", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
+            self?.tableView.setEditing(!(self?.tableView.isEditing ?? false), animated: true)
         }
         
         let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
-            guard let self = self else { return }
-            self.routineList.sort { $0.title < $1.title }
-            self.tableView.reloadData()
+            self?.routineList.sort { $0.title < $1.title }
+            self?.tableView.reloadData()
         }
         
-        let sortTime = UIAction(title: "Time", image: UIImage(systemName: "clock")) { [weak self] _ in
-            guard let self = self else { return }
-            self.routineList.sort { $0.time < $1.time }
-            self.tableView.reloadData()
+        let sortReset = UIAction(title: "Reset", image: UIImage(systemName: "arrow.counterclockwise")) { [weak self] _ in
+            self?.routineList = self?.originalList ?? []
+            self?.tableView.reloadData()
         }
+
+        let sortByMenu = UIMenu(title: "Sort By", children: [sortReset, sortTitle])
+        let mainMenu = UIMenu(title: "", children: [selectAction, sortByMenu])
         
-        let sortNewest = UIAction(title: "Newest First", image: UIImage(systemName: "arrow.up")) { [weak self] _ in
-            guard let self = self else { return }
-            self.routineList = self.originalList.reversed()
-            self.tableView.reloadData()
-        }
-        
-        let sortByMenu = UIMenu(title: "Sort By", image: UIImage(systemName: "arrow.up.arrow.down"), children: [
-            sortCustom, sortTitle, sortTime, sortNewest
-        ])
-        
-        let groupAction = UIAction(title: "Group By Date", image: UIImage(systemName: "calendar")) { _ in
-            print("Group By Date tapped")
-        }
-        
-        let mainMenu = UIMenu(title: "", children: [selectAction, sortByMenu, groupAction])
-        
-        if let rightButton = navigationItem.rightBarButtonItem {
-            rightButton.menu = mainMenu
-        }
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "ellipsis.circle"), target: nil, action: nil, menu: mainMenu)
     }
-    
-    @objc private func didTapInfoButton(_ sender: UIButton) {
-        performSegue(withIdentifier: "ShowInfo", sender: sender.tag)
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "ShowInfo" {
-            if let sheet = segue.destination.sheetPresentationController {
-                sheet.detents = [.medium(), .large()]
-                sheet.prefersGrabberVisible = true
-            }
-        }
-    }
-    
+
+    // MARK: - TableView Logic
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return routineList.count
     }
     
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 72
-    }
-    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as? RoutineTableViewCell1 else {
-            return UITableViewCell()
-        }
-        
-        let item = routineList[indexPath.row]
-        cell.titleLabel.text = item.title
-        cell.subtitleLabel.text = item.time
-        cell.separatorInset = .zero
-        cell.layoutMargins = .zero
-        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as! RoutineTableViewCell
+        // Using the unified configuration method we created in RoutineTableViewCell
+        cell.configure(with: routineList[indexPath.row])
         return cell
     }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
-            guard let self = self else { return }
-            self.routineList.remove(at: indexPath.row)
+        let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
+            self?.routineList.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)
             completion(true)
         }
-        deleteAction.backgroundColor = .systemRed
-        deleteAction.image = UIImage(systemName: "trash")
         
-        let editAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
-            guard let self = self else { return }
-            let item = self.routineList[indexPath.row]
-            self.showRenameAlert(for: item, at: indexPath)
+        let edit = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
+            self?.showRenameAlert(at: indexPath)
             completion(true)
         }
-        editAction.backgroundColor = .systemOrange
-        editAction.image = UIImage(systemName: "pencil")
+        edit.backgroundColor = .systemOrange
         
-        let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
-        config.performsFirstActionWithFullSwipe = false
-        return config
+        return UISwipeActionsConfiguration(actions: [delete, edit])
     }
     
-    private func showRenameAlert(for item: FamilyRoutineItem, at indexPath: IndexPath) {
+    private func showRenameAlert(at indexPath: IndexPath) {
         let alert = UIAlertController(title: "Edit Title", message: nil, preferredStyle: .alert)
-        alert.addTextField { textField in
-            textField.text = item.title
-        }
+        alert.addTextField { $0.text = self.routineList[indexPath.row].title }
         
-        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
-            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
-            
-            var updatedItem = item
-            updatedItem.title = newName
-            self.routineList[indexPath.row] = updatedItem
-            self.tableView.reloadRows(at: [indexPath], with: .automatic)
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
-        
-        alert.addAction(saveAction)
-        alert.addAction(cancelAction)
-        
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
+            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
+                self.routineList[indexPath.row].title = newName
+                self.tableView.reloadRows(at: [indexPath], with: .automatic)
+            }
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
+
+    // MARK: - Navigation
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "ShowInfo",
+           let destination = (segue.destination as? UINavigationController)?.topViewController as? InfoViewController,
+           let indexPath = tableView.indexPathForSelectedRow {
+            
+            destination.existingNote = routineList[indexPath.row].notes
+            destination.onSave = { [weak self] newNote in
+                self?.routineList[indexPath.row].notes = newNote
+                self?.tableView.reloadRows(at: [indexPath], with: .none)
+            }
+        }
+    }
 }
+
+// MARK: - Storyboard Compatibility Aliases
+// These allow you to delete all the subclass files while keeping Storyboard working.
+typealias FamilyRoutineViewController = BaseRoutineViewController
+typealias FriendsRoutineViewController = BaseRoutineViewController
+typealias OfficeRoutineViewController = BaseRoutineViewController
+typealias RoutineViewController1 = BaseRoutineViewController

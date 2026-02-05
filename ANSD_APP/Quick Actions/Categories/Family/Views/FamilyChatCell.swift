@@ -1,29 +1,29 @@
-//
-//  ChatCell.swift
-//  ANSD_APP
-//
-//  Created by Dhiraj Bodake on 25/11/25.
-//
-
 import UIKit
 
-class OutgoingCell1: UICollectionViewCell {
-    @IBOutlet weak var bubbleView: UIView!
-    @IBOutlet weak var messageLabel: UILabel!
+// MARK: - 1. Base Chat Cell (The Engine)
+class BaseChatCell: UICollectionViewCell {
     
+    var widthConstraint: NSLayoutConstraint?
+
     override func awakeFromNib() {
         super.awakeFromNib()
-        
-        bubbleView.backgroundColor = .systemBlue
-        messageLabel.textColor = .white
-        bubbleView.layer.cornerRadius = 16
-        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-        
+        setupWidthConstraint()
+    }
+
+    private func setupWidthConstraint() {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+            widthConstraint = contentView.widthAnchor.constraint(equalToConstant: screenWidth)
+            widthConstraint?.isActive = true
         }
     }
+
+    /// Common styling for all chat bubbles
+    func applyBaseBubbleStyle(view: UIView) {
+        view.layer.cornerRadius = 16
+        view.clipsToBounds = true
+    }
+
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -35,7 +35,25 @@ class OutgoingCell1: UICollectionViewCell {
     }
 }
 
-class IncomingCell1: UICollectionViewCell {
+// MARK: - 2. Outgoing Cell
+class OutgoingCell: BaseChatCell {
+    @IBOutlet weak var bubbleView: UIView!
+    @IBOutlet weak var messageLabel: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        applyBaseBubbleStyle(view: bubbleView)
+        
+        bubbleView.backgroundColor = .systemBlue
+        messageLabel.textColor = .white
+        
+        // Tail effect: Bottom-right stays square
+        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+    }
+}
+
+// MARK: - 3. Incoming Cell
+class IncomingCell: BaseChatCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
@@ -45,41 +63,37 @@ class IncomingCell1: UICollectionViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
+        applyBaseBubbleStyle(view: bubbleView)
+        
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
-        bubbleView.layer.cornerRadius = 16
-
+        
+        // Tail effect: Bottom-left stays square
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         
+        setupUI()
+    }
+    
+    private func setupUI() {
+        // Name tap gesture
         nameLabel.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         nameLabel.addGestureRecognizer(tap)
         
-
+        // Profile Image circularity logic consolidated
         if let profileImg = profileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
             profileImg.clipsToBounds = true
             profileImg.contentMode = .scaleAspectFill
-            profileImg.backgroundColor = .systemGray4 // Placeholder color
-        }
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+            profileImg.backgroundColor = .systemGray4
         }
     }
     
-    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
-        setNeedsLayout()
-        layoutIfNeeded()
-        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
-        var newFrame = layoutAttributes.frame
-        newFrame.size.height = ceil(size.height)
-        layoutAttributes.frame = newFrame
-        return layoutAttributes
-    }
-    
-    @objc func handleTap() {
+    @objc private func handleTap() {
         onLabelTapped?()
     }
 }
+
+// MARK: - 4. Storyboard Compatibility Aliases
+typealias OutgoingCell2 = OutgoingCell
+typealias IncomingCell2 = IncomingCell
