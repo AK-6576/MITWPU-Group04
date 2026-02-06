@@ -1,29 +1,34 @@
 import UIKit
-import FirebaseDatabase
 import AVFoundation
 import Speech
+import Supabase // Use Supabase instead of Firebase
+import Realtime
 
 class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     @IBOutlet weak var GroupJoinCollectionView: UICollectionView!
-    @IBOutlet weak var GroupJoinPauseButton: UIButton!
     @IBOutlet weak var GroupJoinMicButton: UIButton!
-    @IBOutlet weak var GroupJoinEndButton: UIButton!
     
     // MARK: - Properties
-    let speechManager = SpeechManager()
-    var isRecording = false
-    var selectedLanguageCode = "en-US"
-    
-    var currentSessionID: String = ""
-    var messages: [GroupJoinChatMessage] = []
+        let speechManager = SpeechManager()
+        let supabase = SupabaseManager.shared.client // Supabase Client
+        var channel: RealtimeChannelV2?
+        
+        var isRecording = false
+        var currentSessionID: String = ""
+        var messages: [GroupJoinChatMessage] = [] // Ensure this model matches your DB columns
+        var selectedLanguageCode = "en-US"
+        let myName = UIDevice.current.name
+    // Add these under your existing Properties section
+    var otherPersonName: String = "Other Speaker"
     var isPaused = false
-    var otherPersonName = "Host"
+    // Replace the identifierForVendor line with this:
+    var currentUserID: String {
+        return supabase.auth.currentSession?.user.id.uuidString ?? "Guest"
+    }
     
-    var ref: DatabaseReference!
-    let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
-    let myName = UIDevice.current.name
-
+    @IBOutlet weak var GroupJoinPauseButton: UIButton! // Ensure this is connected in Storyboard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -38,46 +43,33 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
 
         if currentSessionID.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.showJoinRoomAlert()
-            }
-        } else {
-            self.title = "Room \(currentSessionID)"
-            setupFirebaseConnection()
-        }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.showJoinRoomAlert()
+                    }
+                } else {
+                    self.startJoinFlow()
+                }
         // Optional: Update title to show the code so the host knows what to share
         self.title = "Host: \(currentSessionID)"
     }
+    
     // MARK: - Join Logic
-    func showJoinRoomAlert() {
-        let alert = UIAlertController(title: "Join Session", message: "Enter the Room Code shared with you", preferredStyle: .alert)
-        
-        alert.addTextField { textField in
-            textField.placeholder = "4-Digit Code"
-            textField.keyboardType = .numberPad
-        }
-        
-        let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
-            guard let self = self else { return }
-            if let code = alert.textFields?.first?.text, !code.isEmpty {
+        func showJoinRoomAlert() {
+            let alert = UIAlertController(title: "Join Session", message: "Enter the Room Code", preferredStyle: .alert)
+            alert.addTextField { $0.placeholder = "4-Digit Code"; $0.keyboardType = .numberPad }
+            
+            let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
+                guard let self = self, let code = alert.textFields?.first?.text, !code.isEmpty else {
+                    self?.dismiss(animated: true); return
+                }
                 self.currentSessionID = code
-                self.title = "Room \(code)"
-                self.messages.removeAll()
-                self.setupFirebaseConnection() // Connect to the specific room
-                self.GroupJoinCollectionView.reloadData()
-            } else {
-                // If they didn't enter a code, you might want to dismiss or show an error
-                self.dismiss(animated: true)
+                self.startJoinFlow()
             }
+            
+            alert.addAction(joinAction)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in self?.dismiss(animated: true) })
+            self.present(alert, animated: true)
         }
-        
-        alert.addAction(joinAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
-            self?.dismiss(animated: true)
-        })
-        
-        self.present(alert, animated: true)
-    }
 
     // Add this as well to handle the Rename functionality used in your Cell logic
     func showRenameAlert() {
@@ -95,141 +87,143 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         self.present(alert, animated: true)
     }
-    // MARK: - Firebase Logic
-    func setupFirebaseConnection() {
-        guard !currentSessionID.isEmpty else { return }
-        let baseURL = "https://ansd-f90fc-default-rtdb.asia-southeast1.firebasedatabase.app"
-        self.ref = Database.database(url: baseURL).reference().child("chat_sessions").child(currentSessionID)
-        observeFirebaseMessages()
+    
+    // MARK: - Supabase Logic (The Fetch + Sub Model)
+    func fetchPreviousMessages() async {
+        do {
+            // FIX: Removed manual JSONDecoder and fixed the .execute().value chain
+            let history: [GroupJoinChatMessage] = try await supabase
+                .from("chat_messages")
+                .select()
+                .eq("session_id", value: currentSessionID)
+                .order("created_at", ascending: true)
+                .execute() // Call as a function
+                .value     // Access the decoded data directly
+
+            await MainActor.run {
+                self.messages = history
+                self.GroupJoinCollectionView.reloadData()
+                self.scrollToBottom()
+            }
+        } catch {
+            print("❌ Error fetching history: \(error)")
+        }
     }
     
-    func observeFirebaseMessages() {
-        ref.observe(.childAdded) { [weak self] snapshot in
-            guard let self = self,
-                  let value = snapshot.value as? [String: Any],
-                  let senderID = value["senderID"] as? String else { return }
-
-            // Ignore if it's my own message (we show it locally during transcription)
-            if senderID == self.currentUserID { return }
-
-            let text = value["text"] as? String ?? ""
-            let senderName = value["sender"] as? String ?? "Other"
+    func startJoinFlow() {
+            self.title = "Room \(currentSessionID)"
+            self.messages.removeAll()
+            self.GroupJoinCollectionView.reloadData()
             
-            let newMessage = GroupJoinChatMessage(text: text, isIncoming: true, sender: senderName, senderID: senderID)
+            // This is the core Pub/Sub entry point
+            Task {
+                await fetchPreviousMessages() // 1. Get History
+                setupRealtimeSubscription()   // 2. Listen for New
+            }
+        }
+    
+    // MARK: - Speech Logic
+        @IBAction func didTapMicButton(_ sender: UIButton) {
+            if !isRecording {
+                startLiveTranscription()
+                GroupJoinMicButton.tintColor = .systemRed
+                GroupJoinMicButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
+                isRecording = true
+            } else {
+                stopLiveTranscription()
+                GroupJoinMicButton.tintColor = .systemBlue
+                GroupJoinMicButton.setImage(UIImage(systemName: "mic"), for: .normal)
+                isRecording = false
+            }
+        }
 
-            DispatchQueue.main.async {
-                self.messages.append(newMessage)
+    func setupRealtimeSubscription() {
+        let newChannel = supabase.realtimeV2.channel("room_\(currentSessionID)")
+        self.channel = newChannel
+        
+        let filter = "session_id=eq.\(currentSessionID)"
+        
+        newChannel.onPostgresChange(
+            InsertAction.self,
+            schema: "public",
+            table: "chat_messages",
+            filter: filter
+        ) { [weak self] change in
+            guard let self = self else { return }
+            do {
+                // Provide the decoder argument
+                let newMessage = try change.decodeRecord(as: GroupJoinChatMessage.self, decoder: JSONDecoder())
+                Task { await self.processIncomingMessage(newMessage) }
+            } catch {
+                print("❌ Realtime decoding error: \(error)")
+            }
+        }
+        
+        // IMPORTANT: You MUST call subscribe() to start receiving updates
+        Task {
+            try await newChannel.subscribe()
+            print("✅ Subscribed to Realtime for room: \(currentSessionID)")
+        }
+    }
+    
+    func processIncomingMessage(_ newMessage: GroupJoinChatMessage) async {
+        // Only add if it's not from us
+        if newMessage.senderID != self.currentUserID {
+            await MainActor.run {
+                var incomingMsg = newMessage
+                incomingMsg.isIncoming = true
+                self.messages.append(incomingMsg)
                 self.GroupJoinCollectionView.reloadData()
                 self.scrollToBottom()
             }
         }
     }
-
-    // MARK: - Mic / Speech Logic (Matched to GroupNew)
-    @IBAction func didTapMicButton(_ sender: UIButton) {
-        // This MUST print. If it doesn't, your Storyboard connection is broken.
-        print("DEBUG: Mic Button Tapped! Current State: \(isRecording ? "Recording" : "Not Recording")")
-        
-        if !isRecording {
-            // Force stop any zombie engine instances
-            speechManager.stopTranscribing()
-            
-            let audioSession = AVAudioSession.sharedInstance()
-            do {
-                // Set category for both play and record
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                
-                // Start the actual logic
-                self.startLiveTranscription()
-                
-                // UI Updates
-                DispatchQueue.main.async {
-                    self.GroupJoinMicButton.tintColor = .systemRed
-                    self.GroupJoinMicButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
-                }
-                
-                isRecording = true
-            } catch {
-                print("DEBUG: Audio Session error: \(error.localizedDescription)")
-            }
-        } else {
-            stopLiveTranscription()
-            
-            DispatchQueue.main.async {
-                self.GroupJoinMicButton.tintColor = .systemBlue
-                self.GroupJoinMicButton.setImage(UIImage(systemName: "mic"), for: .normal)
-            }
-            
-            isRecording = false
-        }
-    }
-
+    
     func startLiveTranscription() {
-        let newMessage = GroupJoinChatMessage(text: "Listening...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-        self.messages.append(newMessage)
-        
-        let lastIndex = IndexPath(item: self.messages.count - 1, section: 0)
-        self.GroupJoinCollectionView.insertItems(at: [lastIndex])
-        self.scrollToBottom()
+            // Local preview bubble
+        let newMessage = GroupJoinChatMessage(
+            text: "Listening...",
+            sender: self.myName,
+            senderID: self.currentUserID,
+            sessionID: self.currentSessionID, // Added this
+            createdAt: nil,                  // Added this
+            isIncoming: false
+        )
+            self.messages.append(newMessage)
+            self.GroupJoinCollectionView.reloadData()
+            self.scrollToBottom()
 
-        speechManager.startTranscribing(languageCode: self.selectedLanguageCode) { [weak self] transcribedText in
-            guard let self = self else { return }
-            
-            let indexToUpdate = self.messages.count - 1
-            guard indexToUpdate >= 0 else { return }
-            
-            self.messages[indexToUpdate] = GroupJoinChatMessage(
-                text: transcribedText,
-                isIncoming: false,
-                sender: self.myName,
-                senderID: self.currentUserID
-            )
-            
-            DispatchQueue.main.async {
-                UIView.performWithoutAnimation {
-                    self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: indexToUpdate, section: 0)])
-                    self.scrollToBottom()
+            speechManager.startTranscribing(languageCode: self.selectedLanguageCode) { [weak self] text in
+                guard let self = self, let lastIndex = self.messages.indices.last else { return }
+                self.messages[lastIndex].text = text
+                DispatchQueue.main.async {
+                    self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
                 }
             }
         }
-    }
 
-    func stopLiveTranscription() {
-        speechManager.stopTranscribing()
-        
-        // 1. Get the very last message on screen
-        guard let lastMsg = messages.last else { return }
-        
-        // 2. Clean the text (remove accidental spaces)
-        let cleanedText = lastMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // 3. SAFETY CHECK:
-        // Only delete if the text is empty OR if it never changed from the placeholder
-        if cleanedText.isEmpty || cleanedText == "Listening..." {
-            print("DEBUG: No speech detected. Deleting empty bubble.")
+        func stopLiveTranscription() {
+            let finalTranscribedText = speechManager.stopTranscribing()
+            guard var lastMsg = messages.last else { return }
             
-            // Remove from local list so the blue pill disappears
-            messages.removeLast()
+            if finalTranscribedText.isEmpty || finalTranscribedText == "Listening..." {
+                messages.removeLast()
+                GroupJoinCollectionView.reloadData()
+                return
+            }
+
+            lastMsg.text = finalTranscribedText
+            lastMsg.sessionID = self.currentSessionID // Ensure ID is attached
             
-            // Update the screen immediately
-            let lastIndexPath = IndexPath(item: messages.count, section: 0)
-            GroupJoinCollectionView.deleteItems(at: [lastIndexPath])
-            
-            return // We stop here. Nothing is sent to Firebase.
-        }
-        
-        print("DEBUG: Saving message: \(cleanedText)")
-        
-        ref.childByAutoId().setValue(lastMsg.toDictionary()) { error, _ in
-            if let error = error {
-                print("DEBUG: Firebase Save Failed: \(error.localizedDescription)")
-            } else {
-                print("DEBUG: Message sent successfully!")
+            Task {
+                do {
+                    try await supabase.from("chat_messages").insert(lastMsg).execute()
+                } catch {
+                    print("❌ Publish error: \(error)")
+                }
             }
         }
-    }
-
+    
     // MARK: - Control Buttons (Matched to GroupNew)
     @IBAction func didTapPauseButton(_ sender: UIButton) {
         isPaused = !isPaused

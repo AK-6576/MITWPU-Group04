@@ -101,79 +101,72 @@ final class GroupNewSummaryViewController: UIViewController,
     }
     
     // MARK: - AI Summarization Logic
-    private func generateAISummary() {
-        // 1. Prepare the raw transcript from REAL MESSAGES
-        var rawTranscript = ""
-        
-        if !transcriptMessages.isEmpty {
-            // Use real chat logs: "Name: Text"
-            rawTranscript = transcriptMessages
-                .map { "\($0.sender): \($0.text)" }
-                .joined(separator: "\n")
-        } else {
-            // Fallback to dummy data if no messages passed
-            rawTranscript = self.participantsData
-                .map { $0.summary }
-                .joined(separator: "\n")
-        }
+        private func generateAISummary() {
+            // 1. Prepare raw transcript from REAL MESSAGES
+            let rawTranscript = transcriptMessages.isEmpty ?
+                    "No conversation data." :
+                    transcriptMessages.map { "\($0.sender): \($0.text)" }.joined(separator: "\n")
 
-        guard !rawTranscript.isEmpty else {
-            updateNotes("No conversation data available.")
-            return
-        }
+                guard !transcriptMessages.isEmpty else {
+                    updateNotes("No data to summarize.")
+                    return
+                }
 
-        // 2. Check if the on-device model is available
-        guard model.isAvailable else {
-            updateNotes("AI Model unavailable. Raw Transcript:\n\n" + rawTranscript)
-            return
-        }
-
-        updateNotes("Summarizing with Apple Intelligence...")
-        isProcessing = true
-
-        // 3. Run the model asynchronously
-        Task {
-            let prompt = """
-            You are an expert meeting assistant. Analyze the following transcript of a conversation.
-
-            Task:
-            1. Read every message in the transcript below.
-            2. Create a concise summary of the conversation's main purpose and outcome.
-            3. Extract and list key details such as specific access codes, dates/times, names of people involved, and any decisions made.
-
-            Format your response exactly as follows:
-            Summary:
-            [Provide a clear 2-3 sentence summary of the conversation]
+                updateNotes("Apple Intelligence is analyzing your conversation...")
+                isProcessing = true
             
+            // 3. Apple Intelligence Task
+            Task {
+                do {
+                    // Using the iOS 18+ LanguageModel API
+                    // Note: Ensure your project has the 'Apple Intelligence' capability enabled in Entitlements
+                    
+                    let instructions = """
+                    You are an ANSD (Auditory Neuropathy Spectrum Disorder) assistant. 
+                    Summarize this transcript for a patient who has hearing difficulties.
+                    Focus on:
+                    1. What was decided?
+                    2. What are the next steps?
+                    3. List any specific names or numbers mentioned.
 
-            Transcript:
-            \(rawTranscript)
-            """
-
-            let session = LanguageModelSession()
-
-            do {
-                let response = try await session.respond(to: prompt)
-                await MainActor.run {
-                    self.isProcessing = false
-                    self.updateNotes(response.content)
-                }
-            } catch {
-                await MainActor.run {
-                    self.isProcessing = false
-                    self.updateNotes("Failed to summarize. Showing raw transcript:\n\n" + rawTranscript)
-                }
+                    Transcript:
+                    \(rawTranscript)
+                    """
+                    
+                    let session = LanguageModelSession(instructions: instructions)
+                    
+                    // The prompt is just the transcript since the role is in instructions
+                                let prompt = "Please summarize this transcript:\n\(rawTranscript)"
+                    
+                    // Generate the response
+                    let response = try await session.respond(to: prompt)
+                                
+                                await MainActor.run {
+                                    self.isProcessing = false
+                                    // 'response' is a LanguageModelSession.Response<String>
+                                    // We access the content (which is the summary text)
+                                    self.updateNotes(response.content)
+                                }
+                    
+                } catch {
+                        print("Apple Intelligence Error: \(error)")
+                        await MainActor.run {
+                            self.isProcessing = false
+                            self.updateNotes("Summary unavailable. Raw transcript:\n\n" + rawTranscript)
+                        }
+                    }
             }
         }
-    }
 
-    private func updateNotes(_ text: String) {
-        notesText = text
-        // Ensure UI updates happen on the main thread
-        DispatchQueue.main.async {
-            self.tableView.reloadSections(IndexSet(integer: 5), with: .automatic)
+        private func updateNotes(_ text: String) {
+            notesText = text
+            // Section 5 is where your NotesCardCell lives
+            DispatchQueue.main.async {
+                self.tableView.beginUpdates()
+                self.tableView.reloadSections(IndexSet(integer: 5), with: .fade)
+                self.tableView.endUpdates()
+            }
         }
-    }
 
     // MARK: - Export
     private func shareAsPDF() {
@@ -238,4 +231,24 @@ final class GroupNewSummaryViewController: UIViewController,
     func didChangeTitle(text: String) {
         conversationTitle = text
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        Task {
+            // Check if we have a session
+            let authenticated = await SupabaseManager.shared.isUserAuthenticated()
+            
+            if !authenticated {
+                do {
+                    print("No session found. Attempting anonymous sign-in...")
+                    try await SupabaseManager.shared.signInAnonymously()
+                    print("Successfully signed in anonymously!")
+                } catch {
+                    print("Auth failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
 }
+

@@ -1,23 +1,23 @@
 import Foundation
-import FirebaseDatabaseInternal
 
-struct GroupJoinChatMessage {
-    let text: String
-    let isIncoming: Bool
-    let sender: String
-    let senderID: String // Required for Firebase logic
+struct GroupJoinChatMessage: Codable {
+    var id: UUID?          // 1. ADD THIS (Matches GroupNew)
+    var text: String
+    var sender: String
+    var senderID: String
+    var sessionID: String
+    var createdAt: Date?
     
-    // Helper to convert to Dictionary for Firebase
-    func toDictionary() -> [String: Any] {
-        return [
-            "text": text,
-            "sender": sender,
-            "senderID": senderID,
-            "timestamp": ServerValue.timestamp()
-        ]
+    // 2. SET TO TRUE. Incoming Realtime messages should default to true.
+    var isIncoming: Bool = true
+
+    enum CodingKeys: String, CodingKey {
+        case id, text, sender // 3. ADD id HERE TOO
+        case senderID = "sender_id"
+        case sessionID = "session_id"
+        case createdAt = "created_at"
     }
 }
-
 //struct GroupJoinChatData {
 //    // Helper to generate a random ID for mock data
 //    static func randomID() -> String {

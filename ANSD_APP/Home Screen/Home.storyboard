@@ -1068,10 +1068,10 @@
             </objects>
             <point key="canvasLocation" x="1361.0687022900763" y="-961.26760563380287"/>
         </scene>
-        <!--View Controller-->
+        <!--Auth View Controller-->
         <scene sceneID="gEV-l4-VyP">
             <objects>
-                <viewController storyboardIdentifier="SignUp" id="8ji-ER-JBq" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="SignUp" id="8ji-ER-JBq" customClass="AuthViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="laH-yD-lEG">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1240,21 +1240,14 @@
                                                                 <nil key="textColor"/>
                                                                 <nil key="highlightedColor"/>
                                                             </label>
-                                                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="line" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="2yT-8W-kjE">
-                                                                <rect key="frame" x="0.0" y="28.333333333333371" width="345" height="50"/>
-                                                                <constraints>
-                                                                    <constraint firstAttribute="height" constant="50" id="1YV-gu-62c"/>
-                                                                </constraints>
-                                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                                <textInputTraits key="textInputTraits"/>
-                                                            </textField>
+                                                            <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="RBj-nq-Wq7">
+                                                                <rect key="frame" x="0.0" y="38" width="337" height="34"/>
+                                                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                            </slider>
                                                         </subviews>
                                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                         <constraints>
                                                             <constraint firstItem="IIC-eY-cGO" firstAttribute="top" secondItem="18p-wA-ELh" secondAttribute="top" id="ARt-0g-yTt"/>
-                                                            <constraint firstAttribute="trailing" secondItem="2yT-8W-kjE" secondAttribute="trailing" id="PxJ-7n-P49"/>
-                                                            <constraint firstItem="2yT-8W-kjE" firstAttribute="top" secondItem="IIC-eY-cGO" secondAttribute="bottom" constant="8" id="abI-if-gDe"/>
-                                                            <constraint firstItem="2yT-8W-kjE" firstAttribute="leading" secondItem="18p-wA-ELh" secondAttribute="leading" id="cjn-Aq-caS"/>
                                                             <constraint firstAttribute="height" constant="80" id="t9U-d3-zIt"/>
                                                             <constraint firstItem="IIC-eY-cGO" firstAttribute="leading" secondItem="18p-wA-ELh" secondAttribute="leading" id="xIp-h7-V6k"/>
                                                         </constraints>
@@ -1294,10 +1287,18 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="o7n-hh-KOm"/>
+                    <connections>
+                        <outlet property="dobTextField" destination="IXi-bY-UKZ" id="aNn-zN-2pE"/>
+                        <outlet property="emailTextField" destination="fC2-zq-EfL" id="VJY-Sj-xls"/>
+                        <outlet property="fullNameTextField" destination="6HR-Ud-rIp" id="B9Y-ej-vAC"/>
+                        <outlet property="hearingLevelSlider" destination="RBj-nq-Wq7" id="AwW-HF-O3Y"/>
+                        <outlet property="passwordTextField" destination="dYG-2C-pSq" id="ulx-uE-Wf3"/>
+                        <outlet property="phoneNumberTextField" destination="ucH-Ps-mXh" id="sfh-sn-TfW"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="IDH-lM-64u" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2285" y="-961"/>
+            <point key="canvasLocation" x="2284.7328244274809" y="-961.26760563380287"/>
         </scene>
         <!--Test1-->
         <scene sceneID="1dm-zH-fQV">
@@ -1600,25 +1601,25 @@
         <image name="star.fill" catalog="system" width="128" height="116"/>
         <image name="waveform" catalog="system" width="125" height="128"/>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="separatorColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.12" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.79607843137254897" green="0.18823529411764706" blue="0.8784313725490196" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
