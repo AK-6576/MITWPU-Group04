@@ -8,6 +8,7 @@
 import UIKit
 import UserNotifications
 import Foundation
+
 class HomeViewController: UIViewController {
     
     // MARK: - Outlets & Properties
@@ -25,33 +26,88 @@ class HomeViewController: UIViewController {
         setupTableView()
         setupProfileButton()
         loadSavedProfileImage()
+        
+        // Hide the default back button to prevent navigation issues
         navigationItem.hidesBackButton = true
         
+        // Request Notification Permissions
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        
+        // === INSTANT UPDATE LISTENERS ===
+        // 1. Listen for Image changes
         NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleProfileUpdate(_:)),
+                                               selector: #selector(handleProfileImageUpdate(_:)),
                                                name: NSNotification.Name("ProfileImageUpdated"),
                                                object: nil)
         
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        // 2. Listen for Name changes (This fixes the "Steve" vs "Mike" issue instantly)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleProfileNameUpdate(_:)),
+                                               name: NSNotification.Name("ProfileNameUpdated"),
+                                               object: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadData()
         loadSavedProfileImage()
+        
+        // Force a check when the view appears, just in case
+        updateGreetingHeader()
     }
     
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
     
-    // MARK: - Data Loading & Notification Sync
+    // MARK: - Header Update Logic
+    
+    func updateGreetingHeader(forceName: String? = nil) {
+        // Use the forced name if provided (from Notification), otherwise read from disk
+        let nameToShow = forceName ?? UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+        
+        // Ensure this happens on the Main Thread (UI updates must remain here)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Access the header view
+            if let headerView = self.tableView.tableHeaderView as? GreetingViewCell {
+                headerView.configure(name: nameToShow)
+                
+                // Force layout update if needed
+                headerView.setNeedsLayout()
+                headerView.layoutIfNeeded()
+            }
+        }
+    }
+    
+    // MARK: - Notification Handlers
+    
+    @objc func handleProfileNameUpdate(_ notification: Notification) {
+        // This runs instantly when you type in the Profile screen
+        if let userInfo = notification.userInfo,
+           let newName = userInfo["name"] as? String {
+            updateGreetingHeader(forceName: newName)
+        }
+    }
+    
+    @objc func handleProfileImageUpdate(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            if let newImage = notification.object as? UIImage {
+                self?.profileButton.setImage(newImage, for: .normal)
+            }
+        }
+    }
+    
+    // MARK: - Data Loading & Logic
     
     func loadData() {
+        // Filter out "Done" items
         let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
         
-        let cutoffTime = Date().addingTimeInterval(-1800)
+        let cutoffTime = Date().addingTimeInterval(-1800) // 30 mins ago
         
+        // Sort future actions
         let sortedFutureActions = allItems.filter { item in
             guard let itemDate = getDate(from: item.startTime) else { return false }
             return itemDate > cutoffTime
@@ -75,6 +131,7 @@ class HomeViewController: UIViewController {
         for item in items {
             guard var targetDate = getDate(from: item.startTime) else { continue }
             
+            // Adjust date if it passed already
             if targetDate < now {
                 if now.timeIntervalSince(targetDate) < 60 {
                     targetDate = now.addingTimeInterval(1)
@@ -83,6 +140,7 @@ class HomeViewController: UIViewController {
                 }
             }
             
+            // Schedule Main Notification
             NotificationManager.shared.scheduleNotification(
                 identifier: item.id,
                 title: item.conversationTopic,
@@ -90,8 +148,8 @@ class HomeViewController: UIViewController {
                 for: targetDate
             )
             
+            // Schedule Pre-Notification (5 mins before)
             let preNotificationDate = targetDate.addingTimeInterval(-300)
-            
             if preNotificationDate > Date() {
                 NotificationManager.shared.scheduleNotification(
                     identifier: "\(item.id)_pre",
@@ -127,7 +185,7 @@ class HomeViewController: UIViewController {
                              of: now)
     }
     
-    // MARK: - Edit Logic (Name & Time)
+    // MARK: - Edit Logic
     
     private func showEditSheet(for item: RoutineConversation, row: Int) {
         let alert = UIAlertController(title: "Edit Action", message: "\n\n\n\n\n\n", preferredStyle: .alert)
@@ -178,7 +236,6 @@ class HomeViewController: UIViewController {
                 self.quickActions[row] = updatedItem
                 self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
             }
-            
             self.loadData()
         }
         
@@ -202,7 +259,13 @@ class HomeViewController: UIViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "showProfile" { }
+        if segue.identifier == "showProfile" {
+            if let destVC = segue.destination as? ProfileTableViewController {
+                // Pass current name so Profile screen doesn't reset to "Steve" initially
+                let currentName = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+                destVC.incomingName = currentName
+            }
+        }
         else if segue.identifier == "viewConvoCell" {
             guard let destVC = segue.destination as? ChatHistoryViewController,
                   let selectedItem = sender as? RoutineConversation else { return }
@@ -221,14 +284,6 @@ class HomeViewController: UIViewController {
                     icon: selectedItem.iconName
                 )
                 destVC.histconversationData = fallbackConv
-            }
-        }
-    }
-    
-    @objc func handleProfileUpdate(_ notification: Notification) {
-        DispatchQueue.main.async { [weak self] in
-            if let newImage = notification.object as? UIImage {
-                self?.profileButton.setImage(newImage, for: .normal)
             }
         }
     }
@@ -282,7 +337,7 @@ class HomeViewController: UIViewController {
 extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return 2 // 0: Quick Actions, 1: Routine Conversations
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -339,30 +394,24 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         } else {
             segueID = "viewConvoCell"
         }
+        // Safely perform segue
         performSegue(withIdentifier: segueID, sender: item)
     }
     
-    // MARK: - Swipe Actions (Delete & Edit)
-    
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-
         guard indexPath.section == 0 else { return nil }
         let item = quickActions[indexPath.row]
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
-            
             self.cancelNotifications(for: item)
             QuickActionsRepository.shared.deleteAction(item)
-            
             self.quickActions.remove(at: indexPath.row)
-            
             if self.quickActions.count >= 3 {
                 self.tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
             } else {
                 self.tableView.deleteRows(at: [indexPath], with: .automatic)
             }
-            
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed
