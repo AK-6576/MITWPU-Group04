@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct GroupJoinParticipantData {
+struct GroupJoinParticipants {
     var name: String
     var summary: String
-}
+    var avatarTitle: String}

@@ -125,7 +125,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     @IBAction func backTapped(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
-        let homeVC = storyboard.instantiateViewController(withIdentifier: "Home.")
+        let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
         
         let navController = UINavigationController(rootViewController: homeVC)
         navController.isNavigationBarHidden = false

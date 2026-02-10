@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct GroupJoinSessionModel {
+struct GroupJoinSessions {
     let title: String
     let subtitle: String
 }

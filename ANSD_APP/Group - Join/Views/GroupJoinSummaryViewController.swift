@@ -17,7 +17,7 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     var transcriptMessages: [GroupJoinChatMessage] = []
     
     // We will generate this list based on the transcript
-    var participantsData: [GroupJoinParticipantData] = []
+    var participantsData: [GroupJoinParticipants] = []
     
     // Stores the AI Summary
     private(set) var notesText: String = ""
@@ -76,10 +76,10 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         
         // Create participant objects (Using dummy summary for individual rows for now)
         self.participantsData = uniqueSenders.map { (_, name) in
-            GroupJoinParticipantData(
+            GroupJoinParticipants(
                 name: name,
                 summary: "Participant",
-                //imageName: "avatar_1"
+                avatarTitle: "person.circle.fill"
             )
         }
         

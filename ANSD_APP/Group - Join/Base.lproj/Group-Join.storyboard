@@ -60,7 +60,7 @@
                     </view>
                     <navigationItem key="navigationItem" title="Join Conversation" id="gg0-zO-wa0"/>
                     <connections>
-                        <outlet property="GJtableView" destination="FoG-g9-Kf3" id="fUT-PF-jfk"/>
+                        <outlet property="GroupJoinTableView" destination="FoG-g9-Kf3" id="fUT-PF-jfk"/>
                         <segue destination="BYZ-38-t0r" kind="show" identifier="goToChat" id="26M-BR-Ks3"/>
                     </connections>
                 </viewController>
@@ -97,11 +97,11 @@
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <subviews>
                                                         <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hGV-i0-CBj">
-                                                            <rect key="frame" x="35" y="96.666666666666686" width="61.333333333333343" height="40.333333333333314"/>
+                                                            <rect key="frame" x="40" y="4" width="61.333333333333343" height="133"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" ambiguous="YES" text="Label" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1hn-2U-wTA">
-                                                                    <rect key="frame" x="10" y="10" width="41.333333333333336" height="20.333333333333329"/>
-                                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                                    <rect key="frame" x="10" y="10" width="41.333333333333336" height="113"/>
+                                                                    <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <nil key="highlightedColor"/>
                                                                 </label>
@@ -114,14 +114,14 @@
                                                                 <constraint firstItem="1hn-2U-wTA" firstAttribute="top" secondItem="hGV-i0-CBj" secondAttribute="top" constant="10" id="t3v-qn-p2B"/>
                                                             </constraints>
                                                         </view>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="llp-l6-Eox">
-                                                            <rect key="frame" x="39" y="4" width="28.666666666666671" height="13.333333333333336"/>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" ambiguous="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="llp-l6-Eox">
+                                                            <rect key="frame" x="40" y="141" width="28.666666666666671" height="13.333333333333343"/>
                                                             <fontDescription key="fontDescription" type="system" pointSize="11"/>
                                                             <color key="textColor" systemColor="systemGray2Color"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person.circle.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="Qwv-rO-ux5">
-                                                            <rect key="frame" x="15" y="117.66666666666667" width="30" height="28.666666666666671"/>
+                                                            <rect key="frame" x="10" y="109.66666666666667" width="30" height="28.666666666666671"/>
                                                             <color key="tintColor" white="0.66666666669999997" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="30" id="L2o-kI-c9T"/>
@@ -130,15 +130,15 @@
                                                         </imageView>
                                                     </subviews>
                                                     <constraints>
-                                                        <constraint firstItem="Qwv-rO-ux5" firstAttribute="leading" secondItem="f9V-JT-CNL" secondAttribute="leading" constant="15" id="JJS-s1-Dso"/>
-                                                        <constraint firstAttribute="bottom" secondItem="Qwv-rO-ux5" secondAttribute="bottom" id="Jiz-qB-Jbj"/>
-                                                        <constraint firstItem="llp-l6-Eox" firstAttribute="leading" secondItem="hGV-i0-CBj" secondAttribute="leading" constant="4" id="KWU-l5-ggY"/>
-                                                        <constraint firstItem="hGV-i0-CBj" firstAttribute="leading" secondItem="Qwv-rO-ux5" secondAttribute="trailing" constant="-10" id="QLg-YI-5A7"/>
-                                                        <constraint firstItem="hGV-i0-CBj" firstAttribute="top" secondItem="llp-l6-Eox" secondAttribute="bottom" constant="2" id="R9N-iy-xWk"/>
-                                                        <constraint firstItem="hGV-i0-CBj" firstAttribute="leading" secondItem="f9V-JT-CNL" secondAttribute="leading" constant="35" id="lsV-14-byT"/>
-                                                        <constraint firstAttribute="bottom" secondItem="hGV-i0-CBj" secondAttribute="bottom" constant="10" id="s4X-zW-ttz"/>
+                                                        <constraint firstItem="hGV-i0-CBj" firstAttribute="top" secondItem="f9V-JT-CNL" secondAttribute="top" constant="4" id="6ag-B6-Vy1"/>
+                                                        <constraint firstItem="llp-l6-Eox" firstAttribute="top" secondItem="hGV-i0-CBj" secondAttribute="bottom" id="EHJ-0W-tL9"/>
+                                                        <constraint firstItem="Qwv-rO-ux5" firstAttribute="leading" secondItem="f9V-JT-CNL" secondAttribute="leading" constant="10" id="JJS-s1-Dso"/>
+                                                        <constraint firstAttribute="bottom" secondItem="Qwv-rO-ux5" secondAttribute="bottom" constant="8" id="Jiz-qB-Jbj"/>
+                                                        <constraint firstItem="llp-l6-Eox" firstAttribute="leading" secondItem="Qwv-rO-ux5" secondAttribute="trailing" id="TEx-6V-0YR"/>
+                                                        <constraint firstItem="hGV-i0-CBj" firstAttribute="leading" secondItem="f9V-JT-CNL" secondAttribute="leading" constant="36" id="lsV-14-byT"/>
+                                                        <constraint firstAttribute="bottom" secondItem="llp-l6-Eox" secondAttribute="bottom" constant="8" id="u8o-QK-KfW"/>
+                                                        <constraint firstItem="hGV-i0-CBj" firstAttribute="leading" secondItem="Qwv-rO-ux5" secondAttribute="trailing" id="wsD-I5-cz0"/>
                                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="hGV-i0-CBj" secondAttribute="trailing" constant="42" id="xue-BM-Sa1"/>
-                                                        <constraint firstItem="llp-l6-Eox" firstAttribute="top" secondItem="f9V-JT-CNL" secondAttribute="top" constant="4" id="yhR-bu-lRB"/>
                                                     </constraints>
                                                 </collectionViewCellContentView>
                                                 <size key="customSize" width="191" height="147"/>
@@ -146,6 +146,7 @@
                                                     <outlet property="GroupJoinBubbleView" destination="hGV-i0-CBj" id="WuH-pg-iYY"/>
                                                     <outlet property="GroupJoinMessageLabel" destination="1hn-2U-wTA" id="na9-Gy-bx4"/>
                                                     <outlet property="GroupJoinNameLabel" destination="llp-l6-Eox" id="583-2G-0Lw"/>
+                                                    <outlet property="GroupJoinProfileImageView" destination="Qwv-rO-ux5" id="eM7-bD-FtI"/>
                                                 </connections>
                                             </collectionViewCell>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="8RT-my-7rI" customClass="GroupJoinOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
@@ -160,7 +161,7 @@
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" text="Label" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Gdq-wY-1VW">
                                                                     <rect key="frame" x="10" y="10" width="41.333333333333336" height="107"/>
-                                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                                    <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <nil key="highlightedColor"/>
                                                                 </label>
@@ -183,8 +184,8 @@
                                                 </collectionViewCellContentView>
                                                 <size key="customSize" width="181" height="147"/>
                                                 <connections>
-                                                    <outlet property="GroupJoinBubbleView" destination="iYN-0c-W0S" id="AHm-rB-zF6"/>
-                                                    <outlet property="GroupJoinMessageLabel" destination="Gdq-wY-1VW" id="tpJ-1g-7Vf"/>
+                                                    <outlet property="GroupJoinBubbleView" destination="iYN-0c-W0S" id="Uje-UO-eN8"/>
+                                                    <outlet property="GroupJoinMessageLabel" destination="Gdq-wY-1VW" id="Wa8-cr-IZj"/>
                                                 </connections>
                                             </collectionViewCell>
                                         </cells>
@@ -220,7 +221,7 @@
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
                                                         <buttonConfiguration key="configuration" style="gray">
-                                                            <imageReference key="image" image="pause.fill" catalog="system" symbolScale="small"/>
+                                                            <imageReference key="image" image="pause.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
                                                             <action selector="didTapPauseButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ekc-Ia-1Vd"/>
@@ -234,10 +235,10 @@
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
                                                         <buttonConfiguration key="configuration" style="gray">
-                                                            <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="small"/>
+                                                            <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapMicButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="a7O-hd-mWq"/>
+                                                            <action selector="didTapMicButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="kbb-OB-JFF"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wJW-FM-VSu">
@@ -248,7 +249,7 @@
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
                                                         <buttonConfiguration key="configuration" style="gray">
-                                                            <imageReference key="image" image="square.fill" catalog="system" symbolScale="small"/>
+                                                            <imageReference key="image" image="square.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
                                                             <action selector="didTapStopButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="rkm-Nt-kVm"/>
@@ -529,7 +530,7 @@
                                                     <rect key="frame" x="20" y="10" width="353" height="180"/>
                                                     <subviews>
                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="g03-da-YyC">
-                                                            <rect key="frame" x="16" y="17.666666666666664" width="30" height="26.666666666666664"/>
+                                                            <rect key="frame" x="16" y="17.666666666666671" width="30" height="144.66666666666669"/>
                                                             <color key="backgroundColor" systemColor="systemGray4Color"/>
                                                             <color key="tintColor" systemColor="labelColor"/>
                                                             <constraints>
@@ -554,6 +555,7 @@
                                                         <constraint firstItem="g03-da-YyC" firstAttribute="top" secondItem="v8u-t8-Yua" secondAttribute="top" constant="16" id="BNd-tx-mMb"/>
                                                         <constraint firstAttribute="trailing" secondItem="TQh-jl-HP2" secondAttribute="trailing" constant="16" id="Hw2-oc-iHj"/>
                                                         <constraint firstItem="TQh-jl-HP2" firstAttribute="top" secondItem="v8u-t8-Yua" secondAttribute="top" constant="16" id="OHE-uq-aMo"/>
+                                                        <constraint firstAttribute="bottom" secondItem="g03-da-YyC" secondAttribute="bottom" constant="16" id="ZAq-G3-kmP"/>
                                                         <constraint firstAttribute="bottom" secondItem="TQh-jl-HP2" secondAttribute="bottom" constant="16" id="d5C-ai-aWG"/>
                                                         <constraint firstItem="TQh-jl-HP2" firstAttribute="leading" secondItem="g03-da-YyC" secondAttribute="trailing" constant="12" id="sp3-1L-zft"/>
                                                         <constraint firstItem="g03-da-YyC" firstAttribute="leading" secondItem="v8u-t8-Yua" secondAttribute="leading" constant="16" id="w01-rB-OJK"/>
@@ -693,7 +695,7 @@
         <!--Navigation Controller-->
         <scene sceneID="7Ny-uw-D6Z">
             <objects>
-                <navigationController storyboardIdentifier="GJSummaryNavController" automaticallyAdjustsScrollViewInsets="NO" useStoryboardIdentifierAsRestorationIdentifier="YES" toolbarHidden="NO" id="RCs-ad-mZZ" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="SummaryNavController" automaticallyAdjustsScrollViewInsets="NO" useStoryboardIdentifierAsRestorationIdentifier="YES" toolbarHidden="NO" id="RCs-ad-mZZ" sceneMemberID="viewController">
                     <toolbarItems/>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="dv6-W4-Zax">
@@ -715,7 +717,7 @@
         <!--Navigation Controller-->
         <scene sceneID="5FY-Kq-9QV">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" useStoryboardIdentifierAsRestorationIdentifier="YES" id="Fbe-IY-niK" sceneMemberID="viewController">
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="Fbe-IY-niK" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="KO4-VH-PPk">
                         <rect key="frame" x="0.0" y="118" width="393" height="54"/>

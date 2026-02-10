@@ -70,7 +70,7 @@ class GroupJoinParticipantCardCell: UITableViewCell {
         avatarImageView.tintColor = .systemGray
     }
     
-    func configure(with data: GroupJoinParticipantData) {
+    func configure(with data: GroupJoinParticipants) {
         detailsLabel.text = data.summary
     }
 }

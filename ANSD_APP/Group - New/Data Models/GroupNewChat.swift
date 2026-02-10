@@ -9,7 +9,7 @@ import Foundation
 import FirebaseDatabaseInternal
 
 struct GroupNewChatMessage {
-    let text: String
+    var text: String
     let isIncoming: Bool
     var sender: String
     let senderID: String // Add this to distinguish between users

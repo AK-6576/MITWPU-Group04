@@ -2,9 +2,9 @@ import Foundation
 import FirebaseDatabaseInternal
 
 struct GroupJoinChatMessage {
-    let text: String
+    var text: String
     let isIncoming: Bool
-    let sender: String
+    var sender: String
     let senderID: String // Required for Firebase logic
     
     // Helper to convert to Dictionary for Firebase
