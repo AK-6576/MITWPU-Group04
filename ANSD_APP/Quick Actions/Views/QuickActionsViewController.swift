@@ -103,11 +103,11 @@ class QuickActionsViewController: UITableViewController {
         
         switch categoryName {
         case "Office":
-            segueID = "office"
+            segueID = "familyDetail"
         case "Family":
-            segueID = "family"
+            segueID = "familyDetail"
         case "Friends":
-            segueID = "friends"
+            segueID = "familyDetail"
             
         default:
             print("No segue configured for category: \(categoryName)")

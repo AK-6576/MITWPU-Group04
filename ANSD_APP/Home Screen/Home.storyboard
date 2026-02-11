@@ -1355,39 +1355,19 @@
             <point key="canvasLocation" x="3392" y="-453"/>
         </scene>
         <!--Family-->
-        <scene sceneID="MfO-Aa-vzU">
-            <objects>
-                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="Family" id="dtu-wv-7gh" sceneMemberID="viewController">
-                    <navigationItem key="navigationItem" id="cl6-NB-Fpu"/>
-                </viewControllerPlaceholder>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="rII-TS-V6j" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="686" y="306"/>
-        </scene>
-        <!--Family-->
-        <scene sceneID="gi3-Yr-eAb">
-            <objects>
-                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="Family" id="H6f-Ko-ZHl" sceneMemberID="viewController">
-                    <navigationItem key="navigationItem" id="Fjv-5d-G39"/>
-                </viewControllerPlaceholder>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="hk3-h2-C6a" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="376" y="307"/>
-        </scene>
-        <!--Family-->
         <scene sceneID="UNF-oD-ENv">
             <objects>
-                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="Family" id="fKX-Jl-CZP" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="Family" referencedIdentifier="Family" id="fKX-Jl-CZP" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="TgI-t7-AdS"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="8yf-vd-VVm" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="373" y="403"/>
+            <point key="canvasLocation" x="464" y="344"/>
         </scene>
         <!--FamilyNewViewController-->
         <scene sceneID="D7H-K9-Pnc">
             <objects>
-                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="FamilyNewViewController" id="cm8-Ax-jDl" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="Family" referencedIdentifier="FamilyNewViewController" id="cm8-Ax-jDl" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="0Z8-Df-0r3"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="olA-S4-LlV" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1397,7 +1377,7 @@
         <!--FamilyNewViewController-->
         <scene sceneID="jQR-Aw-aql">
             <objects>
-                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="FamilyNewViewController" id="fhN-Zk-fUh" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="Family" referencedIdentifier="FamilyNewViewController" id="fhN-Zk-fUh" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="PEh-tV-dpj"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ST4-oa-MIk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1526,10 +1506,8 @@
                     <connections>
                         <segue destination="cm8-Ax-jDl" kind="show" identifier="officeChat" id="nVB-34-M2C"/>
                         <segue destination="fhN-Zk-fUh" kind="show" identifier="familyChat" id="Q7A-QP-k3o"/>
-                        <segue destination="H6f-Ko-ZHl" kind="show" identifier="family" id="Njz-zT-iYZ"/>
-                        <segue destination="fKX-Jl-CZP" kind="show" identifier="office" id="sK3-pA-ItA"/>
                         <segue destination="vSB-kN-Fx0" kind="show" identifier="friendChat" id="GMx-eU-hUA"/>
-                        <segue destination="dtu-wv-7gh" kind="show" identifier="friends" id="Qht-dg-9l0"/>
+                        <segue destination="fKX-Jl-CZP" kind="show" identifier="familyDetail" id="lYo-0W-Udo"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F8T-D9-LtR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1585,7 +1563,7 @@
         <!--FamilyNewViewController-->
         <scene sceneID="eI9-Bb-XaS">
             <objects>
-                <viewControllerPlaceholder storyboardName="Family." referencedIdentifier="FamilyNewViewController" id="vSB-kN-Fx0" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="Family" referencedIdentifier="FamilyNewViewController" id="vSB-kN-Fx0" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="SeS-zh-yFK"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="csm-5I-UUb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1606,25 +1584,25 @@
         <image name="star.fill" catalog="system" width="128" height="116"/>
         <image name="waveform" catalog="system" width="125" height="128"/>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="separatorColor">
-            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.12" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.79607843137254897" green="0.18823529411764706" blue="0.8784313725490196" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
