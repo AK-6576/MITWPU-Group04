@@ -9,10 +9,13 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     @IBOutlet weak var micButton: UIButton!
     
     // MARK: - Properties
-    var sessionTitle: String = "Family Session"
-    // Use the Enum type we defined to prevent conversion errors
-    var category: ChatCategory = .family
+    var category: String = "Family"
     var chatHistory: [(sender: String, message: String)] = []
+    var sessionTitle: String = "Session" {
+        didSet {
+            self.title = sessionTitle
+        }
+    }
     
     // Speech Engine Properties
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -51,27 +54,54 @@ class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
 
-    // THE MISSING LINK: This is the function your Storyboard is looking for!
     @IBAction func endSessionTapped(_ sender: Any) {
-        // Stop audio before leaving to prevent background crashes
-        if audioEngine.isRunning {
-            stopRecording()
+        // 1. Initialize the Alert
+        let alert = UIAlertController(
+            title: "End Session?",
+            message: "This will stop transcription and generate a summary.",
+            preferredStyle: .alert
+        )
+        
+        // 2. Define the "End Session" Action (Destructive)
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Block 1: Safety Cleanup (Stopping Audio)
+            if self.audioEngine.isRunning {
+                self.stopRecording()
+            }
+            
+            // 3. Trigger Navigation (Modal)
+            self.navigateToSummary()
         }
+        
+        // 4. Define the Cancel Action
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        // 5. Add actions and present the alert
+        alert.addAction(endAction)
+        alert.addAction(cancelAction)
+        present(alert, animated: true)
+    }
 
-        let storyboard = UIStoryboard(name: "Family.", bundle: nil)
-        guard let summaryVC = storyboard.instantiateViewController(withIdentifier: "summaryScreen") as? FamilySummaryViewController else {
+    func navigateToSummary() {
+        let storyboard = UIStoryboard(name: "Family", bundle: nil)
+        
+        guard let summaryVC = storyboard.instantiateViewController(withIdentifier: "summaryScreen") as? BaseSummaryViewController else {
             print("❌ SummaryViewController not found!")
             return
         }
-        
-        // Pass data to summary
+
         summaryVC.category = self.category
         
-        if let nav = navigationController {
-            nav.pushViewController(summaryVC, animated: true)
-        } else {
-            self.present(summaryVC, animated: true)
-        }
+        // 1. Wrap your summaryVC in a new Navigation Controller
+        let navController = UINavigationController(rootViewController: summaryVC)
+        
+        // 2. Set the modal style on the Nav Controller, not the summaryVC
+        navController.modalPresentationStyle = .pageSheet
+        
+        // 3. Present the Navigation Controller
+        self.present(navController, animated: true, completion: nil)
     }
     
     // MARK: - Speech Implementation

@@ -8,17 +8,28 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     @IBOutlet weak var optionsButton: UIBarButtonItem!
     
     // MARK: - Properties
-    // This matches the enum in FamilyChat.swift
-    var category: ChatCategory = .family
+    
+    /// Updated to String to support custom categories like "Orasad" or "Office"
+    /// didSet ensures the Page Title updates as soon as the category is assigned
+    var category: String = "Family" {
+        didSet {
+            self.title = "\(category) Summary"
+        }
+    }
+    
     var conversationTitle = "Conversation Summary"
     
-    // Using the unified ParticipantData struct from FamilyParticipantData.swift
+    // Using the unified ParticipantData struct
     var participants: [ParticipantData] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Initial title setup
+        self.title = "\(category) Summary"
+        
         setupUI()
-        loadParticipants()
+        //loadParticipants()
     }
     
     private func setupUI() {
@@ -41,21 +52,27 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
-    
-    private func loadParticipants() {
-        // CLEAN IMPLEMENTATION: Fetches the real list from the repository
-        self.participants = ParticipantRepository.getParticipants(for: category)
-        tableView.reloadData()
-    }
-    
+//    
+//    private func loadParticipants() {
+//        // Fetches the real list from the repository based on the category string
+//        self.participants = ParticipantRepository.getParticipants(for: category)
+//        tableView.reloadData()
+//    }
+//    
     @objc func dismissKeyboard() { view.endEditing(true) }
     @objc func shareTapped() { shareAsPDF() }
     
     @IBAction func backTapped(_ sender: Any) {
-        if let nav = navigationController {
-            nav.popToRootViewController(animated: true)
-        } else {
-            dismiss(animated: true)
+        let storyboard = UIStoryboard(name: "Home", bundle: nil)
+        let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
+        let navController = UINavigationController(rootViewController: homeVC)
+        navController.isNavigationBarHidden = false
+        navController.modalPresentationStyle = .fullScreen
+        if let window = self.view.window {
+            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = navController
+            }, completion: nil)          
+            window.makeKeyAndVisible()
         }
     }
     
@@ -103,15 +120,15 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             cell.headerIcon.image = UIImage(systemName: "sparkles")
             return cell
         case 1:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "TitleCardCell", for: indexPath) as! SummaryCardCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! SummaryCardCell
             cell.titleLabel.text = conversationTitle
             return cell
         case 2:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsHeaderCell", for: indexPath) as! ParticipantsSummaryHeaderCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell", for: indexPath) as! ParticipantsSummaryHeaderCell
             cell.participantLabel.text = "Participants"
             return cell
         case 3:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantCell", for: indexPath) as! ParticipantCardCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell", for: indexPath) as! ParticipantCardCell
             cell.configure(with: participants[indexPath.row])
             return cell
         case 4:
@@ -120,7 +137,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
         case 5:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCell", for: indexPath) as! NotesCardCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! NotesCardCell
             cell.delegate = self
             return cell
         default: return UITableViewCell()

@@ -11,7 +11,7 @@
         <!--Home View Controller-->
         <scene sceneID="OXk-7y-Kq3">
             <objects>
-                <viewController storyboardIdentifier="Home." useStoryboardIdentifierAsRestorationIdentifier="YES" id="sX3-WR-o7v" customClass="HomeViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="Home" useStoryboardIdentifierAsRestorationIdentifier="YES" id="sX3-WR-o7v" customClass="HomeViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" id="9om-3b-NIt">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -649,14 +649,14 @@
                             <tableViewSection headerTitle="PERSONAL INFORMATION" id="nFU-Vn-UpC">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" id="w8X-l4-Mo3">
-                                        <rect key="frame" x="0.0" y="255.33333206176758" width="393" height="52.333332061767578"/>
+                                        <rect key="frame" x="0.0" y="255.33333206176758" width="393" height="51.333332061767578"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="w8X-l4-Mo3" id="fBF-8C-XfF">
-                                            <rect key="frame" x="0.0" y="0.0" width="393" height="52.333332061767578"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="393" height="51.333332061767578"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="First Name" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fO5-IR-4CZ">
-                                                    <rect key="frame" x="20" y="14.999999999999998" width="200" height="22.333333333333329"/>
+                                                    <rect key="frame" x="20" y="14.999999999999998" width="200" height="21.333333333333329"/>
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="200" id="qCk-A1-2Us"/>
                                                     </constraints>
@@ -665,7 +665,7 @@
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" textAlignment="right" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="xzj-MV-XlE">
-                                                    <rect key="frame" x="369" y="15.333333333333336" width="4" height="22"/>
+                                                    <rect key="frame" x="369" y="14.666666666666664" width="4" height="22"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                     <textInputTraits key="textInputTraits"/>
                                                 </textField>
@@ -681,7 +681,7 @@
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" id="Qa3-NX-3gu">
-                                        <rect key="frame" x="0.0" y="307.66666412353516" width="393" height="51"/>
+                                        <rect key="frame" x="0.0" y="306.66666412353516" width="393" height="51"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Qa3-NX-3gu" id="Aci-6p-xR7">
                                             <rect key="frame" x="0.0" y="0.0" width="393" height="51"/>
@@ -714,7 +714,7 @@
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" id="7yC-4u-Ukf">
-                                        <rect key="frame" x="0.0" y="358.66666412353516" width="393" height="51"/>
+                                        <rect key="frame" x="0.0" y="357.66666412353516" width="393" height="51"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="7yC-4u-Ukf" id="HrK-u8-6fm">
                                             <rect key="frame" x="0.0" y="0.0" width="362.66666666666669" height="51"/>
@@ -743,7 +743,7 @@
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" id="Eea-3e-DAL">
-                                        <rect key="frame" x="0.0" y="409.66666412353516" width="393" height="51"/>
+                                        <rect key="frame" x="0.0" y="408.66666412353516" width="393" height="51"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Eea-3e-DAL" id="fYp-Co-IXu">
                                             <rect key="frame" x="0.0" y="0.0" width="362.66666666666669" height="51"/>
@@ -770,7 +770,7 @@
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="HearingCell" rowHeight="120" id="ysg-Cy-aO1" customClass="HearingCell" customModule="ANSD_APP" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="460.66666412353516" width="393" height="120"/>
+                                        <rect key="frame" x="0.0" y="459.66666412353516" width="393" height="120"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ysg-Cy-aO1" id="VZO-z2-JrM">
                                             <rect key="frame" x="0.0" y="0.0" width="393" height="120"/>
@@ -1508,6 +1508,7 @@
                         <segue destination="fhN-Zk-fUh" kind="show" identifier="familyChat" id="Q7A-QP-k3o"/>
                         <segue destination="vSB-kN-Fx0" kind="show" identifier="friendChat" id="GMx-eU-hUA"/>
                         <segue destination="fKX-Jl-CZP" kind="show" identifier="familyDetail" id="lYo-0W-Udo"/>
+                        <segue destination="QzQ-Fy-RH7" kind="show" identifier="genericChat" id="M7b-PQ-T3y"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="F8T-D9-LtR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1570,6 +1571,16 @@
             </objects>
             <point key="canvasLocation" x="469" y="594"/>
         </scene>
+        <!--FamilyNewViewController-->
+        <scene sceneID="hMy-ey-3dm">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Family" referencedIdentifier="FamilyNewViewController" id="QzQ-Fy-RH7" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="PVX-0u-NfK"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iBY-gg-KeA" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="464" y="658"/>
+        </scene>
     </scenes>
     <inferredMetricsTieBreakers>
         <segue reference="kCw-cd-cHm"/>
@@ -1584,25 +1595,25 @@
         <image name="star.fill" catalog="system" width="128" height="116"/>
         <image name="waveform" catalog="system" width="125" height="128"/>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="separatorColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.12" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.79607843137254897" green="0.18823529411764706" blue="0.8784313725490196" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
