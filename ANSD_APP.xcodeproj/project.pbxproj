@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BF1B1AAF2F4070EF00C4F236 /* VL1004.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = BF1B1AAE2F4070EF00C4F236 /* VL1004.mlpackage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		02AE994B2ED5711C0079EA2B /* ANSD_APP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANSD_APP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BF1B1AAE2F4070EF00C4F236 /* VL1004.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = VL1004.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -47,6 +52,7 @@
 			children = (
 				02AE994D2ED5711C0079EA2B /* ANSD_APP */,
 				02AE994C2ED5711C0079EA2B /* Products */,
+				BF1B1AAE2F4070EF00C4F236 /* VL1004.mlpackage */,
 			);
 			sourceTree = "<group>";
 		};
@@ -133,6 +139,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF1B1AAF2F4070EF00C4F236 /* VL1004.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
