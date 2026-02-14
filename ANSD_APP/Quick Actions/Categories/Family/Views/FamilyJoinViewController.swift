@@ -1,200 +1,185 @@
-//
-//  FamilyJoinViewController.swift
-//  ANSD_APP
-//
-//  Created by Dhiraj Bodake on 25/11/25.
-//
-
 import UIKit
+import Speech
+import AVFoundation
 
-class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-    
+class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
+
+    // MARK: - Outlets
     @IBOutlet weak var collectionView: UICollectionView!
-    @IBOutlet weak var pauseButton: UIButton!
     @IBOutlet weak var micButton: UIButton!
-    @IBOutlet weak var endButton: UIButton!
     
-    var sessionTitle: String = "Breakfast"
-    var messages: [FamilyChat] = []
-    let fullConversation = FamilyChatParticipants.fullConversation
-    var currentMessageIndex = 0
-    var isPaused = false
-    var otherPersonName = "Person 1"
+    // MARK: - Properties
+    var category: String = "Family"
+    var chatHistory: [(sender: String, message: String)] = []
+    var sessionTitle: String = "Session" {
+        didSet {
+            self.title = sessionTitle
+        }
+    }
     
+    // Speech Engine Properties
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let audioEngine = AVAudioEngine()
+    
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = sessionTitle
-        collectionView.dataSource = self
+        
         collectionView.delegate = self
+        collectionView.dataSource = self
         
-        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-            layout.minimumLineSpacing = 4
-            layout.sectionInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
+        setupSpeech()
+        addMessage(sender: "System", text: "Tap the mic to start speaking.")
+    }
+    
+    func setupSpeech() {
+        micButton.isEnabled = false
+        speechRecognizer?.delegate = self
+        SFSpeechRecognizer.requestAuthorization { authStatus in
+            DispatchQueue.main.async {
+                self.micButton.isEnabled = (authStatus == .authorized)
+            }
         }
-        
-        collectionView.keyboardDismissMode = .interactive
-        processNextMessage()
     }
     
-    // MARK: - Image Helper
-    func getImageName(for name: String) -> String {
-        let lower = name.lowercased()
-        if lower.contains("marie") { return "avatar_9" }
-        if lower.contains("henry") { return "avatar_10" }
-        if lower.contains("anna") { return "avatar_7" }
-        return "person.circle.fill"
+    // MARK: - Actions
+    @IBAction func micButtonTapped(_ sender: UIButton) {
+        if audioEngine.isRunning {
+            stopRecording()
+        } else {
+            startRecording()
+        }
     }
-    
-    func processNextMessage() {
-        if currentMessageIndex >= fullConversation.count { return }
-        if isPaused { return }
+
+    @IBAction func endSessionTapped(_ sender: Any) {
+        // 1. Initialize the Alert
+        let alert = UIAlertController(
+            title: "End Session?",
+            message: "This will stop transcription and generate a summary.",
+            preferredStyle: .alert
+        )
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+        // 2. Define the "End Session" Action (Destructive)
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
-            if self.isPaused { return }
             
-            let message = self.fullConversation[self.currentMessageIndex]
-            self.messages.append(message)
-            let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
-            self.collectionView.insertItems(at: [indexPath])
-            self.scrollToBottom()
-            self.currentMessageIndex += 1
-            self.processNextMessage()
+            // Block 1: Safety Cleanup (Stopping Audio)
+            if self.audioEngine.isRunning {
+                self.stopRecording()
+            }
+            
+            // 3. Trigger Navigation (Modal)
+            self.navigateToSummary()
         }
+        
+        // 4. Define the Cancel Action
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        // 5. Add actions and present the alert
+        alert.addAction(endAction)
+        alert.addAction(cancelAction)
+        present(alert, animated: true)
+    }
+
+    func navigateToSummary() {
+        let storyboard = UIStoryboard(name: "Family", bundle: nil)
+        
+        guard let summaryVC = storyboard.instantiateViewController(withIdentifier: "summaryScreen") as? BaseSummaryViewController else {
+            print("❌ SummaryViewController not found!")
+            return
+        }
+
+        summaryVC.category = self.category
+        
+        // 1. Wrap your summaryVC in a new Navigation Controller
+        let navController = UINavigationController(rootViewController: summaryVC)
+        
+        // 2. Set the modal style on the Nav Controller, not the summaryVC
+        navController.modalPresentationStyle = .pageSheet
+        
+        // 3. Present the Navigation Controller
+        self.present(navController, animated: true, completion: nil)
     }
     
+    // MARK: - Speech Implementation
+    func startRecording() {
+        if recognitionTask != nil { recognitionTask?.cancel(); recognitionTask = nil }
+        
+        micButton.setTitle("Stop", for: .normal)
+        micButton.backgroundColor = .systemRed
+        
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try? audioSession.setActive(true)
+        
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        let inputNode = audioEngine.inputNode
+        recognitionRequest?.shouldReportPartialResults = true
+        
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { result, error in
+            if let result = result {
+                if result.isFinal {
+                    self.addMessage(sender: "You", text: result.bestTranscription.formattedString)
+                    self.stopRecording()
+                }
+            }
+            if error != nil { self.stopRecording() }
+        }
+        
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, _) in
+            self.recognitionRequest?.append(buffer)
+        }
+        
+        audioEngine.prepare()
+        try? audioEngine.start()
+    }
+    
+    func stopRecording() {
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionTask = nil
+        recognitionRequest = nil
+        
+        micButton.setTitle("Record", for: .normal)
+        micButton.backgroundColor = .systemBlue
+    }
+    
+    func addMessage(sender: String, text: String) {
+        chatHistory.append((sender: sender, message: text))
+        collectionView.reloadData()
+        
+        if chatHistory.count > 0 {
+            let lastItem = chatHistory.count - 1
+            collectionView.scrollToItem(at: IndexPath(item: lastItem, section: 0), at: .bottom, animated: true)
+        }
+    }
+
+    // MARK: - CollectionView DataSource
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return messages.count
+        return chatHistory.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let message = messages[indexPath.row]
+        let chat = chatHistory[indexPath.row]
         
-        if message.isIncoming {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell1
-            cell.messageLabel.text = message.text
-            
-
-            let displayName: String
-            if message.sender == "Person 1" {
-                displayName = self.otherPersonName
-            } else {
-                displayName = message.sender
-            }
-            cell.nameLabel.text = displayName
-            
-            let imgName = getImageName(for: displayName)
-            if let image = UIImage(named: imgName) {
-                cell.profileImageView.image = image
-            } else {
-                cell.profileImageView.image = UIImage(systemName: "person.circle.fill")
-            }
-            
-            cell.onLabelTapped = { [weak self] in
-                self?.showRenameAlert()
-            }
+        if chat.sender == "You" {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! OutgoingCell
+            cell.messageLabel.text = chat.message
             return cell
         } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! OutgoingCell1
-            cell.messageLabel.text = message.text
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell
+            cell.messageLabel.text = chat.message
+            cell.nameLabel.text = chat.sender
             return cell
         }
-    }
-    
-    func showRenameAlert() {
-        if !isPaused { togglePauseState() }
-        
-        let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
-        alert.addTextField { tf in
-            tf.text = self.otherPersonName
-            tf.autocapitalizationType = .words
-        }
-        
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
-                self.otherPersonName = newName
-                self.collectionView.reloadData()
-            }
-            self.togglePauseState()
-        }
-        
-        alert.addAction(saveAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        self.present(alert, animated: true)
-    }
-    
-    @IBAction func didTapPauseButton(_ sender: UIButton) {
-        togglePauseState()
-    }
-    
-    func togglePauseState() {
-        isPaused = !isPaused
-        let config = UIImage.SymbolConfiguration(scale: .small)
-        let imgName = isPaused ? "play.fill" : "pause.fill"
-        pauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
-        if !isPaused { processNextMessage() }
-    }
-    
-    @IBAction func didTapStopButton(_ sender: UIButton) {
-        if !isPaused { togglePauseState() }
-        
-        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
-        let endAction = UIAlertAction(title: "End Session", style: .destructive) { _ in
-
-            let storyboard = UIStoryboard(name: "Family.", bundle: nil)
-            
-            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
-               let summaryVC = summaryNav.topViewController as? FamilySummaryViewController {
-                
-                summaryVC.conversationTitle = self.sessionTitle
-                summaryVC.chatHistory = self.messages
-                summaryVC.participantsData = [
-                    FamilyParticipantData(
-                        name: "Marie Parker",
-                        summary: "Marie announced that pancakes were ready and reminded everyone about the 10 AM dentist appointment. She also expressed concern about Anna missing the bus."
-                    ),
-                    FamilyParticipantData(
-                        name: "Henry Parker",
-                        summary: "Henry complimented the breakfast and offered a ride to the dentist appointment. He suggested letting Anna sleep in longer since she was up late studying."
-                    ),
-                    FamilyParticipantData(
-                        name: "Me",
-                        summary: "I confirmed I would be down shortly and accepted Dad's offer for a ride to save money on an Uber. I also jokingly reminded them to save pancakes for Anna."
-                    )
-                ]
-                
-                summaryNav.modalPresentationStyle = .pageSheet
-                self.present(summaryNav, animated: true, completion: nil)
-            }
-        }
-        
-        actionSheet.addAction(endAction)
-        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        self.present(actionSheet, animated: true)
-    }
-    
-    // MARK: - Info Button Logic
-    @IBAction func didTapInfoButton(_ sender: UIBarButtonItem) {
-        performSegue(withIdentifier: "ShowInfo", sender: self)
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "ShowInfo" {
-            let destinationVC = segue.destination
-            if let sheet = destinationVC.sheetPresentationController {
-                sheet.detents = [.medium(), .large()]
-                sheet.prefersGrabberVisible = true
-            }
-        }
-    }
-    
-    func scrollToBottom() {
-        guard messages.count > 0 else { return }
-        collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width, height: 100)
+        return CGSize(width: collectionView.bounds.width, height: 80)
     }
 }

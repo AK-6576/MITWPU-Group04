@@ -1,17 +1,17 @@
-//
-//  SummaryCells.swift
-//  ANSD_APP
-//
-//  Created by Dhiraj Bodake on 25/11/25.
-//
-
 import UIKit
 
-protocol NotesCardCellDelegate1: AnyObject {
-    func didUpdateText(in cell: NotesCardCell1)
+// MARK: - Protocols
+protocol NotesCardCellDelegate: AnyObject {
+    func didUpdateText(in cell: NotesCardCell)
 }
 
-private func styleCard(view: UIView?) {
+// MARK: - Unified Data Model
+/// NOTE: Removed the duplicate ParticipantData struct from here.
+/// It is now centrally managed in FamilyParticipantData.swift to avoid 'Invalid redeclaration' errors.
+
+// MARK: - Styling Helper
+/// Made internal instead of private so it can be used by other UI components if needed.
+func styleSummaryCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
     card.backgroundColor = .white
@@ -21,7 +21,8 @@ private func styleCard(view: UIView?) {
     card.layer.shadowRadius = 4
 }
 
-class SummarySectionHeaderCell1: UITableViewCell {
+// MARK: - Headers
+class SummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
     
@@ -32,7 +33,7 @@ class SummarySectionHeaderCell1: UITableViewCell {
     }
 }
 
-class ParticipantsSummaryHeaderCell1: UITableViewCell {
+class ParticipantsSummaryHeaderCell: UITableViewCell {
     @IBOutlet weak var participantIcon: UIImageView!
     @IBOutlet weak var participantLabel: UILabel!
     
@@ -43,7 +44,8 @@ class ParticipantsSummaryHeaderCell1: UITableViewCell {
     }
 }
 
-class SummaryCardCell1: UITableViewCell {
+// MARK: - Conversation Summary Card
+class SummaryCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
@@ -52,47 +54,68 @@ class SummaryCardCell1: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        styleCard(view: mainCardView)
+        styleSummaryCard(view: mainCardView)
+    }
+    
+    func configure(title: String, date: String, location: String) {
+        titleLabel.text = title
+        dateLabel.text = date
+        locationLabel.text = location
     }
 }
 
-class ParticipantCardCell1: UITableViewCell {
+// MARK: - Participant Card
+class ParticipantCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var avatarImageView: UIImageView!
-    @IBOutlet weak var detailsLabel: UILabel!
+    @IBOutlet weak var detailsLabel: UILabel! // This should show "Name: Summary"
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        styleCard(view: mainCardView)
-        avatarImageView.layer.cornerRadius = 4
+        styleSummaryCard(view: mainCardView)
+        
+        avatarImageView.layer.cornerRadius = avatarImageView.frame.height / 2
         avatarImageView.clipsToBounds = true
+        avatarImageView.contentMode = .scaleAspectFill
         avatarImageView.tintColor = .systemGray
     }
     
-    func configure(with data: FamilyParticipantData) {
-        detailsLabel.text = data.summary
+    /// Updated to accept the unified ParticipantData struct
+    func configure(with data: ParticipantData) {
+        // Combining name and summary for a cleaner UI look in the card
+        let attributedText = NSMutableAttributedString(string: "\(data.name): ", attributes: [.font: UIFont.boldSystemFont(ofSize: 15)])
+        attributedText.append(NSAttributedString(string: data.summary, attributes: [.font: UIFont.systemFont(ofSize: 15)]))
+        
+        detailsLabel.attributedText = attributedText
+        
+        if let image = UIImage(systemName: "person.circle.fill") {
+            avatarImageView.image = image
+        } else {
+            avatarImageView.image = UIImage(systemName: "person.circle.fill")
+        }
     }
 }
 
-class NotesCardCell1: UITableViewCell, UITextViewDelegate {
+// MARK: - Notes Card
+class NotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
     
-    weak var delegate: NotesCardCellDelegate1?
+    weak var delegate: NotesCardCellDelegate?
     let placeholderText = "Add notes about this conversation..."
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        styleCard(view: mainCardView)
+        styleSummaryCard(view: mainCardView)
+        
         notesTextView.delegate = self
         notesTextView.text = placeholderText
         notesTextView.textColor = .lightGray
         notesTextView.font = UIFont.systemFont(ofSize: 15)
         notesTextView.isScrollEnabled = false
-        notesTextView.textContainerInset = .zero
-        notesTextView.textContainer.lineFragmentPadding = 0
+        notesTextView.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -110,6 +133,7 @@ class NotesCardCell1: UITableViewCell, UITextViewDelegate {
     }
     
     func textViewDidChange(_ textView: UITextView) {
+        // Trigger height resize in TableView
         delegate?.didUpdateText(in: self)
     }
 }
