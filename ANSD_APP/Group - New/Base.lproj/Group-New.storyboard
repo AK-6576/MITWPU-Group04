@@ -109,7 +109,7 @@
                                             <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="IncomingCell" id="bx9-1M-VOz" customClass="GroupNewIncomingCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="GroupNewIncomingCell" id="bx9-1M-VOz" customClass="GroupNewIncomingCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="84.666666666666671" y="0.0" width="192" height="161"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="f9V-JT-CNL">
@@ -169,7 +169,7 @@
                                                     <outlet property="profileImageView" destination="Qwv-rO-ux5" id="oLN-gj-j2k"/>
                                                 </connections>
                                             </collectionViewCell>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="8RT-my-7rI" customClass="GroupNewOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="GroupNewOutgoingCell" id="8RT-my-7rI" customClass="GroupNewOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="171" width="181" height="147"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="19T-BB-fo0">
@@ -270,7 +270,7 @@
                                                             <imageReference key="image" image="pause.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapPauseButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ekc-Ia-1Vd"/>
+                                                            <action selector="pauseButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Hrc-Gk-Buv"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="BIN-Ig-eE9">
@@ -284,7 +284,7 @@
                                                             <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapMicButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="pWz-LW-fK8"/>
+                                                            <action selector="micButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Nfy-Bv-hHK"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wJW-FM-VSu">
@@ -298,7 +298,7 @@
                                                             <imageReference key="image" image="square.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapStopButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="rkm-Nt-kVm"/>
+                                                            <action selector="endButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="dZw-IT-5bM"/>
                                                         </connections>
                                                     </button>
                                                 </subviews>
@@ -348,9 +348,9 @@
                     <nil key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="collectionView" destination="lj2-nh-zb8" id="zTe-cx-4Sx"/>
-                        <outlet property="endButton" destination="wJW-FM-VSu" id="Hq7-7A-9t6"/>
-                        <outlet property="micButton" destination="BIN-Ig-eE9" id="GTb-XS-2Br"/>
-                        <outlet property="pauseButton" destination="epU-aO-Kkg" id="bXw-3u-a4v"/>
+                        <outlet property="endButton" destination="wJW-FM-VSu" id="1Aw-FH-i7i"/>
+                        <outlet property="micButton" destination="BIN-Ig-eE9" id="n8o-K8-bld"/>
+                        <outlet property="pauseButton" destination="epU-aO-Kkg" id="Lab-0c-KG0"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -360,7 +360,7 @@
         <!--Summary-->
         <scene sceneID="kcn-NZ-gxc">
             <objects>
-                <viewController storyboardIdentifier="summaryScreen" id="RGC-I3-0nd" customClass="GroupNewSummaryViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="GroupNewSummaryViewController" id="RGC-I3-0nd" customClass="GroupNewSummaryViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="h8d-iS-acG">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -528,6 +528,7 @@
                                             <outlet property="dateLabel" destination="hbd-1Y-y0E" id="XXY-iu-r2s"/>
                                             <outlet property="locationLabel" destination="8sE-HH-ZO8" id="qDa-Jg-E5S"/>
                                             <outlet property="mainCardView" destination="duY-0m-dwu" id="bul-9R-KqW"/>
+                                            <outlet property="timeLabel" destination="Igu-pL-xen" id="Akl-Hb-Awf"/>
                                             <outlet property="titleTextField" destination="LUi-Nn-e48" id="HHz-sr-SJV"/>
                                         </connections>
                                     </tableViewCell>
@@ -730,16 +731,19 @@
                     <navigationItem key="navigationItem" title="Summary" id="wsv-T8-3A0">
                         <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="lRt-Hy-lxd">
                             <connections>
-                                <action selector="backTapped:" destination="RGC-I3-0nd" id="MEN-Wc-SPD"/>
+                                <action selector="didTapDone" destination="RGC-I3-0nd" id="4uT-Pa-UEr"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" image="square.and.arrow.up" catalog="system" id="jii-NI-x6g">
                             <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <connections>
+                                <action selector="didTapShare:" destination="RGC-I3-0nd" id="8G2-mP-EZt"/>
+                            </connections>
                         </barButtonItem>
                     </navigationItem>
                     <connections>
-                        <outlet property="optionsButton" destination="jii-NI-x6g" id="OQk-L1-HqG"/>
-                        <outlet property="tableView" destination="K2q-AI-2zg" id="YWz-8x-tQu"/>
+                        <outlet property="GroupNewShareButton" destination="jii-NI-x6g" id="S54-zJ-xvI"/>
+                        <outlet property="GroupNewTableView" destination="K2q-AI-2zg" id="PA7-08-SAV"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="7ZD-0Q-lev" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -808,22 +812,22 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.53333333333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray2Color">
-            <color red="0.68235294120000001" green="0.68235294120000001" blue="0.69803921570000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68235294117647061" green="0.68235294117647061" blue="0.69803921568627447" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray4Color">
-            <color red="0.81960784310000001" green="0.81960784310000001" blue="0.83921568629999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.81960784313725488" green="0.81960784313725488" blue="0.83921568627450982" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

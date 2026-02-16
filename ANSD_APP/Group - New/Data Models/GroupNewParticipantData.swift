@@ -1,5 +1,5 @@
 //
-//  ParticipantData..swift
+//  GroupNewParticipantData..swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 28/11/25.
