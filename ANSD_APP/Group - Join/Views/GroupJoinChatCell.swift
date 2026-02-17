@@ -8,15 +8,15 @@
 import UIKit
 
 class GroupJoinOutgoingCell: UICollectionViewCell {
-    @IBOutlet weak var GroupJoinBubbleView: UIView!
+    @IBOutlet weak var GroupJoinbubbleView: UIView!
     @IBOutlet weak var GroupJoinMessageLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        GroupJoinBubbleView.backgroundColor = .systemBlue
+        GroupJoinbubbleView.backgroundColor = .systemBlue
         GroupJoinMessageLabel.textColor = .white
-        GroupJoinBubbleView.layer.cornerRadius = 16
-        GroupJoinBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        GroupJoinbubbleView.layer.cornerRadius = 16
+        GroupJoinbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width

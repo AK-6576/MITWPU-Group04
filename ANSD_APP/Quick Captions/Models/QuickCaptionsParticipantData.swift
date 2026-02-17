@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct QuickCaptionsParticipantData: Sendable {
+struct QuickCaptionsParticipants: Sendable {
     var name: String
     var summary: String
 }

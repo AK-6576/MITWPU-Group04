@@ -8,8 +8,7 @@
 import Foundation
 
 struct QuickCaptionsChat: Sendable {
-    var sender: String
-    var text: String
-    var isIncoming: Bool
-    var speakerID : Int?
+    let text: String
+    let isIncoming: Bool
+    let sender: String
 }

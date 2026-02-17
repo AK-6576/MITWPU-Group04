@@ -18,12 +18,13 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GroupJoinSessions(title: "Assignment Completion", subtitle: "Peter Parker")
     ]
     
-    // MARK: - Lifecycle
+    // Function - Initializes the view lifecycle and triggers the table view setup.
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
     }
     
+    // Function - Configures the table view's delegate, data source, background color, and footer.
     func setupTableView() {
         GroupJoinTableView.delegate = self
         GroupJoinTableView.dataSource = self
@@ -31,84 +32,54 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GroupJoinTableView.tableFooterView = UIView()
     }
 
-    // MARK: - Navigation
+    // Function - Prepares for the segue to the chat view controller, passing the selected session title.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToChat" {
             if let chatVC = segue.destination as? GroupJoinViewController {
                 chatVC.modalPresentationStyle = .fullScreen
-                // Pass the session data forward
                 if let sessionData = sender as? GroupJoinSessions {
-                    chatVC.title = sessionData.title
+                    chatVC.sessionTitle = sessionData.title
                 }
             }
         }
     }
     
-    // MARK: - TableView Data Source
+    // Function - Returns the number of sections in the table view.
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
+    // Function - Returns a custom view for the section header.
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
         headerView.backgroundColor = .systemGroupedBackground
         return headerView
     }
     
+    // Function - Returns the number of session items to display in the section.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return sessions.count
     }
     
+    // Function - Dequeues and configures a cell with the session title and subtitle using default content configuration.
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
         let session = sessions[indexPath.row]
-        
         var content = cell.defaultContentConfiguration()
         content.text = session.title
         content.textProperties.font = UIFont.systemFont(ofSize: 17, weight: .medium)
         content.secondaryText = session.subtitle
         content.secondaryTextProperties.color = .secondaryLabel
         content.secondaryTextProperties.font = UIFont.systemFont(ofSize: 14, weight: .regular)
-        
         cell.contentConfiguration = content
         cell.accessoryType = .disclosureIndicator
         return cell
     }
     
-    // MARK: - TableView Delegate
+    // Function - Handles row selection, triggers the segue to the chat, and deselects the row.
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let selectedSession = sessions[indexPath.row]
-        
+        performSegue(withIdentifier: "goToChat", sender: selectedSession)
         tableView.deselectRow(at: indexPath, animated: true)
-        
-        showJoinSessionAlert(for: selectedSession)
-    }
-    
-    // MARK: - Alert Logic
-    func showJoinSessionAlert(for session: GroupJoinSessions) {
-        let alert = UIAlertController(
-            title: "Join Session",
-            message: "Enter the Room Code shared with you",
-            preferredStyle: .alert
-        )
-        
-        alert.addTextField { textField in
-            textField.placeholder = "4-Digit Code"
-            textField.textAlignment = .center
-            textField.keyboardType = .numberPad
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
-        
-        let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
-            guard let self = self else { return }
-            
-            self.performSegue(withIdentifier: "goToChat", sender: session)
-        }
-        
-        alert.addAction(cancelAction)
-        alert.addAction(joinAction)
-        
-        self.present(alert, animated: true, completion: nil)
     }
 }

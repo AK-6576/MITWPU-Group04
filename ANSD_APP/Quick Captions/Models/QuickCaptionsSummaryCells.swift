@@ -8,6 +8,7 @@
 import UIKit
 
 // MARK: - Protocols
+
 protocol QuickCaptionsNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: QuickCaptionsNotesCardCell)
 }
@@ -16,47 +17,19 @@ protocol QuickCaptionsSummaryCardDelegate: AnyObject {
     func didChangeTitle(text: String)
 }
 
-// MARK: - Helper Styling Function
+// MARK: - Styling Helper
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
-    card.backgroundColor = .secondarySystemGroupedBackground
+    card.backgroundColor = .white
     card.layer.shadowColor = UIColor.black.cgColor
     card.layer.shadowOpacity = 0.05
     card.layer.shadowOffset = CGSize(width: 0, height: 2)
     card.layer.shadowRadius = 4
 }
 
-// MARK: - 1. Main Header Card (Title, Date, Location)
-class QuickCaptionsSummaryCardCell: UITableViewCell, UITextFieldDelegate {
-    @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var titleTextField: UITextField!
-    @IBOutlet weak var dateLabel: UILabel!
-    @IBOutlet weak var timeLabel: UILabel!
-    @IBOutlet weak var locationLabel: UILabel!
-    
-    weak var delegate: QuickCaptionsSummaryCardDelegate?
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        backgroundColor = .clear
-        styleCard(view: mainCardView)
-        titleTextField.delegate = self
-    }
-    
-    @IBAction func titleChanged(_ sender: UITextField) {
-        delegate?.didChangeTitle(text: sender.text ?? "")
-    }
-    
-    func configure(title: String, date: String, time: String, location: String) {
-        titleTextField.text = title
-        dateLabel.text = date
-        timeLabel.text = time
-        locationLabel.text = location
-    }
-}
+// MARK: - Header Cells
 
-// MARK: - 2 & 4. Section Header Cell
 class QuickCaptionsSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
@@ -68,10 +41,26 @@ class QuickCaptionsSummarySectionHeaderCell: UITableViewCell {
     }
 }
 
-// MARK: - 3. Participant Card Cell
-class QuickCaptionsParticipantCardCell: UITableViewCell {
+class QuickCaptionsParticipantsSummaryHeaderCell: UITableViewCell {
+    @IBOutlet weak var participantIcon: UIImageView!
+    @IBOutlet weak var participantLabel: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
+}
+
+// MARK: - Content Cells
+
+class QuickCaptionsSummaryCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var summaryLabel: UILabel!
+    @IBOutlet weak var titleTextField: UITextField!
+    @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var locationLabel: UILabel!
+    
+    weak var delegate: QuickCaptionsSummaryCardDelegate?
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -79,12 +68,30 @@ class QuickCaptionsParticipantCardCell: UITableViewCell {
         styleCard(view: mainCardView)
     }
     
-    func configure(with data: QuickCaptionsParticipantData) {
-        summaryLabel.text = data.summary
+    @IBAction func titleChanged(_ sender: UITextField) {
+        delegate?.didChangeTitle(text: sender.text ?? "")
     }
 }
 
-// MARK: - 5. Notes Card (Key Takeaways)
+class QuickCaptionsParticipantCardCell: UITableViewCell {
+    @IBOutlet weak var mainCardView: UIView!
+    @IBOutlet weak var avatarImageView: UIImageView!
+    @IBOutlet weak var detailsLabel: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        styleCard(view: mainCardView)
+        avatarImageView.layer.cornerRadius = 4
+        avatarImageView.clipsToBounds = true
+        avatarImageView.tintColor = .systemGray
+    }
+    
+    func configure(with data: QuickCaptionsParticipants) {
+        detailsLabel.text = data.summary
+    }
+}
+
 class QuickCaptionsNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var notesTextView: UITextView!
@@ -96,8 +103,10 @@ class QuickCaptionsNotesCardCell: UITableViewCell, UITextViewDelegate {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
-        
         notesTextView.delegate = self
+        notesTextView.text = placeholderText
+        notesTextView.textColor = .lightGray
+        notesTextView.font = UIFont.systemFont(ofSize: 15)
         notesTextView.isScrollEnabled = false
         notesTextView.textContainerInset = .zero
         notesTextView.textContainer.lineFragmentPadding = 0
