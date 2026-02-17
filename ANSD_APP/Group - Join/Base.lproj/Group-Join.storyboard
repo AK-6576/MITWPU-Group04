@@ -90,10 +90,10 @@
                                         </collectionViewFlowLayout>
                                         <cells>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="IncomingCell" id="bx9-1M-VOz" customClass="GroupJoinIncomingCell" customModule="ANSD_APP" customModuleProvider="target">
-                                                <rect key="frame" x="85" y="0.0" width="191" height="147"/>
+                                                <rect key="frame" x="71.666666666666671" y="0.0" width="218" height="163"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="f9V-JT-CNL">
-                                                    <rect key="frame" x="0.0" y="0.0" width="191" height="147"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="218" height="163"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <subviews>
                                                         <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hGV-i0-CBj">
@@ -121,7 +121,7 @@
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person.circle.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="Qwv-rO-ux5">
-                                                            <rect key="frame" x="10" y="109.66666666666667" width="30" height="28.666666666666671"/>
+                                                            <rect key="frame" x="10" y="125.66666666666667" width="30" height="28.666666666666671"/>
                                                             <color key="tintColor" white="0.66666666669999997" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="30" id="L2o-kI-c9T"/>
@@ -141,7 +141,7 @@
                                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="hGV-i0-CBj" secondAttribute="trailing" constant="42" id="xue-BM-Sa1"/>
                                                     </constraints>
                                                 </collectionViewCellContentView>
-                                                <size key="customSize" width="191" height="147"/>
+                                                <size key="customSize" width="218" height="163"/>
                                                 <connections>
                                                     <outlet property="GroupJoinBubbleView" destination="hGV-i0-CBj" id="WuH-pg-iYY"/>
                                                     <outlet property="GroupJoinMessageLabel" destination="1hn-2U-wTA" id="na9-Gy-bx4"/>
@@ -150,7 +150,7 @@
                                                 </connections>
                                             </collectionViewCell>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="8RT-my-7rI" customClass="GroupJoinOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
-                                                <rect key="frame" x="90" y="157" width="181" height="147"/>
+                                                <rect key="frame" x="90" y="173" width="181" height="147"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="19T-BB-fo0">
                                                     <rect key="frame" x="0.0" y="0.0" width="181" height="147"/>
@@ -303,7 +303,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3106" y="113"/>
+            <point key="canvasLocation" x="3104.5801526717555" y="112.67605633802818"/>
         </scene>
         <!--Summary-->
         <scene sceneID="kcn-NZ-gxc">

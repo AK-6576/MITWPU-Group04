@@ -18,6 +18,7 @@ class GroupJoinOutgoingCell: UICollectionViewCell {
         GroupJoinBubbleView.layer.cornerRadius = 16
         GroupJoinBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         
+        contentView.translatesAutoresizingMaskIntoConstraints = false
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
@@ -60,6 +61,7 @@ class GroupJoinIncomingCell: UICollectionViewCell {
             profileImg.backgroundColor = .systemGray4
         }
         
+        contentView.translatesAutoresizingMaskIntoConstraints = false
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true

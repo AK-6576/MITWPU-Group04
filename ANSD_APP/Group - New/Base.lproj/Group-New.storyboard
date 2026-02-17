@@ -574,7 +574,7 @@
                                             <outlet property="participantLabel" destination="6a4-gI-PbS" id="CP5-MX-eUs"/>
                                         </connections>
                                     </tableViewCell>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsCardCell" rowHeight="200" id="0Cr-6r-epO" customClass="GroupNewParticipantCardCell" customModule="ANSD_APP" customModuleProvider="target">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsCardCell" rowHeight="200" id="0Cr-6r-epO" customClass="GroupNewParticipantsCardCell" customModule="ANSD_APP" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="350" width="393" height="200"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="0Cr-6r-epO" id="DfR-Ks-yD2">
@@ -630,9 +630,9 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                         <connections>
-                                            <outlet property="avatarImageView" destination="g03-da-YyC" id="M7F-W6-8vR"/>
-                                            <outlet property="detailsLabel" destination="TQh-jl-HP2" id="gXq-UB-V7N"/>
-                                            <outlet property="mainCardView" destination="v8u-t8-Yua" id="grL-RC-Of2"/>
+                                            <outlet property="avatarImageView" destination="g03-da-YyC" id="fsw-gM-vdp"/>
+                                            <outlet property="mainCardView" destination="v8u-t8-Yua" id="eMv-rP-Z9G"/>
+                                            <outlet property="summaryLabel" destination="TQh-jl-HP2" id="ff1-P8-7D8"/>
                                         </connections>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="NotesSectionHeaderCell" rowHeight="50" id="gmb-4T-zHM" customClass="NotesHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
@@ -731,13 +731,13 @@
                     <navigationItem key="navigationItem" title="Summary" id="wsv-T8-3A0">
                         <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="lRt-Hy-lxd">
                             <connections>
-                                <action selector="didTapDone" destination="RGC-I3-0nd" id="4uT-Pa-UEr"/>
+                                <action selector="didTapDone:" destination="RGC-I3-0nd" id="nPg-LM-bXa"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" image="square.and.arrow.up" catalog="system" id="jii-NI-x6g">
                             <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <connections>
-                                <action selector="didTapShare:" destination="RGC-I3-0nd" id="8G2-mP-EZt"/>
+                                <action selector="shareButtonTapped:" destination="RGC-I3-0nd" id="8YI-kM-CKI"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
@@ -748,7 +748,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="7ZD-0Q-lev" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="4979" y="113"/>
+            <point key="canvasLocation" x="4977.8625954198469" y="112.67605633802818"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="7Ny-uw-D6Z">

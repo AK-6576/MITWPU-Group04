@@ -18,6 +18,8 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     // MARK: - Data Sources
     var conversationTitle = "Session Summary"
     var transcriptMessages: [GroupNewChatMessage] = []
+    
+    // This holds the Name + Summary for the list
     var participantsData: [GroupNewParticipantData] = []
     
     // MARK: - Header Data
@@ -38,25 +40,183 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         generateDateAndTime()
         setupLocation()
         
+        // 1. Initial Data Prep (Fill list with "Waiting..." state)
         if !transcriptMessages.isEmpty {
             prepareParticipantsFromMessages()
         }
         
+        // 2. Start Analysis
         generateAISummary()
     }
     
     private func configureUI() {
         view.backgroundColor = .systemGroupedBackground
+        
         GroupNewTableView.delegate = self
         GroupNewTableView.dataSource = self
         GroupNewTableView.separatorStyle = .none
+        GroupNewTableView.backgroundColor = .clear
+        
         GroupNewTableView.rowHeight = UITableView.automaticDimension
         GroupNewTableView.estimatedRowHeight = 120
+        
+        // Tap to dismiss keyboard
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
     }
     
-    // MARK: - Actions (Share & Dismiss)
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
+    }
     
-    @IBAction func didTapDone() {
+    // MARK: - Data Preparation
+    private func prepareParticipantsFromMessages() {
+        // Identify all unique speakers
+        var seenSenders = Set<String>()
+        var ordering: [String] = []
+        
+        for msg in transcriptMessages {
+            if !seenSenders.contains(msg.sender) {
+                seenSenders.insert(msg.sender)
+                ordering.append(msg.sender)
+            }
+        }
+        
+        // Initialize with "Waiting..."
+        self.participantsData = ordering.map { name in
+            GroupNewParticipantData(name: name, summary: "Waiting for analysis...")
+        }
+        
+        GroupNewTableView.reloadData()
+    }
+    
+    // MARK: - AI Summary
+    private func generateAISummary() {
+        guard !transcriptMessages.isEmpty else {
+            self.notesText = "No conversation to summarize."
+            self.GroupNewTableView.reloadData()
+            return
+        }
+        
+        isProcessing = true
+        let fullTranscript = transcriptMessages.map { "\($0.sender): \($0.text)" }.joined(separator: "\n")
+        
+        Task {
+            do {
+                // Prompt: Ask for Notes AND per-person summaries
+                let prompt = """
+                Analyze the following transcript.
+                
+                Step 1: Write a section strictly labeled "NOTES:" containing bullet points of action items and key takeaways.
+                
+                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in third person.
+                
+                TRANSCRIPT:
+                \(fullTranscript)
+                """
+                
+                // CORRECTED: Use LanguageModelSession and respond(to:)
+                let session = LanguageModelSession(model: model)
+                let response = try await session.respond(to: prompt)
+                
+                // Parse Logic on Main Thread
+                await MainActor.run {
+                    self.parseAIResponse(response.content) // Use .content from the response
+                    self.isProcessing = false
+                    self.GroupNewTableView.reloadData()
+                }
+                
+            } catch {
+                await MainActor.run {
+                    self.notesText = "Could not generate summary. Error: \(error.localizedDescription)"
+                    self.isProcessing = false
+                    self.GroupNewTableView.reloadData()
+                }
+            }
+        }
+    }
+    
+    private func parseAIResponse(_ text: String) {
+        // Simple Parser to split "NOTES:" and "SUMMARY_Name:"
+        var notesBuffer = ""
+        let components = text.components(separatedBy: CharacterSet.newlines)
+        var currentSection = ""
+        
+        var participantSummaries: [String: String] = [:]
+        
+        for line in components {
+            if line.contains("NOTES:") {
+                currentSection = "NOTES"
+                continue
+            }
+            if line.contains("SUMMARY_") && line.contains(":") {
+                // Extract Name
+                let start = line.index(line.startIndex, offsetBy: 8) // Length of SUMMARY_
+                if let end = line.firstIndex(of: ":") {
+                    let name = String(line[start..<end])
+                    currentSection = name
+                    continue
+                }
+            }
+            
+            if currentSection == "NOTES" {
+                notesBuffer += line + "\n"
+            } else if !currentSection.isEmpty {
+                // It's a participant summary line
+                let existing = participantSummaries[currentSection] ?? ""
+                participantSummaries[currentSection] = existing + line + " "
+            }
+        }
+        
+        // Update Notes
+        self.notesText = notesBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+        if self.notesText.isEmpty { self.notesText = text } // Fallback
+        
+        // Update Participants Data
+        for (name, summary) in participantSummaries {
+            // Fuzzy match the name (case insensitive or contains)
+            if let index = participantsData.firstIndex(where: { name.contains($0.name) || $0.name.contains(name) }) {
+                participantsData[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+    }
+
+    // MARK: - Location & Date
+    private func generateDateAndTime() {
+        let now = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .none
+        dateString = dateFormatter.string(from: now)
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateStyle = .none
+        timeFormatter.timeStyle = .short
+        timeString = timeFormatter.string(from: now)
+    }
+    
+    private func setupLocation() {
+        locationManager.delegate = self
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(location) { placemarks, error in
+            if let place = placemarks?.first {
+                self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
+                self.locationManager.stopUpdatingLocation()
+                DispatchQueue.main.async {
+                    self.GroupNewTableView.reloadSections(IndexSet(integer: 1), with: .none)
+                }
+            }
+        }
+    }
+    
+    @IBAction func didTapDone(_ sender: Any) {
         // Return to Home Storyboard
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
@@ -73,214 +233,53 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         }
     }
     
-    @IBAction func didTapShare(_ sender: UIBarButtonItem) {
+    // MARK: - Actions (PDF Share)
+    @IBAction func shareButtonTapped(_ sender: UIBarButtonItem) {
         shareAsPDF()
     }
     
-    // MARK: - PDF Generation Logic (Matches QuickCaptioning)
     private func shareAsPDF() {
-        // 1. Build the text content for the PDF
-        var pdfContent = "Conversation Title: \(conversationTitle)\n"
-        pdfContent += "\(dateString) | \(timeString) | \(locationString)\n\n"
+        let pdfMetaData = [kCGPDFContextCreator: "ANSD App", kCGPDFContextTitle: conversationTitle]
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = pdfMetaData as [String: Any]
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595.2, height: 841.8), format: format)
         
-        pdfContent += "--- NOTES ---\n"
-        pdfContent += "\(notesText)\n\n"
-        
-        pdfContent += "--- PARTICIPANTS ---\n"
-        for person in participantsData {
-            pdfContent += "\(person.name):\n\(person.summary)\n\n"
-        }
-        
-        // 2. Generate and present
-        if let pdfURL = createPDF(from: pdfContent) {
-            let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
-            
-            // iPad Popover Support
-            if let popover = activityVC.popoverPresentationController {
-                popover.barButtonItem = GroupNewShareButton
-            }
-            
-            self.present(activityVC, animated: true, completion: nil)
-        }
-    }
-    
-    private func createPDF(from text: String) -> URL? {
-        let pageWidth = 595.2
-        let pageHeight = 841.8
-        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
-        
-        let data = renderer.pdfData { context in
+        let data = renderer.pdfData { (context) in
             context.beginPage()
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 12),
-                .paragraphStyle: NSMutableParagraphStyle()
-            ]
-            // Add padding (margin)
-            let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
-            text.draw(in: textRect, withAttributes: attributes)
-        }
-        
-        let tempFolder = FileManager.default.temporaryDirectory
-        let fileName = "\(conversationTitle) - Summary.pdf"
-        let fileURL = tempFolder.appendingPathComponent(fileName)
-        
-        do {
-            try data.write(to: fileURL)
-            return fileURL
-        } catch {
-            print("Error generating PDF: \(error)")
-            return nil
-        }
-    }
-    
-    // MARK: - Date & Time Logic
-    private func generateDateAndTime() {
-        let now = Date()
-        let dateFormatter = DateFormatter()
-
-        dateFormatter.dateFormat = "MMMM"
-        let month = dateFormatter.string(from: now)
-
-        let calendar = Calendar.current
-        let day = calendar.component(.day, from: now)
-        let numberFormatter = NumberFormatter()
-        numberFormatter.numberStyle = .ordinal
-        let dayWithSuffix = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
-
-        dateFormatter.dateFormat = "h:mm a"
-        self.timeString = dateFormatter.string(from: now)
-
-        self.dateString = "\(month) \(dayWithSuffix)"
-    }
-    
-    // MARK: - Location Logic
-    private func setupLocation() {
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
-        locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let loc = locations.last else { return }
-        let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(loc) { placemarks, error in
-            if let place = placemarks?.first {
-                let city = place.locality ?? ""
-                let country = place.country ?? ""
-                if !city.isEmpty {
-                    self.locationString = "\(city), \(country)"
-                    DispatchQueue.main.async {
-                        if self.GroupNewTableView.numberOfSections > 1 {
-                            self.GroupNewTableView.reloadRows(at: [IndexPath(row: 0, section: 1)], with: .none)
-                        }
-                    }
-                }
-            }
-        }
-        manager.stopUpdatingLocation()
-    }
-    
-    // MARK: - Data Preparation
-    private func prepareParticipantsFromMessages() {
-        let uniqueSenders = Set(transcriptMessages.map { $0.sender }).sorted()
-        
-        participantsData = uniqueSenders.map { name in
-            GroupNewParticipantData(name: name, summary: "Waiting for analysis...")
-        }
-        GroupNewTableView.reloadData()
-    }
-    
-    // MARK: - AI Logic
-    private func generateAISummary() {
-        guard !transcriptMessages.isEmpty else {
-            self.notesText = "No transcript available."
-            self.GroupNewTableView.reloadData()
-            return
-        }
-        
-        isProcessing = true
-        let transcriptText = transcriptMessages.map { "\($0.sender): \($0.text)" }.joined(separator: "\n")
-        
-        Task {
-            do {
-                let prompt = """
-                Analyze the following transcript.
-                
-                Step 1: Write a section strictly labeled "NOTES:" containing bullet points of action items, key takeaways, and dates mentioned.
-                
-                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in third person.
-                
-                TRANSCRIPT:
-                \(transcriptText)
-                """
-                
-                let session = LanguageModelSession(model: model)
-                let response = try await session.respond(to: prompt)
-                
-                await MainActor.run {
-                    self.parseAIResponse(response.content)
-                    self.isProcessing = false
-                    self.GroupNewTableView.reloadData()
-                }
-            } catch {
-                await MainActor.run {
-                    self.notesText = "Could not generate summary. Error: \(error.localizedDescription)"
-                    self.isProcessing = false
-                    self.GroupNewTableView.reloadData()
-                }
-            }
-        }
-    }
-    
-    private func parseAIResponse(_ text: String) {
-        var notesBuffer = ""
-        let components = text.components(separatedBy: CharacterSet.newlines)
-        var currentSection = ""
-        
-        var participantSummaries: [String: String] = [:]
-        
-        for line in components {
-            if line.contains("NOTES:") {
-                currentSection = "NOTES"
-                continue
+            let titleAttr = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 24)]
+            let bodyAttr = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12)]
+            
+            conversationTitle.draw(at: CGPoint(x: 40, y: 40), withAttributes: titleAttr)
+            
+            var text = "Date: \(dateString) | \(timeString)\nLocation: \(locationString)\n\n"
+            text += "--- NOTES ---\n\(notesText)\n\n"
+            text += "--- PARTICIPANTS ---\n"
+            for p in participantsData {
+                text += "\(p.name):\n\(p.summary)\n\n"
             }
             
-            if line.contains("SUMMARY_") && line.contains(":") {
-                let start = line.index(line.startIndex, offsetBy: 8)
-                if let end = line.firstIndex(of: ":") {
-                    let name = String(line[start..<end])
-                    currentSection = name
-                    continue
-                }
-            }
-            
-            if currentSection == "NOTES" {
-                notesBuffer += line + "\n"
-            } else if !currentSection.isEmpty {
-                let existing = participantSummaries[currentSection] ?? ""
-                participantSummaries[currentSection] = existing + line + " "
-            }
+            text.draw(in: CGRect(x: 40, y: 80, width: 515, height: 740), withAttributes: bodyAttr)
         }
         
-        self.notesText = notesBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
-        if self.notesText.isEmpty { self.notesText = text }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("SessionSummary.pdf")
+        try? data.write(to: url)
         
-        for (name, summary) in participantSummaries {
-            if let index = participantsData.firstIndex(where: { $0.name == name }) {
-                participantsData[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
+        let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = vc.popoverPresentationController {
+            popover.barButtonItem = GroupNewShareButton
         }
+        present(vc, animated: true)
     }
-    
+
     // MARK: - TableView Data Source
     func numberOfSections(in tableView: UITableView) -> Int {
         return 6
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 3 { return participantsData.count }
+        if section == 3 {
+            return participantsData.count
+        }
         return 1
     }
     
@@ -288,37 +287,44 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         switch indexPath.section {
         case 0:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupNewSummarySectionHeaderCell
+            cell.headerLabel.text = "Conversation Summary"
+            cell.headerIcon.image = UIImage(systemName: "list.clipboard")
+            cell.selectionStyle = .none
             return cell
             
-        case 1:
+        case 1: // Main Card
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! GroupNewSummaryCardCell
-            cell.configure(
-                title: self.conversationTitle,
-                date: self.dateString,
-                time: self.timeString,
-                location: self.locationString
-            )
+            cell.configure(title: conversationTitle, date: dateString, time: timeString, location: locationString)
             cell.delegate = self
+            cell.selectionStyle = .none
             return cell
             
-        case 2:
+        case 2: // Header Participants
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupNewSummarySectionHeaderCell
+            cell.headerLabel.text = "Participant Summary"
+            cell.headerIcon.image = UIImage(systemName: "person.2.fill")
+            cell.selectionStyle = .none
             return cell
             
-        case 3:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell", for: indexPath) as! GroupNewParticipantsSummaryHeaderCell
+        case 3: // LIST OF PARTICIPANTS (Using Card Cell)
+            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell", for: indexPath) as! GroupNewParticipantsCardCell
             let data = participantsData[indexPath.row]
             cell.configure(with: data)
+            cell.selectionStyle = .none
             return cell
             
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupNewSummarySectionHeaderCell
+            cell.headerLabel.text = "Notes"
+            cell.headerIcon.image = UIImage(systemName: "note.text")
+            cell.selectionStyle = .none
             return cell
             
-        case 5:
+        case 5: // Notes Card
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! GroupNewNotesCardCell
             cell.notesTextView.text = self.notesText
             cell.delegate = self
+            cell.selectionStyle = .none
             return cell
             
         default:
@@ -329,8 +335,6 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     func didUpdateText(in cell: GroupNewNotesCardCell) {
         notesText = cell.notesTextView.text
         GroupNewTableView.performBatchUpdates(nil)
-        
-        // Auto-scroll to keep editing area visible
         if let indexPath = GroupNewTableView.indexPath(for: cell) {
             GroupNewTableView.scrollToRow(at: indexPath, at: .bottom, animated: false)
         }

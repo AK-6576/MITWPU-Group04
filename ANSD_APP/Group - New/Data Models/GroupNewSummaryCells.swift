@@ -39,37 +39,38 @@ class GroupNewSummarySectionHeaderCell: UITableViewCell {
     }
 }
 
-// MARK: - 2. Participants Header Cell (Row in List)
-class GroupNewParticipantsSummaryHeaderCell: UITableViewCell {
-    @IBOutlet weak var participantIcon: UIImageView!
-    @IBOutlet weak var participantLabel: UILabel!
+// MARK: - 2. Participants Card Cell (NEW)
+class GroupNewParticipantsCardCell: UITableViewCell {
+    @IBOutlet weak var mainCardView: UIView!
+    @IBOutlet weak var summaryLabel: UILabel!
+    @IBOutlet weak var avatarImageView: UIImageView!
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        contentView.backgroundColor = .clear
+        styleCard(view: mainCardView)
         
-        if let icon = participantIcon {
-            icon.layer.cornerRadius = icon.frame.height / 2
-            icon.clipsToBounds = true
-            icon.backgroundColor = .systemGray5
-            icon.tintColor = .systemGray
+        // Avatar Styling
+        if let avatar = avatarImageView {
+            avatar.layer.cornerRadius = avatar.frame.height / 2
+            avatar.clipsToBounds = true
+            avatar.backgroundColor = .systemGray5
+            avatar.tintColor = .systemGray
+            avatar.contentMode = .scaleAspectFill
         }
     }
     
     func configure(with data: GroupNewParticipantData) {
-        let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 16)]
-        let regularAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 14), .foregroundColor: UIColor.secondaryLabel]
+        summaryLabel.text = data.summary
         
-        let attributedString = NSMutableAttributedString(string: "\(data.name)\n", attributes: boldAttributes)
-        attributedString.append(NSAttributedString(string: data.summary, attributes: regularAttributes))
-        
-        participantLabel.attributedText = attributedString
-        participantLabel.numberOfLines = 0
+        // Default Icon
+        if avatarImageView.image == nil {
+            avatarImageView.image = UIImage(systemName: "person.circle.fill")
+        }
     }
 }
 
-// MARK: - 3. Summary Card Cell (Title, Date, Time, Location)
+// MARK: - 3. Main Summary Card (Title, Date, Location)
 class GroupNewSummaryCardCell: UITableViewCell, UITextFieldDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleTextField: UITextField!
