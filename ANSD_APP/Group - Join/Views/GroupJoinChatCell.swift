@@ -1,5 +1,5 @@
 //
-//  ChatCell.swift
+//  GroupJoinChatCell.swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
@@ -18,20 +18,13 @@ class GroupJoinOutgoingCell: UICollectionViewCell {
         GroupJoinBubbleView.layer.cornerRadius = 16
         GroupJoinBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
-        }
+        GroupJoinMessageLabel.numberOfLines = 0
+        
+        // FIX: Removed translatesAutoresizingMaskIntoConstraints = false
     }
-    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
-        setNeedsLayout()
-        layoutIfNeeded()
-        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
-        var newFrame = layoutAttributes.frame
-        newFrame.size.height = ceil(size.height)
-        layoutAttributes.frame = newFrame
-        return layoutAttributes
+    
+    func configure(with message: GroupJoinChatMessage) {
+        GroupJoinMessageLabel.text = message.text
     }
 }
 
@@ -50,35 +43,19 @@ class GroupJoinIncomingCell: UICollectionViewCell {
         GroupJoinBubbleView.layer.cornerRadius = 16
         GroupJoinBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         
+        GroupJoinMessageLabel.numberOfLines = 0
         GroupJoinNameLabel.isUserInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-        GroupJoinNameLabel.addGestureRecognizer(tap)
+        GroupJoinNameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
         
-        if let profileImg = GroupJoinProfileImageView {
-            profileImg.layer.cornerRadius = profileImg.frame.height / 2
-            profileImg.clipsToBounds = true
-            profileImg.contentMode = .scaleAspectFill
-            profileImg.backgroundColor = .systemGray4
-        }
-        
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            let screenWidth = windowScene.screen.bounds.width
-            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
-        }
+        GroupJoinProfileImageView?.layer.cornerRadius = (GroupJoinProfileImageView?.frame.height ?? 30) / 2
+        GroupJoinProfileImageView?.clipsToBounds = true
     }
     
-    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
-        setNeedsLayout()
-        layoutIfNeeded()
-        let size = contentView.systemLayoutSizeFitting(layoutAttributes.size)
-        var newFrame = layoutAttributes.frame
-        newFrame.size.height = ceil(size.height)
-        layoutAttributes.frame = newFrame
-        return layoutAttributes
-    }
+    @objc func handleTap() { onLabelTapped?() }
     
-    @objc func handleTap() {
-        onLabelTapped?()
+    func configure(with message: GroupJoinChatMessage) {
+        GroupJoinMessageLabel.text = message.text
+        GroupJoinNameLabel.text = message.sender
+        GroupJoinProfileImageView.image = UIImage(systemName: "person.circle.fill")
     }
 }

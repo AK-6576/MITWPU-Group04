@@ -89,7 +89,7 @@
                                             <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="IncomingCell" id="bx9-1M-VOz" customClass="GroupJoinIncomingCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="GroupJoinIncomingCell" id="bx9-1M-VOz" customClass="GroupJoinIncomingCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="71.666666666666671" y="0.0" width="218" height="163"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="f9V-JT-CNL">
@@ -149,7 +149,7 @@
                                                     <outlet property="GroupJoinProfileImageView" destination="Qwv-rO-ux5" id="eM7-bD-FtI"/>
                                                 </connections>
                                             </collectionViewCell>
-                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="OutgoingCell" id="8RT-my-7rI" customClass="GroupJoinOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="GroupJoinOutgoingCell" id="8RT-my-7rI" customClass="GroupJoinOutgoingCell" customModule="ANSD_APP" customModuleProvider="target">
                                                 <rect key="frame" x="90" y="173" width="181" height="147"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="19T-BB-fo0">
@@ -474,6 +474,8 @@
                                             <outlet property="dateLabel" destination="hbd-1Y-y0E" id="br9-K9-FTZ"/>
                                             <outlet property="locationLabel" destination="8sE-HH-ZO8" id="ynz-xj-aP3"/>
                                             <outlet property="mainCardView" destination="duY-0m-dwu" id="7Ve-wu-pcp"/>
+                                            <outlet property="timeLabel" destination="Igu-pL-xen" id="rzp-Ld-2bS"/>
+                                            <outlet property="title" destination="KDM-wx-DcH" id="7KX-uB-rQ8"/>
                                             <outlet property="titleLabel" destination="KDM-wx-DcH" id="ato-M0-Y1G"/>
                                         </connections>
                                     </tableViewCell>
@@ -514,12 +516,8 @@
                                                 <constraint firstAttribute="trailing" secondItem="TMl-CC-tvP" secondAttribute="trailing" constant="16" id="aQR-mo-LQO"/>
                                             </constraints>
                                         </tableViewCellContentView>
-                                        <connections>
-                                            <outlet property="participantIcon" destination="zvY-6X-Yhw" id="1CA-jV-WHI"/>
-                                            <outlet property="participantLabel" destination="6a4-gI-PbS" id="BLB-b1-rKA"/>
-                                        </connections>
                                     </tableViewCell>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsCardCell" rowHeight="200" id="0Cr-6r-epO" customClass="GroupJoinParticipantCardCell" customModule="ANSD_APP" customModuleProvider="target">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsCardCell" rowHeight="200" id="0Cr-6r-epO" customClass="GroupJoinParticipantsCardCell" customModule="ANSD_APP" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="350" width="393" height="200"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="0Cr-6r-epO" id="DfR-Ks-yD2">
@@ -576,8 +574,8 @@
                                         </tableViewCellContentView>
                                         <connections>
                                             <outlet property="avatarImageView" destination="g03-da-YyC" id="9eb-H6-Sge"/>
-                                            <outlet property="detailsLabel" destination="TQh-jl-HP2" id="zlU-6C-6k4"/>
                                             <outlet property="mainCardView" destination="v8u-t8-Yua" id="k8K-zy-4eA"/>
+                                            <outlet property="summaryLabel" destination="TQh-jl-HP2" id="iKx-AG-Nui"/>
                                         </connections>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="NotesSectionHeaderCell" rowHeight="50" id="gmb-4T-zHM" customClass="NotesHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
@@ -676,11 +674,14 @@
                     <navigationItem key="navigationItem" title="Summary" id="wsv-T8-3A0">
                         <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="lRt-Hy-lxd">
                             <connections>
-                                <action selector="backTapped:" destination="RGC-I3-0nd" id="MEN-Wc-SPD"/>
+                                <action selector="doneButtonTapped:" destination="RGC-I3-0nd" id="aQo-a6-KoP"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" image="square.and.arrow.up" catalog="system" id="jii-NI-x6g">
                             <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <connections>
+                                <action selector="shareButtonTapped:" destination="RGC-I3-0nd" id="szn-rE-FMG"/>
+                            </connections>
                         </barButtonItem>
                     </navigationItem>
                     <connections>

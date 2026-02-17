@@ -1,8 +1,16 @@
+//
+//  GroupJoinViewController.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//
+
 import UIKit
 import AVFoundation
 import Speech
+import Combine
 
-class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
     
     // MARK: - IBOutlets
     @IBOutlet weak var GroupJoinCollectionView: UICollectionView!
@@ -11,267 +19,309 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     @IBOutlet weak var GroupJoinEndButton: UIButton!
     
     // MARK: - Properties
-    private let speechManager = SpeechManager()
-    private let firebase = FirebaseManager.shared // Using the Manager
+    private let firebase = FirebaseManager.shared
+    private let cleanupManager = TextCleanupManager()
     
+    // Monolithic Speech Engine
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let audioEngine = AVAudioEngine()
+    
+    // State
     var isRecording = false
     var isPaused = false
-    var selectedLanguageCode = "en-US"
-    var currentSessionID: String = ""
-    var otherPersonName = "Host"
-    var messages: [GroupJoinChatMessage] = []
+    var isHost = false // Joiners are NOT hosts
+    var isRestarting = false // Logic to prevent auto-mute
     
+    var messages: [GroupJoinChatMessage] = []
+    var currentSessionID: String = "" // Passed from previous screen
+    
+    // Identity
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
-    let myName = UIDevice.current.name
+    let myName = UIDevice.current.name // Device Name
+    
+    var otherPersonName = "Host" // Default name for others
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupCollectionView()
-
-        if currentSessionID.isEmpty {
-            // Delay slightly to ensure UI is ready before showing alert
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.showJoinRoomAlert()
-            }
-        } else {
-            startJoinSession()
+        setupSpeechPermissions()
+        setupAudioSession()
+        
+        // Title
+        self.title = "Session: \(currentSessionID)"
+        
+        // Start Firebase connection immediately using passed ID
+        if !currentSessionID.isEmpty {
+            startSession()
         }
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Auto-start mic
+        if !isRecording {
+            startRecording()
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        stopRecording()
+    }
+    
+    // MARK: - Setup
     private func setupCollectionView() {
         GroupJoinCollectionView.dataSource = self
         GroupJoinCollectionView.delegate = self
-        
         if let layout = GroupJoinCollectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.estimatedItemSize = .zero
-            layout.minimumLineSpacing = 10
+            layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
+            layout.minimumLineSpacing = 12
         }
     }
-
-    private func startJoinSession() {
-        self.title = "Room: \(currentSessionID)"
-        self.messages.removeAll()
-        
-        // Connect via Manager (isHost: false)
-        firebase.setupSession(id: currentSessionID, isHost: false)
-        
-        // Listen for messages
-        firebase.observeMessages { [weak self] data in
-            self?.handleIncomingFirebaseData(data)
+    
+    private func setupAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
+            try session.setActive(true)
+        } catch {
+            print("Audio Session Error: \(error)")
         }
     }
-
-    // MARK: - Firebase Handling
-    private func handleIncomingFirebaseData(_ data: [String: Any]) {
-        guard let senderID = data["senderID"] as? String,
-              senderID != self.currentUserID else { return }
-
-        let text = data["text"] as? String ?? ""
-        let senderName = data["sender"] as? String ?? "Other"
-        
-        let newMessage = GroupJoinChatMessage(text: text, isIncoming: true, sender: senderName, senderID: senderID)
-
-        DispatchQueue.main.async {
-            self.messages.append(newMessage)
-            self.GroupJoinCollectionView.reloadData()
-            self.scrollToBottom()
-        }
-    }
-
-    // MARK: - Join Logic
-    func showJoinRoomAlert() {
-        let alert = UIAlertController(title: "Join Session", message: "Enter the Room Code shared with you", preferredStyle: .alert)
-        
-        alert.addTextField { textField in
-            textField.placeholder = "4-Digit Code"
-            textField.keyboardType = .numberPad
-        }
-        
-        let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
-            guard let self = self else { return }
-            if let code = alert.textFields?.first?.text, !code.isEmpty {
-                self.currentSessionID = code
-                self.startJoinSession()
-                self.GroupJoinCollectionView.reloadData()
-            } else {
-                self.dismiss(animated: true)
+    
+    private func setupSpeechPermissions() {
+        speechRecognizer?.delegate = self
+        SFSpeechRecognizer.requestAuthorization { authStatus in
+            DispatchQueue.main.async {
+                self.GroupJoinMicButton.isEnabled = (authStatus == .authorized)
             }
         }
-        
-        alert.addAction(joinAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
-            self?.dismiss(animated: true)
-        })
-        
-        self.present(alert, animated: true)
-    }
-
-    // MARK: - Mic / Speech Logic
-    @IBAction func didTapMicButton(_ sender: UIButton) {
-        if !isRecording {
-            startAudioAndTranscription()
-        } else {
-            stopAudioAndTranscription()
-        }
-        isRecording = !isRecording
     }
     
-    private func startAudioAndTranscription() {
-        let audioSession = AVAudioSession.sharedInstance()
+    // MARK: - Speech Logic (Monolithic)
+    private func startRecording() {
+        if recognitionTask != nil {
+            recognitionTask?.cancel()
+            recognitionTask = nil
+        }
+        
+        addListeningBubble()
+        
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        if #available(iOS 13, *) { request.requiresOnDeviceRecognition = true }
+        recognitionRequest = request
+        
+        let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
+            self.recognitionRequest?.append(buffer)
+        }
+        
+        audioEngine.prepare()
+        
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            
-            startLiveTranscription()
-            
-            GroupJoinMicButton.tintColor = .systemRed
-            GroupJoinMicButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
+            try audioEngine.start()
+            isRecording = true
+            updateMicButtonVisuals(isActive: true)
         } catch {
-            print("DEBUG: Audio Session error: \(error.localizedDescription)")
+            print("Audio Engine Start Error: \(error)")
         }
-    }
-    
-    private func stopAudioAndTranscription() {
-        stopLiveTranscription()
-        GroupJoinMicButton.tintColor = .systemBlue
-        GroupJoinMicButton.setImage(UIImage(systemName: "mic"), for: .normal)
-    }
-
-    func startLiveTranscription() {
-        let newMessage = GroupJoinChatMessage(text: "Listening...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-        self.messages.append(newMessage)
         
-        let lastIndex = IndexPath(item: self.messages.count - 1, section: 0)
-        self.GroupJoinCollectionView.insertItems(at: [lastIndex])
-        self.scrollToBottom()
-
-        speechManager.startTranscribing(languageCode: self.selectedLanguageCode) { [weak self] transcribedText in
-            guard let self = self, !self.messages.isEmpty else { return }
+        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+            guard let self = self else { return }
             
-            let indexToUpdate = self.messages.count - 1
-            self.messages[indexToUpdate].text = transcribedText
+            if let result = result {
+                let rawText = result.bestTranscription.formattedString
+                self.updateListeningBubble(with: rawText)
+                
+                self.cleanupManager.scheduleCleanup(text: rawText, at: 0) { _, cleanedText in
+                    // Send to Firebase
+                    self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
+                    
+                    if self.isRecording {
+                        self.restartRecordingCycle()
+                    }
+                }
+            }
             
-            DispatchQueue.main.async {
-                UIView.performWithoutAnimation {
-                    self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: indexToUpdate, section: 0)])
-                    self.scrollToBottom()
+            if let error = error {
+                if !self.isRestarting {
+                    print("Speech Error: \(error)")
+                    self.stopRecording()
+                } else {
+                    self.isRestarting = false
                 }
             }
         }
     }
-
-    func stopLiveTranscription() {
-        speechManager.stopTranscribing()
-        
-        guard let lastMsg = messages.last else { return }
-        let cleanedText = lastMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if cleanedText.isEmpty || cleanedText == "Listening..." {
-            removeLastGhostBubble()
-            return
-        }
-        
-        // Use Manager to send
-        firebase.send(text: lastMsg.text, sender: self.myName, senderID: self.currentUserID)
+    
+    private func stopRecording() {
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionRequest = nil
+        recognitionTask = nil
+        isRecording = false
+        removeListeningBubble()
+        updateMicButtonVisuals(isActive: false)
     }
     
-    private func removeLastGhostBubble() {
-        messages.removeLast()
-        let lastIndexPath = IndexPath(item: messages.count, section: 0)
-        if GroupJoinCollectionView.numberOfItems(inSection: 0) > 0 {
-            GroupJoinCollectionView.performBatchUpdates({
-                self.GroupJoinCollectionView.deleteItems(at: [lastIndexPath])
-            })
-        }
+    private func restartRecordingCycle() {
+        isRestarting = true
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionTask?.cancel()
+        removeListeningBubble()
+        startRecording()
     }
-
-    // MARK: - Actions
-    @IBAction func didTapPauseButton(_ sender: UIButton) {
-        isPaused = !isPaused
-        let config = UIImage.SymbolConfiguration(scale: .small)
-        let imgName = isPaused ? "play.fill" : "pause.fill"
-        GroupJoinPauseButton.setImage(UIImage(systemName: imgName, withConfiguration: config), for: .normal)
-        
-        if isPaused && isRecording {
-            didTapMicButton(GroupJoinMicButton)
+    
+    // MARK: - Bubble Logic
+    private func addListeningBubble() {
+        if let last = messages.last, last.text == "Listening..." && !last.isIncoming { return }
+        let listeningMsg = GroupJoinChatMessage(text: "Listening...", isIncoming: false, sender: myName, senderID: currentUserID)
+        messages.append(listeningMsg)
+        reloadDataAndScroll()
+    }
+    
+    private func updateListeningBubble(with text: String) {
+        if let index = messages.lastIndex(where: { !$0.isIncoming }) {
+            messages[index].text = text
+            let indexPath = IndexPath(item: index, section: 0)
+            UIView.performWithoutAnimation {
+                self.GroupJoinCollectionView.reloadItems(at: [indexPath])
+            }
+            scrollToBottom()
         }
     }
     
-    @IBAction func didTapStopButton(_ sender: UIButton) {
-        let alert = UIAlertController(title: "Leave Session?", message: "This will end transcription and generate a summary.", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "End & Summarize", style: .destructive) { [weak self] _ in
-            if self?.isRecording == true { self?.stopAudioAndTranscription() }
-            self?.firebase.stop()
-            self?.navigateToSummary()
-        })
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        self.present(alert, animated: true)
+    private func removeListeningBubble() {
+        messages.removeAll { $0.text == "Listening..." && !$0.isIncoming }
+        reloadDataAndScroll()
     }
+    
+    // MARK: - Firebase Logic
+    private func startSession() {
+        // isHost = false because we are joining
+        firebase.setupSession(id: currentSessionID, isHost: isHost)
         
-    func navigateToSummary() {
-        let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
-        if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
-           let summaryVC = summaryNav.topViewController as? GroupJoinSummaryViewController {
+        firebase.observeMessages { [weak self] data in
+            guard let self = self else { return }
             
-            summaryVC.transcriptMessages = self.messages
-            summaryVC.conversationTitle = "Room \(self.currentSessionID)"
-            summaryNav.modalPresentationStyle = .pageSheet
-            self.present(summaryNav, animated: true)
+            if let text = data["text"] as? String,
+               let sender = data["sender"] as? String,
+               let senderID = data["senderID"] as? String {
+                
+                // Confirm own message sent
+                if senderID == self.currentUserID {
+                    self.removeListeningBubble()
+                    if self.isRecording { self.addListeningBubble() }
+                }
+                
+                let isIncoming = senderID != self.currentUserID
+                let msg = GroupJoinChatMessage(text: text, isIncoming: isIncoming, sender: sender, senderID: senderID)
+                self.messages.append(msg)
+                self.reloadDataAndScroll()
+            }
         }
     }
-
-    // MARK: - CollectionView
+    
+    // MARK: - Actions
+    @IBAction func micButtonTapped(_ sender: UIButton) {
+        isRecording ? stopRecording() : startRecording()
+    }
+    
+    @IBAction func pauseButtonTapped(_ sender: UIButton) {
+        isPaused.toggle()
+        let iconName = isPaused ? "play.fill" : "pause.fill"
+        GroupJoinPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
+        isPaused ? stopRecording() : startRecording()
+    }
+    
+    @IBAction func endButtonTapped(_ sender: UIButton) {
+        let actionSheet = UIAlertController(title: "Leave Session?", message: "Do you want to leave and see summary?", preferredStyle: .actionSheet)
+        
+        let endAction = UIAlertAction(title: "Leave & Summarize", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            self.stopRecording()
+            
+            let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
+            if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
+                
+                // Pass Data
+                summaryVC.transcriptMessages = self.messages
+                summaryVC.conversationTitle = "Session \(self.currentSessionID)"
+                
+                let nav = UINavigationController(rootViewController: summaryVC)
+                nav.modalPresentationStyle = .pageSheet
+                self.present(nav, animated: true)
+            }
+        }
+        
+        actionSheet.addAction(endAction)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let popover = actionSheet.popoverPresentationController {
+            popover.sourceView = sender
+        }
+        present(actionSheet, animated: true)
+    }
+    
+    // MARK: - Helpers
+    private func updateMicButtonVisuals(isActive: Bool) {
+        let imageName = isActive ? "mic.fill" : "mic.slash.fill"
+        let tintColor = isActive ? UIColor.systemRed : UIColor.label
+        GroupJoinMicButton.setImage(UIImage(systemName: imageName), for: .normal)
+        GroupJoinMicButton.tintColor = tintColor
+    }
+    
+    private func reloadDataAndScroll() {
+        GroupJoinCollectionView.reloadData()
+        scrollToBottom()
+    }
+    
+    private func scrollToBottom() {
+        guard !messages.isEmpty else { return }
+        let lastItem = IndexPath(item: messages.count - 1, section: 0)
+        GroupJoinCollectionView.scrollToItem(at: lastItem, at: .bottom, animated: true)
+    }
+    
+    // MARK: - DataSource
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = messages[indexPath.row]
-        let isIncoming = (message.senderID != self.currentUserID)
-        
-        if isIncoming {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! GroupJoinIncomingCell
-            cell.GroupJoinMessageLabel.text = message.text
-            cell.GroupJoinNameLabel.text = message.sender
+        if message.isIncoming {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinIncomingCell", for: indexPath) as! GroupJoinIncomingCell
+            cell.configure(with: message)
             cell.onLabelTapped = { [weak self] in self?.showRenameAlert() }
             return cell
         } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! GroupJoinOutgoingCell
-            cell.GroupJoinMessageLabel.text = message.text
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinOutgoingCell", for: indexPath) as! GroupJoinOutgoingCell
+            cell.configure(with: message)
             return cell
         }
     }
     
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let text = messages[indexPath.row].text
-        let approximateWidth = collectionView.frame.width - 60
-        let size = CGSize(width: approximateWidth, height: 1000)
-        let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 17)]
-        let estimatedFrame = NSString(string: text).boundingRect(with: size, options: .usesLineFragmentOrigin, attributes: attributes, context: nil)
-        return CGSize(width: collectionView.frame.width, height: estimatedFrame.height + 40)
-    }
-
-    func scrollToBottom() {
-        guard !messages.isEmpty else { return }
-        let lastItem = IndexPath(item: messages.count - 1, section: 0)
-        self.GroupJoinCollectionView.scrollToItem(at: lastItem, at: .bottom, animated: true)
-    }
-
     func showRenameAlert() {
         let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
         alert.addTextField { $0.text = self.otherPersonName }
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
-            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
-                self?.otherPersonName = newName
-                for i in 0..<(self?.messages.count ?? 0) where self?.messages[i].isIncoming == true {
-                    self?.messages[i].sender = newName
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
+            if let name = alert.textFields?.first?.text, !name.isEmpty {
+                self.otherPersonName = name
+                for i in 0..<self.messages.count where self.messages[i].isIncoming {
+                    self.messages[i].sender = name
                 }
-                self?.GroupJoinCollectionView.reloadData()
+                self.GroupJoinCollectionView.reloadData()
             }
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        self.present(alert, animated: true)
+        present(alert, animated: true)
     }
 }

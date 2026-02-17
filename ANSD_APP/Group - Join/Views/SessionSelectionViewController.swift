@@ -11,11 +11,10 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
 
     @IBOutlet weak var GroupJoinTableView: UITableView!
     
+    // Mock Data for "Recent Sessions" or "Available Rooms"
+    // In a real app, you might fetch this from Firebase or keep it static
     let sessions: [GroupJoinSessions] = [
-        GroupJoinSessions(title: "UI/UX Design Session", subtitle: "Reed Richards"),
-        GroupJoinSessions(title: "Project Alpha X7", subtitle: "Bruce Wayne"),
-        GroupJoinSessions(title: "Starbucks Meetup", subtitle: "Andrew Garfield"),
-        GroupJoinSessions(title: "Assignment Completion", subtitle: "Peter Parker")
+        GroupJoinSessions(title: "Join via Code", subtitle: "Enter a Room Code.")
     ]
     
     // MARK: - Lifecycle
@@ -36,38 +35,30 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         if segue.identifier == "goToChat" {
             if let chatVC = segue.destination as? GroupJoinViewController {
                 chatVC.modalPresentationStyle = .fullScreen
-                // Pass the session data forward
-                if let sessionData = sender as? GroupJoinSessions {
-                    chatVC.title = sessionData.title
+                
+                // Pass the code entered by the user
+                if let code = sender as? String {
+                    chatVC.currentSessionID = code
                 }
             }
         }
     }
-    
-    // MARK: - TableView Data Source
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-    
-    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let headerView = UIView()
-        headerView.backgroundColor = .systemGroupedBackground
-        return headerView
-    }
-    
+
+    // MARK: - TableView DataSource
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return sessions.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "SessionCell")
         let session = sessions[indexPath.row]
         
         var content = cell.defaultContentConfiguration()
         content.text = session.title
-        content.textProperties.font = UIFont.systemFont(ofSize: 17, weight: .medium)
         content.secondaryText = session.subtitle
-        content.secondaryTextProperties.color = .secondaryLabel
+        
+        // Font Styling
+        content.textProperties.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         content.secondaryTextProperties.font = UIFont.systemFont(ofSize: 14, weight: .regular)
         
         cell.contentConfiguration = content
@@ -77,23 +68,22 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - TableView Delegate
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedSession = sessions[indexPath.row]
-        
         tableView.deselectRow(at: indexPath, animated: true)
         
-        showJoinSessionAlert(for: selectedSession)
+        // Trigger the Single Input Alert
+        showJoinSessionAlert()
     }
     
-    // MARK: - Alert Logic
-    func showJoinSessionAlert(for session: GroupJoinSessions) {
+    // MARK: - Alert Logic (The Only Input Screen)
+    func showJoinSessionAlert() {
         let alert = UIAlertController(
             title: "Join Session",
-            message: "Enter the Room Code shared with you",
+            message: "Enter the 4-Digit Room Code",
             preferredStyle: .alert
         )
         
         alert.addTextField { textField in
-            textField.placeholder = "4-Digit Code"
+            textField.placeholder = "Room Code"
             textField.textAlignment = .center
             textField.keyboardType = .numberPad
         }
@@ -103,7 +93,11 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
             guard let self = self else { return }
             
-            self.performSegue(withIdentifier: "goToChat", sender: session)
+            // Get the code
+            if let code = alert.textFields?.first?.text, !code.isEmpty {
+                // Perform Segue and pass the code
+                self.performSegue(withIdentifier: "goToChat", sender: code)
+            }
         }
         
         alert.addAction(cancelAction)
