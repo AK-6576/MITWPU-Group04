@@ -28,6 +28,17 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GroupJoinTableView.dataSource = self
         GroupJoinTableView.backgroundColor = .systemGroupedBackground
         GroupJoinTableView.tableFooterView = UIView()
+        
+        // MARK: - FIX: Remove Gap Logic
+        // 1. Remove the default top padding introduced in iOS 15
+        if #available(iOS 15.0, *) {
+            GroupJoinTableView.sectionHeaderTopPadding = 0
+        }
+        
+        // 2. Ensure the table header view is minimal (prevents default grouped header spacing)
+        var frame = CGRect.zero
+        frame.size.height = .leastNormalMagnitude
+        GroupJoinTableView.tableHeaderView = UIView(frame: frame)
     }
 
     // MARK: - Navigation
