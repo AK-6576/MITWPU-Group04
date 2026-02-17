@@ -43,7 +43,7 @@ class QuickActionsViewController: UITableViewController {
         // Update your prepare(for:segue:) method
         if let segueID = segue.identifier, chatSegueIDs.contains(segueID) {
             if let selectedItem = sender as? RoutineConversation {
-                if let chatVC = segue.destination as? FamilyJoinViewController {
+                if let chatVC = segue.destination as? ActionJoinViewController {
                     
                     // 1. Set the Dynamic Title
                     chatVC.sessionTitle = "\(selectedItem.categoryTitle) Session"

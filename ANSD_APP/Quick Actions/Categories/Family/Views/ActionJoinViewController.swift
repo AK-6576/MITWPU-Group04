@@ -2,7 +2,7 @@ import UIKit
 import Speech
 import AVFoundation
 
-class FamilyJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
+class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
 
     // MARK: - Outlets
     @IBOutlet weak var collectionView: UICollectionView!
