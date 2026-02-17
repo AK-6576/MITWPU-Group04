@@ -11,10 +11,10 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
 
     @IBOutlet weak var GroupJoinTableView: UITableView!
     
-    // Mock Data for "Recent Sessions" or "Available Rooms"
-    // In a real app, you might fetch this from Firebase or keep it static
+    // Mock Data: If you add "Doomsday Meeting" here, that title will now carry over.
     let sessions: [GroupJoinSessions] = [
-        GroupJoinSessions(title: "Join via Code", subtitle: "Enter a Room Code.")
+        GroupJoinSessions(title: "Join via Code", subtitle: "Enter a Room Code."),
+
     ]
     
     // MARK: - Lifecycle
@@ -29,13 +29,10 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GroupJoinTableView.backgroundColor = .systemGroupedBackground
         GroupJoinTableView.tableFooterView = UIView()
         
-        // MARK: - FIX: Remove Gap Logic
-        // 1. Remove the default top padding introduced in iOS 15
+        // Fix for Top Gap (iOS 15+)
         if #available(iOS 15.0, *) {
             GroupJoinTableView.sectionHeaderTopPadding = 0
         }
-        
-        // 2. Ensure the table header view is minimal (prevents default grouped header spacing)
         var frame = CGRect.zero
         frame.size.height = .leastNormalMagnitude
         GroupJoinTableView.tableHeaderView = UIView(frame: frame)
@@ -47,9 +44,10 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
             if let chatVC = segue.destination as? GroupJoinViewController {
                 chatVC.modalPresentationStyle = .fullScreen
                 
-                // Pass the code entered by the user
-                if let code = sender as? String {
-                    chatVC.currentSessionID = code
+                // Expecting sender to be a tuple: (code: String, title: String)
+                if let data = sender as? (code: String, title: String) {
+                    chatVC.currentSessionID = data.code
+                    chatVC.sessionTitle = data.title // Pass the title forward
                 }
             }
         }
@@ -67,8 +65,6 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         var content = cell.defaultContentConfiguration()
         content.text = session.title
         content.secondaryText = session.subtitle
-        
-        // Font Styling
         content.textProperties.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         content.secondaryTextProperties.font = UIFont.systemFont(ofSize: 14, weight: .regular)
         
@@ -81,15 +77,17 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        // Trigger the Single Input Alert
-        showJoinSessionAlert()
+        let selectedTitle = sessions[indexPath.row].title
+        
+        // Pass the selected title to the alert logic
+        showJoinSessionAlert(title: selectedTitle)
     }
     
-    // MARK: - Alert Logic (The Only Input Screen)
-    func showJoinSessionAlert() {
+    // MARK: - Alert Logic
+    func showJoinSessionAlert(title: String) {
         let alert = UIAlertController(
             title: "Join Session",
-            message: "Enter the 4-Digit Room Code",
+            message: "Enter the 4-Digit Room Code for '\(title)'",
             preferredStyle: .alert
         )
         
@@ -104,10 +102,10 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
             guard let self = self else { return }
             
-            // Get the code
             if let code = alert.textFields?.first?.text, !code.isEmpty {
-                // Perform Segue and pass the code
-                self.performSegue(withIdentifier: "goToChat", sender: code)
+                // Pass BOTH code and title
+                let data = (code: code, title: title)
+                self.performSegue(withIdentifier: "goToChat", sender: data)
             }
         }
         

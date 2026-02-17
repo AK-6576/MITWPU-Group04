@@ -10,7 +10,7 @@ import PDFKit
 import FoundationModels // Apple Intelligence
 import CoreLocation
 
-class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, GroupJoinNotesCardCellDelegate, GroupJoinSummaryCardDelegate, CLLocationManagerDelegate {
+class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, GroupJoinNotesCardCellDelegate, CLLocationManagerDelegate {
     
     @IBOutlet weak var GroupJoinTableView: UITableView!
     @IBOutlet weak var GroupJoinOptionsButton: UIBarButtonItem!
@@ -57,12 +57,20 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - Actions
     @IBAction func doneButtonTapped(_ sender: Any) {
-        // Go Home
+        // Return to Home Storyboard
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
-        let nav = UINavigationController(rootViewController: homeVC)
-        nav.modalPresentationStyle = .fullScreen
-        self.view.window?.rootViewController = nav
+        
+        let navController = UINavigationController(rootViewController: homeVC)
+        navController.isNavigationBarHidden = false
+        navController.modalPresentationStyle = .fullScreen
+        
+        if let window = self.view.window {
+            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = navController
+            }, completion: nil)
+            window.makeKeyAndVisible()
+        }
     }
     
     @IBAction func shareButtonTapped(_ sender: UIBarButtonItem) {
@@ -167,7 +175,6 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! GroupJoinSummaryCardCell
             cell.configure(title: conversationTitle, date: dateString, time: timeString, location: locationString)
-            cell.delegate = self
             return cell
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
@@ -181,8 +188,6 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
             return cell
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
-            cell.headerLabel.text = "AI Notes"
-            cell.headerIcon.image = UIImage(systemName: "note.text")
             return cell
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! GroupJoinNotesCardCell

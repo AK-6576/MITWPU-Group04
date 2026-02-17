@@ -11,10 +11,6 @@ protocol GroupJoinNotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: GroupJoinNotesCardCell)
 }
 
-protocol GroupJoinSummaryCardDelegate: AnyObject {
-    func didChangeTitle(text: String)
-}
-
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
@@ -30,10 +26,8 @@ class GroupJoinSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerLabel: UILabel!
 }
 
-// NEW CARD CELL (Matches Group New)
 class GroupJoinParticipantsCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var summaryLabel: UILabel!
     @IBOutlet weak var avatarImageView: UIImageView!
     
@@ -46,39 +40,30 @@ class GroupJoinParticipantsCardCell: UITableViewCell {
     }
     
     func configure(with data: GroupJoinParticipants) {
-        nameLabel.text = data.name
-        nameLabel.font = UIFont.boldSystemFont(ofSize: 16)
         summaryLabel.text = data.summary
-        summaryLabel.textColor = .secondaryLabel
         avatarImageView.image = UIImage(systemName: "person.circle.fill")
     }
 }
 
-class GroupJoinSummaryCardCell: UITableViewCell, UITextFieldDelegate {
+// MARK: - CHANGED: Title is now a UILabel (Read Only)
+class GroupJoinSummaryCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var titleTextField: UITextField!
+    @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
-    
-    weak var delegate: GroupJoinSummaryCardDelegate?
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
-        titleTextField?.delegate = self
     }
     
     func configure(title: String, date: String, time: String, location: String) {
-        titleTextField?.text = title
+        titleLabel?.text = title
         dateLabel?.text = date
         timeLabel?.text = time
         locationLabel?.text = location
-    }
-    
-    @IBAction func titleChanged(_ sender: UITextField) {
-        delegate?.didChangeTitle(text: sender.text ?? "")
     }
 }
 

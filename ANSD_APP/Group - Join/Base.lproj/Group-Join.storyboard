@@ -224,7 +224,7 @@
                                                             <imageReference key="image" image="pause.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapPauseButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ekc-Ia-1Vd"/>
+                                                            <action selector="pauseButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="UVK-br-xfl"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="BIN-Ig-eE9">
@@ -238,7 +238,7 @@
                                                             <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapMicButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="kbb-OB-JFF"/>
+                                                            <action selector="micButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Rnq-C7-3y9"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wJW-FM-VSu">
@@ -252,7 +252,7 @@
                                                             <imageReference key="image" image="square.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <action selector="didTapStopButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="rkm-Nt-kVm"/>
+                                                            <action selector="endButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Dbq-8f-pPf"/>
                                                         </connections>
                                                     </button>
                                                 </subviews>
@@ -308,7 +308,7 @@
         <!--Summary-->
         <scene sceneID="kcn-NZ-gxc">
             <objects>
-                <viewController storyboardIdentifier="summaryScreen" id="RGC-I3-0nd" customClass="GroupJoinSummaryViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="GroupJoinSummaryViewController" id="RGC-I3-0nd" customClass="GroupJoinSummaryViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="h8d-iS-acG">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -475,7 +475,6 @@
                                             <outlet property="locationLabel" destination="8sE-HH-ZO8" id="ynz-xj-aP3"/>
                                             <outlet property="mainCardView" destination="duY-0m-dwu" id="7Ve-wu-pcp"/>
                                             <outlet property="timeLabel" destination="Igu-pL-xen" id="rzp-Ld-2bS"/>
-                                            <outlet property="title" destination="KDM-wx-DcH" id="7KX-uB-rQ8"/>
                                             <outlet property="titleLabel" destination="KDM-wx-DcH" id="ato-M0-Y1G"/>
                                         </connections>
                                     </tableViewCell>
@@ -754,22 +753,22 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.53333333333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray2Color">
-            <color red="0.68235294117647061" green="0.68235294117647061" blue="0.69803921568627447" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68235294120000001" green="0.68235294120000001" blue="0.69803921570000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray4Color">
-            <color red="0.81960784313725488" green="0.81960784313725488" blue="0.83921568627450982" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.81960784310000001" green="0.81960784310000001" blue="0.83921568629999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray5Color">
-            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.8980392157" green="0.8980392157" blue="0.91764705879999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

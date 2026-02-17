@@ -22,26 +22,26 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     private let firebase = FirebaseManager.shared
     private let cleanupManager = TextCleanupManager()
     
-    // Monolithic Speech Engine
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     
-    // State
     var isRecording = false
     var isPaused = false
-    var isHost = false // Joiners are NOT hosts
-    var isRestarting = false // Logic to prevent auto-mute
+    var isHost = false
+    var isRestarting = false
     
     var messages: [GroupJoinChatMessage] = []
-    var currentSessionID: String = "" // Passed from previous screen
     
-    // Identity
+    // Data from Selection Screen
+    var currentSessionID: String = ""
+    var sessionTitle: String = "Session" // New Property
+    
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
-    let myName = UIDevice.current.name // Device Name
+    let myName = UIDevice.current.name
     
-    var otherPersonName = "Host" // Default name for others
+    var otherPersonName = "Host"
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -50,10 +50,9 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         setupSpeechPermissions()
         setupAudioSession()
         
-        // Title
-        self.title = "Session: \(currentSessionID)"
+        // 1. Set Title on Caption Screen
+        self.title = sessionTitle
         
-        // Start Firebase connection immediately using passed ID
         if !currentSessionID.isEmpty {
             startSession()
         }
@@ -61,7 +60,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // Auto-start mic
         if !isRecording {
             startRecording()
         }
@@ -140,15 +138,12 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 self.updateListeningBubble(with: rawText)
                 
                 self.cleanupManager.scheduleCleanup(text: rawText, at: 0) { _, cleanedText in
-                    // Send to Firebase
                     self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
-                    
                     if self.isRecording {
                         self.restartRecordingCycle()
                     }
                 }
             }
-            
             if let error = error {
                 if !self.isRestarting {
                     print("Speech Error: \(error)")
@@ -207,9 +202,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     // MARK: - Firebase Logic
     private func startSession() {
-        // isHost = false because we are joining
         firebase.setupSession(id: currentSessionID, isHost: isHost)
-        
         firebase.observeMessages { [weak self] data in
             guard let self = self else { return }
             
@@ -217,7 +210,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                let sender = data["sender"] as? String,
                let senderID = data["senderID"] as? String {
                 
-                // Confirm own message sent
                 if senderID == self.currentUserID {
                     self.removeListeningBubble()
                     if self.isRecording { self.addListeningBubble() }
@@ -244,9 +236,9 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     @IBAction func endButtonTapped(_ sender: UIButton) {
-        let actionSheet = UIAlertController(title: "Leave Session?", message: "Do you want to leave and see summary?", preferredStyle: .actionSheet)
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure ?", preferredStyle: .actionSheet)
         
-        let endAction = UIAlertAction(title: "Leave & Summarize", style: .destructive) { [weak self] _ in
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             self.stopRecording()
             
@@ -255,7 +247,8 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 
                 // Pass Data
                 summaryVC.transcriptMessages = self.messages
-                summaryVC.conversationTitle = "Session \(self.currentSessionID)"
+                // 2. Pass the specific Title to Summary
+                summaryVC.conversationTitle = self.sessionTitle
                 
                 let nav = UINavigationController(rootViewController: summaryVC)
                 nav.modalPresentationStyle = .pageSheet
@@ -265,9 +258,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         
         actionSheet.addAction(endAction)
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        if let popover = actionSheet.popoverPresentationController {
-            popover.sourceView = sender
-        }
         present(actionSheet, animated: true)
     }
     
