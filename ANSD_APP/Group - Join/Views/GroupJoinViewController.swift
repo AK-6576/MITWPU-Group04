@@ -300,7 +300,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinIncomingCell", for: indexPath) as! GroupJoinIncomingCell
             cell.configure(with: message)
-            cell.onLabelTapped = { [weak self] in self?.showRenameAlert() }
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinOutgoingCell", for: indexPath) as! GroupJoinOutgoingCell
@@ -309,19 +308,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    func showRenameAlert() {
-        let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
-        alert.addTextField { $0.text = self.otherPersonName }
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
-            if let name = alert.textFields?.first?.text, !name.isEmpty {
-                self.otherPersonName = name
-                for i in 0..<self.messages.count where self.messages[i].isIncoming {
-                    self.messages[i].sender = name
-                }
-                self.GroupJoinCollectionView.reloadData()
-            }
-        })
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        present(alert, animated: true)
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: collectionView.bounds.width, height: 50)
     }
 }
