@@ -9,6 +9,7 @@ import UIKit
 import AVFoundation
 import Speech
 import Combine
+import FoundationModels // Apple Intelligence
 
 class GroupNewViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
     
@@ -21,6 +22,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     // MARK: - Properties
     private let firebase = FirebaseManager.shared
     private let cleanupManager = TextCleanupManager()
+    
+    // Apple Intelligence Model
+    private let model = SystemLanguageModel.default
     
     // Monolithic Speech Engine
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -38,6 +42,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     var otherPersonName = "Guest"
     var messages: [GroupNewChatMessage] = []
     var currentSessionID: String = ""
+    
+    // Buffering State
+    var consumedTranscriptOffset = 0
     
     // Identity
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
@@ -91,7 +98,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
             try session.setActive(true)
         } catch {
             print("Audio Session Error: \(error)")
@@ -114,6 +121,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             recognitionTask = nil
         }
         
+        // Reset offset for new session
+        consumedTranscriptOffset = 0
         addListeningBubble()
         
         let request = SFSpeechAudioBufferRecognitionRequest()
@@ -142,28 +151,102 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             guard let self = self else { return }
             
             if let result = result {
-                let rawText = result.bestTranscription.formattedString
-                self.updateListeningBubble(with: rawText)
+                let fullString = result.bestTranscription.formattedString
                 
-                self.cleanupManager.scheduleCleanup(text: rawText, at: 0) { _, cleanedText in
-                    // 1. Update Local Bubble (Overwrite "Listening...")
-                    self.updateListeningBubble(with: cleanedText)
+                // Safety check for backspacing/correction
+                if self.consumedTranscriptOffset > fullString.count {
+                    self.consumedTranscriptOffset = 0
+                }
+                
+                // Calculate Delta
+                let index = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
+                let newContent = String(fullString[index...])
+                self.consumedTranscriptOffset = fullString.count
+                
+                guard !newContent.isEmpty else { return }
+                
+                // Update Bubble Logic
+                if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                    let currentText = self.messages[lastIndex].text
+                    let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
+                    let combinedText = baseText + newContent
                     
-                    // 2. Send to Firebase
-                    self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
+                    // CHECK LIMIT (3-4 Lines Logic)
+                    if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
+                        // 1. Finalize Current Bubble
+                        self.messages[lastIndex].text = combinedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                        
+                        // 2. Trigger AI Cleanup for this bubble
+                        self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                        
+                        // 3. Start NEW Bubble
+                        let newMsg = GroupNewChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                        self.messages.append(newMsg)
+                        self.reloadDataAndScroll()
+                        
+                    } else {
+                        // JUST APPEND
+                        self.messages[lastIndex].text = combinedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                        self.scrollToBottom()
+                    }
                     
-                    // 3. Restart Cycle (Adds NEW "Listening..." bubble)
-                    if self.isRecording {
-                        self.restartRecordingCycle()
+                    // SILENCE DETECTION
+                    self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
+                        
+                        // Finalize whatever is in the last bubble
+                        if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                            let finalText = self.messages[finalIndex].text
+                            if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
+                                // Trigger AI Cleanup for the silenced bubble
+                                self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
+                            }
+                        }
+                        
+                        // Restart Cycle (Resets engine)
+                        if self.isRecording {
+                            self.restartRecordingCycle()
+                        }
                     }
                 }
             }
+            
             if let error = error {
                 if !self.isRestarting {
                     print("Speech Error: \(error)")
                     self.stopRecording()
                 } else {
                     self.isRestarting = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - Apple Intelligence Logic
+    private func processTextWithAppleIntelligence(text: String, index: Int) {
+        Task {
+            do {
+                let prompt = "Fix grammar and make concise: \(text)"
+                let session = LanguageModelSession(model: model)
+                let response = try await session.respond(to: prompt)
+                let cleanedText = response.content
+                
+                await MainActor.run {
+                    // Update Local UI
+                    if index < self.messages.count {
+                        self.messages[index].text = cleanedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+                        
+                        // Send to Firebase
+                        self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
+                    }
+                }
+            } catch {
+                print("Apple Intelligence Error: \(error)")
+                // Fallback: Send raw text if AI fails
+                await MainActor.run {
+                    self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
                 }
             }
         }
@@ -213,7 +296,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     private func removeListeningBubble() {
-        messages.removeAll { $0.text == "Listening..." && !$0.isIncoming }
+        messages.removeAll { ($0.text == "Listening..." || $0.text == "...") && !$0.isIncoming }
         reloadDataAndScroll()
     }
     
@@ -229,8 +312,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                 
                 // 1. Check for Duplicate (Echo from Self)
                 if senderID == self.currentUserID {
-                    // Find last finalized message (ignoring any current "Listening...")
-                    let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && !$0.isIncoming })
+                    // Find last finalized message
+                    let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && $0.text != "..." && !$0.isIncoming })
                     if let last = lastFinalized, last.text == text {
                         // Already exists locally. Ignore.
                         return
@@ -238,7 +321,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                 }
                 
                 // 2. Handle Bubble Position for others
-                let isListeningPresent = self.messages.last?.text == "Listening..." && !self.messages.last!.isIncoming
+                let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
                 
                 if isListeningPresent {
                     self.removeListeningBubble()

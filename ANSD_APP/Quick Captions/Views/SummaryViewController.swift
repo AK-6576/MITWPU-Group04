@@ -74,14 +74,23 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         Task {
             do {
+                // 1. Dynamically build instructions for EVERY participant in the list
+                var participantPrompts = ""
+                for person in participantsData {
+                    // Create a clean tag (e.g., PETER_PARKER)
+                    let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
+                    participantPrompts += """
+                    Step: Write a section strictly labeled "PARTICIPANT_\(safeName):" summarizing what \(person.name) said in their own perspective using the third person (e.g., "\(person.name) believes that...").
+                    
+                    """
+                }
+                
                 let prompt = """
                 Analyze the following transcript.
                 
                 Step 1: Write a section strictly labeled "NOTES:" containing bullet points of action items, key takeaways, and dates mentioned.
                 
-                Step 2: Write a section strictly labeled "PARTICIPANT_1:" summarizing what the first person said in their own perspective (Third Person).
-                
-                Step 3: Write a section strictly labeled "PARTICIPANT_2:" summarizing what the second person said in their own perspective (Third Person).
+                \(participantPrompts)
                 
                 TRANSCRIPT:
                 \(rawTranscriptText)
@@ -110,34 +119,55 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         var currentSection = ""
         var notesBuffer = ""
-        var p1Buffer = ""
-        var p2Buffer = ""
+        
+        // 2. Create buffers for each participant
+        var participantBuffers: [String: String] = [:]
+        for person in participantsData {
+            let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
+            participantBuffers[safeName] = ""
+        }
         
         for line in components {
-            if line.contains("NOTES:") { currentSection = "NOTES"; continue }
-            if line.contains("PARTICIPANT_1:") { currentSection = "P1"; continue }
-            if line.contains("PARTICIPANT_2:") { currentSection = "P2"; continue }
+            // Check for Notes Header
+            if line.contains("NOTES:") {
+                currentSection = "NOTES"
+                continue
+            }
             
-            switch currentSection {
-            case "NOTES": notesBuffer += line + "\n"
-            case "P1": p1Buffer += line + "\n"
-            case "P2": p2Buffer += line + "\n"
-            default: break
+            // Check for Participant Headers Dynamically
+            var isParticipantHeader = false
+            for person in participantsData {
+                let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
+                if line.contains("PARTICIPANT_\(safeName):") {
+                    currentSection = safeName
+                    isParticipantHeader = true
+                    break
+                }
+            }
+            if isParticipantHeader { continue }
+            
+            // Append content to the active section
+            if currentSection == "NOTES" {
+                notesBuffer += line + "\n"
+            } else if participantBuffers[currentSection] != nil {
+                participantBuffers[currentSection]? += line + "\n"
             }
         }
         
-        // 1. Fill Notes
+        // 3. Update Notes
         self.notesContent = notesBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
         if self.notesContent.isEmpty { self.notesContent = text }
         
-        // 2. Fill Participants
-        if participantsData.count > 0 {
-            participantsData[0].summary = p1Buffer.trimmingCharacters(in: .whitespacesAndNewlines)
-            if participantsData[0].summary.isEmpty { participantsData[0].summary = "No summary available." }
-        }
-        if participantsData.count > 1 {
-            participantsData[1].summary = p2Buffer.trimmingCharacters(in: .whitespacesAndNewlines)
-            if participantsData[1].summary.isEmpty { participantsData[1].summary = "No summary available." }
+        // 4. Update Participants Data
+        for i in 0..<participantsData.count {
+            let person = participantsData[i]
+            let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
+            
+            if let summary = participantBuffers[safeName], !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                participantsData[i].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            } else {
+                participantsData[i].summary = "No summary available."
+            }
         }
     }
     
@@ -264,10 +294,11 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             cell.selectionStyle = .none
             return cell
             
-        // MARK: SECTION 2 - Header: "Participants"
+        // MARK: SECTION 2 - Header: "Participants Summary"
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
-            cell.headerLabel.text = "Participants"
+            // Updated to match Figma text
+            cell.headerLabel.text = "Participants Summary"
             cell.headerIcon.image = UIImage(systemName: "person.2.fill")
             cell.selectionStyle = .none
             return cell
