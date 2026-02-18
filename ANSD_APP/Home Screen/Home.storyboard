@@ -614,7 +614,7 @@
         <!--ChatHistory2ViewController-->
         <scene sceneID="lhK-KH-2P6">
             <objects>
-                <viewControllerPlaceholder storyboardName="ViewConvo." referencedIdentifier="ChatHistory2ViewController" id="V9a-Kk-xxE" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="ViewConvo" referencedIdentifier="ChatHistory2ViewController" id="V9a-Kk-xxE" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="UqX-tg-UIa"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="O5c-T3-KMF" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1561,7 +1561,7 @@
         <!--viewConvo-->
         <scene sceneID="3ip-YL-OMA">
             <objects>
-                <viewControllerPlaceholder storyboardName="ViewConvo." referencedIdentifier="viewConvo" id="0Xm-WW-Dax" sceneMemberID="viewController">
+                <viewControllerPlaceholder storyboardName="ViewConvo" referencedIdentifier="viewConvo" id="0Xm-WW-Dax" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="i7r-Wj-wa5"/>
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="SZ8-5l-onb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
