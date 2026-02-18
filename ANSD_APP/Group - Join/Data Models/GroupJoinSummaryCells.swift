@@ -22,8 +22,15 @@ private func styleCard(view: UIView?) {
 }
 
 class GroupJoinSummarySectionHeaderCell: UITableViewCell {
+    
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+    }
 }
 
 class GroupJoinParticipantsCardCell: UITableViewCell {
@@ -35,10 +42,16 @@ class GroupJoinParticipantsCardCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
-        avatarImageView?.layer.cornerRadius = (avatarImageView?.frame.height ?? 40) / 2
-        avatarImageView?.clipsToBounds = true
+        
+        // Avatar Styling
+        if let avatar = avatarImageView {
+            avatar.layer.cornerRadius = avatar.frame.height / 2
+            avatar.clipsToBounds = true
+            avatar.backgroundColor = .systemGray5
+            avatar.tintColor = .systemGray
+            avatar.contentMode = .scaleAspectFill
+        }
     }
-    
     func configure(with data: GroupJoinParticipants) {
         summaryLabel.text = data.summary
         avatarImageView.image = UIImage(systemName: "person.circle.fill")
@@ -72,12 +85,32 @@ class GroupJoinNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var notesTextView: UITextView!
     weak var delegate: GroupJoinNotesCardCellDelegate?
     
+    let placeholderText = "Add notes about this conversation..."
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
         styleCard(view: mainCardView)
+        
         notesTextView.delegate = self
         notesTextView.isScrollEnabled = false
+        notesTextView.textContainerInset = .zero
+        notesTextView.textContainer.lineFragmentPadding = 0
+        notesTextView.font = UIFont.systemFont(ofSize: 15)
+    }
+    
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        if textView.text == placeholderText {
+            textView.text = nil
+            textView.textColor = UIColor.label
+        }
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        if textView.text.isEmpty {
+            textView.text = placeholderText
+            textView.textColor = .lightGray
+        }
     }
     
     func textViewDidChange(_ textView: UITextView) {
