@@ -164,14 +164,75 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="YQT-8V-Bny">
-                                <rect key="frame" x="0.0" y="118" width="393" height="666"/>
+                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Qmt-ti-h83">
+                                <rect key="frame" x="20" y="128" width="353" height="6"/>
+                                <subviews>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="sob-Hh-0bs" userLabel="StyleView1">
+                                        <rect key="frame" x="0.0" y="0.0" width="112.33333333333333" height="6"/>
+                                        <color key="backgroundColor" systemColor="systemBlueColor"/>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                <integer key="value" value="3"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                    </view>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Scb-iK-gqx" userLabel="StyleView2">
+                                        <rect key="frame" x="120.33333333333334" y="0.0" width="112.33333333333334" height="6"/>
+                                        <color key="backgroundColor" systemColor="systemGray5Color"/>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                <integer key="value" value="3"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                    </view>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Xyx-Hi-Shs" userLabel="StyleView3">
+                                        <rect key="frame" x="240.66666666666671" y="0.0" width="112.33333333333334" height="6"/>
+                                        <color key="backgroundColor" systemColor="systemGray5Color"/>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                <integer key="value" value="3"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                    </view>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="6" id="Vft-ZI-QYF"/>
+                                </constraints>
+                            </stackView>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="YQT-8V-Bny">
+                                <rect key="frame" x="0.0" y="148" width="393" height="636"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="LTk-Bg-E9B" userLabel="ContentView">
                                         <rect key="frame" x="0.0" y="0.0" width="393" height="900"/>
+                                        <subviews>
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="iI1-qO-e7o">
+                                                <rect key="frame" x="24" y="40" width="345" height="840"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Welcome to Echowave" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5xN-zt-dhj" userLabel="Welcome to Echowave">
+                                                        <rect key="frame" x="0.0" y="0.0" width="345" height="33.666666666666664"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="28"/>
+                                                        <nil key="textColor"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Your voice, visualized" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="l5P-BV-gN9" userLabel="Your voice, visualized">
+                                                        <rect key="frame" x="0.0" y="57.666666666666636" width="345" height="20.333333333333336"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="lCM-jv-Q9z">
+                                                        <rect key="frame" x="0.0" y="102" width="345" height="738"/>
+                                                    </stackView>
+                                                </subviews>
+                                            </stackView>
+                                        </subviews>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="900" id="Hmp-0r-ZmA"/>
+                                            <constraint firstAttribute="trailing" secondItem="iI1-qO-e7o" secondAttribute="trailing" constant="24" id="evb-yk-N0L"/>
+                                            <constraint firstAttribute="bottom" secondItem="iI1-qO-e7o" secondAttribute="bottom" constant="20" id="fxx-A5-k4c"/>
+                                            <constraint firstItem="iI1-qO-e7o" firstAttribute="leading" secondItem="LTk-Bg-E9B" secondAttribute="leading" constant="24" id="nkV-0P-W0k"/>
+                                            <constraint firstItem="iI1-qO-e7o" firstAttribute="top" secondItem="LTk-Bg-E9B" secondAttribute="top" constant="40" id="wNp-Pc-jjl"/>
                                         </constraints>
                                     </view>
                                 </subviews>
@@ -189,17 +250,19 @@
                         <viewLayoutGuide key="safeArea" id="QGG-2r-uEi"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
+                            <constraint firstItem="Qmt-ti-h83" firstAttribute="top" secondItem="QGG-2r-uEi" secondAttribute="top" constant="10" id="FjV-yo-3Py"/>
                             <constraint firstItem="QGG-2r-uEi" firstAttribute="bottom" secondItem="YQT-8V-Bny" secondAttribute="bottom" id="Icz-c9-wCV"/>
+                            <constraint firstItem="QGG-2r-uEi" firstAttribute="trailing" secondItem="Qmt-ti-h83" secondAttribute="trailing" constant="20" id="Lns-qu-NY5"/>
                             <constraint firstItem="YQT-8V-Bny" firstAttribute="leading" secondItem="QGG-2r-uEi" secondAttribute="leading" id="NDX-3Z-SXj"/>
-                            <constraint firstItem="YQT-8V-Bny" firstAttribute="top" secondItem="QGG-2r-uEi" secondAttribute="top" id="V78-80-cfk"/>
                             <constraint firstItem="QGG-2r-uEi" firstAttribute="trailing" secondItem="YQT-8V-Bny" secondAttribute="trailing" id="mtK-kR-V1k"/>
+                            <constraint firstItem="Qmt-ti-h83" firstAttribute="leading" secondItem="QGG-2r-uEi" secondAttribute="leading" constant="20" id="qcd-Cu-vf7"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="Om8-ad-c8z"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="aBq-gP-tqL" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2113" y="162"/>
+            <point key="canvasLocation" x="2110.6870229007632" y="147.88732394366198"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="WYo-oo-9hF">
@@ -226,6 +289,12 @@
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+        <systemColor name="systemBlueColor">
+            <color red="0.0" green="0.53333333333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="systemGray5Color">
+            <color red="0.89803921568627454" green="0.89803921568627454" blue="0.91764705882352937" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
