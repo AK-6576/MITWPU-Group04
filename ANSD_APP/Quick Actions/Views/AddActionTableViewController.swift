@@ -141,7 +141,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
         guard let name = nameTextField.text, !name.isEmpty else { return }
         
-        // 1. Format Time (e.g. "12:00 PM")
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
         timeFormatter.amSymbol = "AM"
@@ -149,27 +148,20 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         timeFormatter.locale = Locale(identifier: "en_US_POSIX")
         let timeString = timeFormatter.string(from: startTimePicker.date)
         
-        // 2. Format Day String
-        // If exactly one day is selected (e.g. "Monday"), we use the full name.
-        // If multiple are selected, we use the short version (e.g. "Mon, Wed").
         var dayStringForNotification = ""
         if selectedDays.count == 1, let singleDay = selectedDays.first {
-            dayStringForNotification = singleDay // "Monday"
+            dayStringForNotification = singleDay
         } else {
-            dayStringForNotification = getFormattedDateString() // "Mon, Wed" or "Every Day"
+            dayStringForNotification = getFormattedDateString()
         }
         
         let iconName = getSymbolForCategory(selectedCategory)
 
-        // 3. Trigger Immediate Confirmation Notification
         let content = UNMutableNotificationContent()
         content.title = "Session Scheduled"
-        
-        // Format: Meet is set for Monday at 12:00 PM.
         content.body = "Meet is set for \(dayStringForNotification) at \(timeString)."
         content.sound = .default
         
-        // Trigger in 1 second
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         
@@ -179,7 +171,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             }
         }
         
-        // 4. Create Object (Data persistence uses the standard format)
         let newAction = RoutineConversation(
             id: UUID().uuidString,
             iconName: iconName,
@@ -189,12 +180,19 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             topicImage: "mic.circle.fill",
             startTime: timeString,
             description: selectedParticipants.isEmpty ? "No participants" : "With: \(selectedParticipants.joined(separator: ", "))",
-            date: getFormattedDateString(), // Consistency for the list view
+            date: getFormattedDateString(),
             timeImage: "clock"
         )
         
-        // 5. Save & Close
-        delegate?.didCreateNewAction(newAction)
+        // 1. Save to Repository (The Source of Truth)
+        QuickActionsRepository.shared.addAction(newAction)
+        
+        // 2. FIXED: Removed the delegate call here.
+        // Calling BOTH the repository and the delegate was creating 2 actions.
+        
+        // 3. Post notification so HomeViewController reloads its data from the repository
+        NotificationCenter.default.post(name: NSNotification.Name("ActionsUpdated"), object: nil)
+        
         navigationController?.popViewController(animated: true)
     }
     
@@ -244,7 +242,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         if selectedDays == weekdays { return "Every Weekday" }
         if selectedDays == weekends { return "Every Weekend" }
         
-        // Sort days based on standard week order
         let sorted = allDaysOrdered.filter { selectedDays.contains($0) }
         return sorted.map { String($0.prefix(3)) }.joined(separator: ", ")
     }

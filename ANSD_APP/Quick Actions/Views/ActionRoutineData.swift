@@ -18,6 +18,6 @@ class RoutineRepository {
 }
 
 // These help the Storyboard find the right names
-struct FamilyRepository {
+struct ActionRepository {
     static func getMockData1() -> [RoutineItem] { return [] }
 }

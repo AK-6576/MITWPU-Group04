@@ -5,12 +5,10 @@ protocol NotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: NotesCardCell)
 }
 
-// MARK: - Unified Data Model
-/// NOTE: Removed the duplicate ParticipantData struct from here.
-/// It is now centrally managed in FamilyParticipantData.swift to avoid 'Invalid redeclaration' errors.
+
 
 // MARK: - Styling Helper
-/// Made internal instead of private so it can be used by other UI components if needed.
+
 func styleSummaryCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
