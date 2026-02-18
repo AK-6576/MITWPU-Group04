@@ -36,7 +36,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     // Data from Selection Screen
     var currentSessionID: String = ""
-    var sessionTitle: String = "Session" // New Property
+    var sessionTitle: String = "Session"
     
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
     let myName = UIDevice.current.name
@@ -50,7 +50,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         setupSpeechPermissions()
         setupAudioSession()
         
-        // 1. Set Title on Caption Screen
         self.title = sessionTitle
         
         if !currentSessionID.isEmpty {
@@ -138,7 +137,14 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 self.updateListeningBubble(with: rawText)
                 
                 self.cleanupManager.scheduleCleanup(text: rawText, at: 0) { _, cleanedText in
+                    // 1. Update the local bubble IMMEDIATELY (Overwrite)
+                    // This converts "Listening..." to the final cleaned text in place.
+                    self.updateListeningBubble(with: cleanedText)
+                    
+                    // 2. Send to Firebase
                     self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
+                    
+                    // 3. Restart Cycle (This will add a NEW "Listening..." bubble for next phrase)
                     if self.isRecording {
                         self.restartRecordingCycle()
                     }
@@ -172,7 +178,11 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionTask?.cancel()
+        
+        // Only remove "Listening..." markers.
+        // Since we updated the previous bubble to CleanedText, it won't be removed here.
         removeListeningBubble()
+        
         startRecording()
     }
     
@@ -210,15 +220,33 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                let sender = data["sender"] as? String,
                let senderID = data["senderID"] as? String {
                 
+                // 1. Check if this is an echo of a message we just finalized locally
                 if senderID == self.currentUserID {
-                    self.removeListeningBubble()
-                    if self.isRecording { self.addListeningBubble() }
+                    // Find the last actual message (ignoring any current "Listening..." bubble)
+                    let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && !$0.isIncoming })
+                    if let last = lastFinalized, last.text == text {
+                        // We already have this message (updated in cleanup). Do not append duplicate.
+                        return
+                    }
                 }
                 
-                let isIncoming = senderID != self.currentUserID
-                let msg = GroupJoinChatMessage(text: text, isIncoming: isIncoming, sender: sender, senderID: senderID)
+                // 2. Handle bubble position for incoming messages
+                // If we have a "Listening..." bubble, we want the new message to appear BEFORE it (or strictly, just append and ensure listening is at end).
+                let isListeningPresent = self.messages.last?.text == "Listening..." && !self.messages.last!.isIncoming
+                
+                if isListeningPresent {
+                    self.removeListeningBubble()
+                }
+                
+                // 3. Append the new message
+                let msg = GroupJoinChatMessage(text: text, isIncoming: (senderID != self.currentUserID), sender: sender, senderID: senderID)
                 self.messages.append(msg)
                 self.reloadDataAndScroll()
+                
+                // 4. Restore "Listening..." if it was there
+                if isListeningPresent && self.isRecording {
+                    self.addListeningBubble()
+                }
             }
         }
     }
@@ -236,7 +264,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     @IBAction func endButtonTapped(_ sender: UIButton) {
-        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure ?", preferredStyle: .actionSheet)
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
@@ -247,7 +275,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 
                 // Pass Data
                 summaryVC.transcriptMessages = self.messages
-                // 2. Pass the specific Title to Summary
                 summaryVC.conversationTitle = self.sessionTitle
                 
                 let nav = UINavigationController(rootViewController: summaryVC)
@@ -258,6 +285,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         
         actionSheet.addAction(endAction)
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
         present(actionSheet, animated: true)
     }
     
@@ -290,12 +318,29 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinIncomingCell", for: indexPath) as! GroupJoinIncomingCell
             cell.configure(with: message)
+            cell.onLabelTapped = { [weak self] in self?.showRenameAlert() }
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinOutgoingCell", for: indexPath) as! GroupJoinOutgoingCell
             cell.configure(with: message)
             return cell
         }
+    }
+    
+    func showRenameAlert() {
+        let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
+        alert.addTextField { $0.text = self.otherPersonName }
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
+            if let name = alert.textFields?.first?.text, !name.isEmpty {
+                self.otherPersonName = name
+                for i in 0..<self.messages.count where self.messages[i].isIncoming {
+                    self.messages[i].sender = name
+                }
+                self.GroupJoinCollectionView.reloadData()
+            }
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {

@@ -261,13 +261,10 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
             text.draw(in: CGRect(x: 40, y: 80, width: 515, height: 740), withAttributes: bodyAttr)
         }
         
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("SessionSummary.pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Session Summary..pdf")
         try? data.write(to: url)
         
         let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        if let popover = vc.popoverPresentationController {
-            popover.barButtonItem = GroupNewShareButton
-        }
         present(vc, animated: true)
     }
 

@@ -20,9 +20,31 @@ class GroupJoinOutgoingCell: UICollectionViewCell {
         
         GroupJoinMessageLabel.numberOfLines = 0
         
-        // FIX: Removed translatesAutoresizingMaskIntoConstraints = false
+        // Optimize constraints for auto-sizing
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let screenWidth = windowScene.screen.bounds.width
+            // Width constraint helps Auto Layout calculate height correctly
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
     }
     
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        
+        let targetSize = CGSize(width: layoutAttributes.frame.width, height: UIView.layoutFittingExpandedSize.height)
+        let autoLayoutSize = contentView.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+        
+        let newAttributes = layoutAttributes.copy() as! UICollectionViewLayoutAttributes
+        newAttributes.frame.size = autoLayoutSize
+        return newAttributes
+    }
+
     func configure(with message: GroupJoinChatMessage) {
         GroupJoinMessageLabel.text = message.text
     }
@@ -49,9 +71,33 @@ class GroupJoinIncomingCell: UICollectionViewCell {
         
         GroupJoinProfileImageView?.layer.cornerRadius = (GroupJoinProfileImageView?.frame.height ?? 30) / 2
         GroupJoinProfileImageView?.clipsToBounds = true
+        
+        // Optimize constraints for auto-sizing
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let screenWidth = windowScene.screen.bounds.width
+            // Width constraint helps Auto Layout calculate height correctly
+            contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
+        }
     }
     
     @objc func handleTap() { onLabelTapped?() }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        
+        let targetSize = CGSize(width: layoutAttributes.frame.width, height: UIView.layoutFittingExpandedSize.height)
+        let autoLayoutSize = contentView.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+        
+        let newAttributes = layoutAttributes.copy() as! UICollectionViewLayoutAttributes
+        newAttributes.frame.size = autoLayoutSize
+        return newAttributes
+    }
     
     func configure(with message: GroupJoinChatMessage) {
         GroupJoinMessageLabel.text = message.text

@@ -32,8 +32,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     var isRecording = false
     var isPaused = false
     var isHost = true
-    var isRestarting = false // FIX: Prevents auto-mute logic
-    var roomCodeShown = false // Controls pop-up frequency
+    var isRestarting = false
+    var roomCodeShown = false
     
     var otherPersonName = "Guest"
     var messages: [GroupNewChatMessage] = []
@@ -41,35 +41,35 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     
     // Identity
     let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
-    let myName = UIDevice.current.name // This ensures Device Name appears in Summary
+    let myName = UIDevice.current.name
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         setupCollectionView()
         setupSpeechPermissions()
         setupAudioSession()
         
-        // Generate Code if Host
+        // Host logic: Create session ID or use existing
         if currentSessionID.isEmpty {
-            self.currentSessionID = "\(Int.random(in: 1000...9999))"
+            self.currentSessionID = String(Int.random(in: 1000...9999))
         }
+        self.title = "Room: \(currentSessionID)"
         
+        // Start Firebase
         startSession()
+        
+        // Show Room Code Popup
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.showRoomCodeAlert()
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        // 1. Auto-Start Recording
         if !isRecording {
             startRecording()
-        }
-        
-        // 2. Room Code Pop-up (Only once)
-        if !roomCodeShown {
-            showRoomCodePopup()
-            roomCodeShown = true
         }
     }
     
@@ -78,7 +78,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         stopRecording()
     }
     
-    // MARK: - UI Setup
+    // MARK: - Setup
     private func setupCollectionView() {
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -86,13 +86,12 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
             layout.minimumLineSpacing = 12
         }
-        collectionView.keyboardDismissMode = .interactive
     }
     
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
             try session.setActive(true)
         } catch {
             print("Audio Session Error: \(error)")
@@ -108,10 +107,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
-    // MARK: - Speech Logic (Monolithic)
-    
+    // MARK: - Speech Logic
     private func startRecording() {
-        // Safety Clean
         if recognitionTask != nil {
             recognitionTask?.cancel()
             recognitionTask = nil
@@ -148,23 +145,24 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                 let rawText = result.bestTranscription.formattedString
                 self.updateListeningBubble(with: rawText)
                 
-                // Cleanup Trigger
                 self.cleanupManager.scheduleCleanup(text: rawText, at: 0) { _, cleanedText in
+                    // 1. Update Local Bubble (Overwrite "Listening...")
+                    self.updateListeningBubble(with: cleanedText)
+                    
+                    // 2. Send to Firebase
                     self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
                     
+                    // 3. Restart Cycle (Adds NEW "Listening..." bubble)
                     if self.isRecording {
                         self.restartRecordingCycle()
                     }
                 }
             }
-            
             if let error = error {
-                // FIX: Check 'isRestarting'. If true, this error is expected (cancellation), so DO NOT STOP.
                 if !self.isRestarting {
                     print("Speech Error: \(error)")
                     self.stopRecording()
                 } else {
-                    // Reset flag for next cycle
                     self.isRestarting = false
                 }
             }
@@ -178,22 +176,21 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         recognitionRequest = nil
         recognitionTask = nil
         isRecording = false
-        
         removeListeningBubble()
         updateMicButtonVisuals(isActive: false)
     }
     
     private func restartRecordingCycle() {
-        // FIX: Set flag to ignore the cancellation error from the old task
         isRestarting = true
-        
         audioEngine.stop()
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionTask?.cancel()
         
+        // Ensure we only remove bubbles that are strictly "Listening..." placeholders
         removeListeningBubble()
-        startRecording() // Start fresh immediately
+        
+        startRecording()
     }
     
     // MARK: - Bubble Logic
@@ -230,35 +227,49 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                let sender = data["sender"] as? String,
                let senderID = data["senderID"] as? String {
                 
+                // 1. Check for Duplicate (Echo from Self)
                 if senderID == self.currentUserID {
-                    self.removeListeningBubble()
-                    if self.isRecording { self.addListeningBubble() }
+                    // Find last finalized message (ignoring any current "Listening...")
+                    let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && !$0.isIncoming })
+                    if let last = lastFinalized, last.text == text {
+                        // Already exists locally. Ignore.
+                        return
+                    }
                 }
                 
-                let isIncoming = senderID != self.currentUserID
-                let msg = GroupNewChatMessage(text: text, isIncoming: isIncoming, sender: sender, senderID: senderID)
+                // 2. Handle Bubble Position for others
+                let isListeningPresent = self.messages.last?.text == "Listening..." && !self.messages.last!.isIncoming
+                
+                if isListeningPresent {
+                    self.removeListeningBubble()
+                }
+                
+                // 3. Append
+                let msg = GroupNewChatMessage(text: text, isIncoming: (senderID != self.currentUserID), sender: sender, senderID: senderID)
                 self.messages.append(msg)
                 self.reloadDataAndScroll()
+                
+                // 4. Restore Listening
+                if isListeningPresent && self.isRecording {
+                    self.addListeningBubble()
+                }
             }
         }
     }
     
-    // MARK: - Pop-ups & Actions
-    
-    func showRoomCodePopup() {
-        let alert = UIAlertController(title: "Session Started", message: "Room Code: \(currentSessionID)", preferredStyle: .alert)
-        
-        alert.addAction(UIAlertAction(title: "Copy Code", style: .default) { _ in
+    // MARK: - Popups
+    private func showRoomCodeAlert() {
+        guard !roomCodeShown else { return }
+        roomCodeShown = true
+        let alert = UIAlertController(title: "Room Code", message: "Share this code: \(currentSessionID)", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Copy", style: .default, handler: { _ in
             UIPasteboard.general.string = self.currentSessionID
-        })
-        
-        alert.addAction(UIAlertAction(title: "Share", style: .default) { _ in
-            self.shareRoomInvitation()
-        })
-        
+        }))
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel))
         present(alert, animated: true)
     }
     
+    // MARK: - Actions
     @IBAction func micButtonTapped(_ sender: UIButton) {
         isRecording ? stopRecording() : startRecording()
     }
@@ -271,18 +282,16 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     @IBAction func endButtonTapped(_ sender: UIButton) {
-        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .actionSheet)
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             self.stopRecording()
-            self.firebase.stop()
             
             let storyboard = UIStoryboard(name: "Group-New", bundle: nil)
             if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupNewSummaryViewController") as? GroupNewSummaryViewController {
                 summaryVC.transcriptMessages = self.messages
-                summaryVC.conversationTitle = "Session \(self.currentSessionID)"
-                
+                summaryVC.conversationTitle = "Room \(self.currentSessionID)"
                 let nav = UINavigationController(rootViewController: summaryVC)
                 nav.modalPresentationStyle = .pageSheet
                 self.present(nav, animated: true)
@@ -291,17 +300,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         actionSheet.addAction(endAction)
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
         present(actionSheet, animated: true)
-    }
-    
-    @IBAction func addPersonTapped(_ sender: Any) {
-        showRoomCodePopup()
-    }
-    
-    func shareRoomInvitation() {
-        let invite = "Join session: \(currentSessionID)"
-        let activityVC = UIActivityViewController(activityItems: [invite], applicationActivities: nil)
-        present(activityVC, animated: true)
     }
     
     // MARK: - Helpers
