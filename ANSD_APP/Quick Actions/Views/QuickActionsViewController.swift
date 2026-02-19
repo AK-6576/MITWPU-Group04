@@ -1,5 +1,6 @@
 import UIKit
 
+// MARK: - Quick Actions View Controller
 class QuickActionsViewController: UITableViewController {
     
     var sections: [RoutineSection] = []
@@ -37,28 +38,23 @@ class QuickActionsViewController: UITableViewController {
             addVC.delegate = self
         }
         
-        // 2. Handle Chat Screen Navigation (Injecting the dynamic title)
+        // 2. Handle Chat Screen Navigation
         let chatSegueIDs = ["officeChat", "familyChat", "friendChat", "genericChat"]
-        
-        // Update your prepare(for:segue:) method
         if let segueID = segue.identifier, chatSegueIDs.contains(segueID) {
             if let selectedItem = sender as? RoutineConversation {
                 if let chatVC = segue.destination as? ActionJoinViewController {
-                    
-                    // 1. Set the Dynamic Title
                     chatVC.sessionTitle = "\(selectedItem.categoryTitle) Session"
-                    
-                    // 2. Pass the Category String directly (Fixes the compiler error)
                     chatVC.category = selectedItem.categoryTitle
                 }
-                print("Opening Chat for Category: \(selectedItem.categoryTitle)")
             }
         }
         
         // 3. Handle Category Detail (Header Taps)
-        if segue.identifier == "categoryDetail", let categoryName = sender as? String {
-            // You can set the title for the detail view here as well
-            segue.destination.title = categoryName
+        if segue.identifier == "ActionDetail", let categoryName = sender as? String {
+            if let detailVC = segue.destination as? BaseRoutineViewController {
+                // NATIVE FIX: Use the built-in rawValue initializer
+                detailVC.category = ChatCategory(rawValue: categoryName) ?? .other
+            }
         }
     }
     
@@ -69,22 +65,16 @@ class QuickActionsViewController: UITableViewController {
         
         let sectionData = sections[indexPath.section]
         let item = sectionData.items[indexPath.row]
-        let category = sectionData.category
         
-        var segueID = ""
+        // NATIVE FIX: Use the built-in rawValue initializer
+        let category = ChatCategory(rawValue: sectionData.category) ?? .other
         
-        // Mapping Logic: Predefined categories go to specific segues,
-        // while all others (new/custom) go to a generic chat segue.
+        let segueID: String
         switch category {
-        case "Family":
-            segueID = "familyChat"
-        case "Friends":
-            segueID = "friendChat"
-        case "Office":
-            segueID = "officeChat"
-        default:
-            // This handles "Orasad" or any other custom category
-            segueID = "genericChat"
+        case .family:  segueID = "familyChat"
+        case .friends: segueID = "friendChat"
+        case .office:  segueID = "officeChat"
+        case .other:   segueID = "genericChat"
         }
         
         performSegue(withIdentifier: segueID, sender: item)
@@ -93,13 +83,12 @@ class QuickActionsViewController: UITableViewController {
     // MARK: - Header Navigation
     
     func didTapHeader(sectionIndex: Int, categoryName: String) {
-        // All categories (Predefined + Custom) now use the same detail screen segue
-        let segueID = "categoryDetail"
+        let segueID = "ActionDetail"
         
         if shouldPerformSegue(withIdentifier: segueID, sender: self) {
             performSegue(withIdentifier: segueID, sender: categoryName)
         } else {
-            print("Error: Segue identifier '\(segueID)' not found. Check Storyboard.")
+            print("Error: Segue identifier '\(segueID)' not found.")
         }
     }
     
@@ -127,8 +116,6 @@ class QuickActionsViewController: UITableViewController {
         
         return header
     }
-    
-    // MARK: - Cell & Swipe Configuration
     
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return UITableView.automaticDimension
@@ -209,7 +196,7 @@ class QuickActionsViewController: UITableViewController {
     }
 }
 
-// MARK: - AddActionDelegate
+// MARK: - Extensions
 
 extension QuickActionsViewController: AddActionDelegate {
     func didCreateNewAction(_ action: RoutineConversation) {

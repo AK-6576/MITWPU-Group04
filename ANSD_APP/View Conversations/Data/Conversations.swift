@@ -63,7 +63,7 @@ struct Message: Codable, Identifiable, Sendable {
 
 struct Participants: Codable, Sendable {
     let name: String
-    let summary: String
+    var summary: String
 }
 
 // MARK: - Conversation Model

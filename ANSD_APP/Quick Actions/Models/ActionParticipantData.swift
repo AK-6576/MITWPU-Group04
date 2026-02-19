@@ -24,11 +24,15 @@ class ParticipantRepository {
                 ParticipantData(name: "Alex Jordan", summary: "The movie planner."),
                 ParticipantData(name: "Sarah Miller", summary: "Always ready for food.")
             ]
-        case .work:
+        case .office:
             return [
                 ParticipantData(name: "Julius Oppenheimer", summary: "Project lead."),
                 ParticipantData(name: "Richard Feynman", summary: "Currently panicking.")
             ]
+        case .other:
+          return [  ParticipantData(name: "Julius Oppenheimer", summary: "Project lead."),
+            ParticipantData(name: "Richard Feynman", summary: "Currently panicking.")
+                    ]
         }
     }
 }

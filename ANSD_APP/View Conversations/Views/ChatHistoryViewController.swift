@@ -7,6 +7,7 @@
 
 import UIKit
 import PDFKit
+import FoundationModels // Apple Intelligence added
 
 // MARK: - Protocols
 
@@ -19,12 +20,12 @@ protocol ViewSummaryCardDelegate: AnyObject {
 }
 
 // MARK: - Custom TableView Cell Classes
+// (Kept exactly as you provided)
 
 class ViewSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
     
-    // Function - Prepares the receiver for service after it has been loaded from an Interface Builder archive.
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
@@ -157,14 +158,15 @@ class ChatHistoryViewController: UIViewController {
         return histconversationData?.messages ?? []
     }
 
+    // MARK: - AI & State Properties
+    private let model = SystemLanguageModel.default
+    private var isProcessing = false
+    private(set) var generatedNotesText: String = "Generating summary..."
+
     // Function - Initializes the view lifecycle, setting up the table view properties and gesture recognizers.
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
-        
-        if let participants = histconversationData?.participants {
-            self.participantsData = participants
-        }
         
         setupNavigation()
         setupChatUI()
@@ -175,10 +177,124 @@ class ChatHistoryViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+        
+        // --- AI Processing Logic Check ---
+        let hasExistingParticipants = histconversationData?.participants?.isEmpty == false
+        let hasExistingNotes = histconversationData?.notes?.isEmpty == false
+        
+        if hasExistingParticipants {
+            self.participantsData = histconversationData!.participants!
+            self.generatedNotesText = histconversationData?.notes ?? ""
+        } else if !transcript.isEmpty {
+            // No summary saved yet -> Generate it!
+            prepareParticipantsFromMessages()
+            generateAISummary()
+        }
     }
     
     @objc private func dismissKeyboard() {
         view.endEditing(true)
+    }
+    
+    // MARK: - AI Summarization Logic
+    
+    private func prepareParticipantsFromMessages() {
+        var seenSenders = Set<String>()
+        var ordering: [String] = []
+        
+        for msg in transcript {
+            if !seenSenders.contains(msg.senderName) {
+                seenSenders.insert(msg.senderName)
+                ordering.append(msg.senderName)
+            }
+        }
+        
+        // Note: Make sure your `Participants` model has an initializer like this.
+        // Adjust if your initializer parameters are named differently.
+        self.participantsData = ordering.map { name in
+            Participants(name: name, summary: "Waiting for analysis...")
+        }
+        
+        tableView.reloadData()
+    }
+    
+    private func generateAISummary() {
+        isProcessing = true
+        let fullTranscript = transcript.map { "\($0.senderName): \($0.text)" }.joined(separator: "\n")
+        
+        Task {
+            do {
+                let prompt = """
+                Analyze the following transcript.
+                
+                Step 1: Write a section strictly labeled "NOTES:" containing bullet points of action items and key takeaways.
+                
+                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in third person.
+                
+                TRANSCRIPT:
+                \(fullTranscript)
+                """
+                
+                let session = LanguageModelSession(model: model)
+                let response = try await session.respond(to: prompt)
+                
+                await MainActor.run {
+                    self.parseAIResponse(response.content)
+                    self.isProcessing = false
+                    self.tableView.reloadData()
+                    self.notifyDataChanged() // Save to history
+                }
+                
+            } catch {
+                await MainActor.run {
+                    self.generatedNotesText = "Could not generate summary. Error: \(error.localizedDescription)"
+                    self.isProcessing = false
+                    self.tableView.reloadData()
+                }
+            }
+        }
+    }
+    
+    private func parseAIResponse(_ text: String) {
+        var notesBuffer = ""
+        let components = text.components(separatedBy: CharacterSet.newlines)
+        var currentSection = ""
+        var participantSummaries: [String: String] = [:]
+        
+        for line in components {
+            if line.contains("NOTES:") {
+                currentSection = "NOTES"
+                continue
+            }
+            if line.contains("SUMMARY_") && line.contains(":") {
+                let start = line.index(line.startIndex, offsetBy: 8)
+                if let end = line.firstIndex(of: ":") {
+                    let name = String(line[start..<end])
+                    currentSection = name
+                    continue
+                }
+            }
+            
+            if currentSection == "NOTES" {
+                notesBuffer += line + "\n"
+            } else if !currentSection.isEmpty {
+                let existing = participantSummaries[currentSection] ?? ""
+                participantSummaries[currentSection] = existing + line + " "
+            }
+        }
+        
+        // Update Notes
+        self.generatedNotesText = notesBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+        if self.generatedNotesText.isEmpty { self.generatedNotesText = text }
+        self.histconversationData?.notes = self.generatedNotesText
+        
+        // Update Participants Data
+        for (name, summary) in participantSummaries {
+            if let index = participantsData.firstIndex(where: { name.contains($0.name) || $0.name.contains(name) }) {
+                participantsData[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        self.histconversationData?.participants = self.participantsData
     }
     
     // MARK: - Setup Methods
@@ -228,7 +344,6 @@ class ChatHistoryViewController: UIViewController {
     
     private func setupShareButton() {
         if let shareBtn = menuButton {
-    
             shareBtn.target = self
             shareBtn.action = #selector(shareTapped)
         }
@@ -322,12 +437,15 @@ extension ChatHistoryViewController {
     private func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         
+        // Print Participants
         for person in participantsData {
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
         }
         
-        if let notes = histconversationData?.notes, !notes.isEmpty {
-            pdfContent += "Notes:\n\(notes)\n\n"
+        // Print AI Generated Notes or saved notes
+        let notesToPrint = histconversationData?.notes ?? generatedNotesText
+        if !notesToPrint.isEmpty {
+            pdfContent += "Notes:\n\(notesToPrint)\n\n"
         }
         
         if let pdfURL = createPDF(from: pdfContent) {
@@ -440,6 +558,7 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
     func didUpdateText(in cell: ViewNotesCardCell) {
         if cell.notesTextView.text != cell.placeholderText {
             self.histconversationData?.notes = cell.notesTextView.text
+            self.generatedNotesText = cell.notesTextView.text
             
             tableView.beginUpdates()
             tableView.endUpdates()
@@ -493,11 +612,18 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
             
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCNotesCardCell", for: indexPath) as! ViewNotesCardCell
-            let savedNotes = histconversationData?.notes ?? ""
-            if !savedNotes.isEmpty {
-                cell.notesTextView.text = savedNotes
+            
+            // Feed parsed notes or fallback to existing data
+            let displayNotes = histconversationData?.notes ?? generatedNotesText
+            
+            if !displayNotes.isEmpty && displayNotes != "Generating summary..." {
+                cell.notesTextView.text = displayNotes
                 cell.notesTextView.textColor = .label
+            } else {
+                cell.notesTextView.text = displayNotes // Will show "Generating summary..."
+                cell.notesTextView.textColor = .lightGray
             }
+            
             cell.delegate = self
             return cell
             

@@ -8,10 +8,11 @@
 import Foundation
 
 // 1. This defines the categories so the errors in Summary and Routine disappear
-enum ChatCategory {
-    case family
-    case friends
-    case work
+enum ChatCategory: String, CaseIterable {
+    case family = "Family"
+    case friends = "Friends"
+    case office = "Office"
+    case other = "Other"
 }
 
 // 2. This defines what a message looks like
@@ -27,5 +28,7 @@ protocol ChatMessageProtocol {
     var sender: String { get }
     var isIncoming: Bool { get }
 }
+
+
 
 extension ChatMessage: ChatMessageProtocol {}

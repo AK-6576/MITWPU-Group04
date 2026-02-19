@@ -5,16 +5,16 @@
       "title": "Morning Jog",
       "description": "Running path discussion with neighbor.",
       "topic_image": "figure.run",
-      "notes": "Meet at the park entrance.",
+      "notes": "",
       "participants": [
         {
           "name": "Neighbor",
-          "summary": "Suggesting the lake route.",
+          "summary": "",
           "image": "avatar_8"
         },
         {
           "name": "Me",
-          "summary": "Preferring the trail.",
+          "summary": "",
           "image": "avatar_1"
         }
       ],

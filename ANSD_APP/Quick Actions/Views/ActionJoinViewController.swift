@@ -85,7 +85,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
 
     func navigateToSummary() {
-        let storyboard = UIStoryboard(name: "Family", bundle: nil)
+        let storyboard = UIStoryboard(name: "Action", bundle: nil)
         
         guard let summaryVC = storyboard.instantiateViewController(withIdentifier: "summaryScreen") as? BaseSummaryViewController else {
             print("❌ SummaryViewController not found!")

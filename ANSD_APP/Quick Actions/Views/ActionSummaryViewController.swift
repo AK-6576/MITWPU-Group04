@@ -1,5 +1,18 @@
 import UIKit
 import PDFKit
+import FoundationModels // Apple Intelligence
+
+// MARK: - Required Structs for AI JSON Parsing
+struct AISummaryResponse: Codable {
+    let notes: String
+    let participants: [AIParticipantSummary]
+}
+
+struct AIParticipantSummary: Codable {
+    let name: String
+    let summary: String
+}
+
 
 // MARK: - Summary Base Class
 class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, NotesCardCellDelegate {
@@ -8,9 +21,6 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     @IBOutlet weak var optionsButton: UIBarButtonItem!
     
     // MARK: - Properties
-    
-    /// Updated to String to support custom categories like "Orasad" or "Office"
-    /// didSet ensures the Page Title updates as soon as the category is assigned
     var category: String = "Family" {
         didSet {
             self.title = "\(category) Summary"
@@ -18,24 +28,32 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     var conversationTitle = "Conversation Summary"
-    
-    // Using the unified ParticipantData struct
     var participants: [ParticipantData] = []
     
+    // MARK: - AI & State Properties
+    var transcriptMessages: [ChatMessage] = [] // Pass this in before pushing the VC
+    private let model = SystemLanguageModel.default
+    private var isProcessing = false
+    private(set) var notesText: String = "Generating summary..."
+    
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // Initial title setup
         self.title = "\(category) Summary"
-        
         setupUI()
-        //loadParticipants()
+        
+        // 1. Initial Data Prep
+        if !transcriptMessages.isEmpty {
+            prepareParticipantsFromMessages()
+        }
+        
+        // 2. Start AI Analysis
+        generateAISummary()
     }
     
     private func setupUI() {
         view.backgroundColor = .systemGroupedBackground
         
-        // Setup TableView
         tableView.delegate = self
         tableView.dataSource = self
         tableView.separatorStyle = .none
@@ -43,22 +61,14 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 120
         
-        // Options for PDF sharing
         optionsButton?.target = self
         optionsButton?.action = #selector(shareTapped)
         
-        // Dismiss keyboard when tapping outside
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
-//    
-//    private func loadParticipants() {
-//        // Fetches the real list from the repository based on the category string
-//        self.participants = ParticipantRepository.getParticipants(for: category)
-//        tableView.reloadData()
-//    }
-//    
+    
     @objc func dismissKeyboard() { view.endEditing(true) }
     @objc func shareTapped() { shareAsPDF() }
     
@@ -71,8 +81,112 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         if let window = self.view.window {
             UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
                 window.rootViewController = navController
-            }, completion: nil)          
+            }, completion: nil)
             window.makeKeyAndVisible()
+        }
+    }
+    
+    // MARK: - Data Preparation
+    private func prepareParticipantsFromMessages() {
+        var seenSenders = Set<String>()
+        var ordering: [String] = []
+        
+        for msg in transcriptMessages {
+            if !seenSenders.contains(msg.sender) {
+                seenSenders.insert(msg.sender)
+                ordering.append(msg.sender)
+            }
+        }
+        
+        // Initialize with waiting state
+        self.participants = ordering.map { name in
+            ParticipantData(name: name, summary: "Waiting for analysis...")
+        }
+        tableView.reloadData()
+    }
+    
+    // MARK: - AI Foundation Models Integration
+    private func generateAISummary() {
+        guard !transcriptMessages.isEmpty else {
+            self.notesText = "No conversation to summarize."
+            self.tableView.reloadData()
+            return
+        }
+        
+        isProcessing = true
+        let fullTranscript = transcriptMessages.map { "\($0.sender): \($0.text)" }.joined(separator: "\n")
+        
+        Task {
+            do {
+                // Strict JSON Prompt
+                let prompt = """
+                Analyze the following transcript. You must respond ONLY with a raw, valid JSON object. Do not include markdown blocks, explanations, or code tags.
+                
+                The JSON must perfectly match this structure:
+                {
+                  "notes": "A bulleted string of action items and key takeaways.",
+                  "participants": [
+                    { "name": "Participant Name", "summary": "A short third-person summary of what they said." }
+                  ]
+                }
+                
+                TRANSCRIPT:
+                \(fullTranscript)
+                """
+                
+                let session = LanguageModelSession(model: model)
+                let response = try await session.respond(to: prompt)
+                
+                await MainActor.run {
+                    self.parseJSONResponse(response.content)
+                }
+                
+            } catch {
+                await MainActor.run {
+                    self.notesText = "Could not generate summary. Error: \(error.localizedDescription)"
+                    self.isProcessing = false
+                    self.tableView.reloadData()
+                }
+            }
+        }
+    }
+    
+    private func parseJSONResponse(_ text: String) {
+        // 1. Clean up the response in case the LLM wrapped it in markdown code blocks anyway
+        var cleanJSONString = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanJSONString.hasPrefix("```json") {
+            cleanJSONString = cleanJSONString.replacingOccurrences(of: "```json", with: "")
+            cleanJSONString = cleanJSONString.replacingOccurrences(of: "```", with: "")
+        }
+        
+        guard let jsonData = cleanJSONString.data(using: .utf8) else {
+            self.notesText = "Failed to parse AI response into data."
+            self.isProcessing = false
+            self.tableView.reloadData()
+            return
+        }
+        
+        // 2. Safely Decode
+        do {
+            let decodedSummary = try JSONDecoder().decode(AISummaryResponse.self, from: jsonData)
+            
+            // Assign Notes
+            self.notesText = decodedSummary.notes
+            
+            // Assign Participant Summaries by matching names
+            for aiParticipant in decodedSummary.participants {
+                if let index = self.participants.firstIndex(where: { aiParticipant.name.contains($0.name) || $0.name.contains(aiParticipant.name) }) {
+                    self.participants[index].summary = aiParticipant.summary
+                }
+            }
+            
+            self.isProcessing = false
+            self.tableView.reloadData()
+            
+        } catch {
+            self.notesText = "Failed to decode JSON. Error: \(error.localizedDescription)"
+            self.isProcessing = false
+            self.tableView.reloadData()
         }
     }
     
@@ -81,6 +195,8 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         var pdfContent = "EchoWave Summary\n"
         pdfContent += "Category: \(category)\n"
         pdfContent += "---------------------------\n\n"
+        
+        pdfContent += "NOTES:\n\(notesText)\n\n"
         
         for person in participants {
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
@@ -138,6 +254,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             return cell
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! NotesCardCell
+            cell.notesTextView.text = self.notesText // Link the generated notes here
             cell.delegate = self
             return cell
         default: return UITableViewCell()
@@ -145,6 +262,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func didUpdateText(in cell: NotesCardCell) {
+        notesText = cell.notesTextView.text
         tableView.beginUpdates()
         tableView.endUpdates()
     }

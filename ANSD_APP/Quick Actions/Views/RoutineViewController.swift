@@ -1,22 +1,11 @@
-import UIKit // Add dummy entry to see if data is showing on the screen
+import UIKit
 
-// MARK: - Protocol for Data Consistency
-protocol RoutineItemProtocol {
-    var title: String { get set }
-    var time: String { get }
-    var notes: String { get set }
-}
-
-
-
-// MARK: - Unified Routine View Controller
 class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     
     // MARK: - Properties
-    /// Set this property when navigating to this screen to load correct data
-    var category: ChatCategory = .family
+    var category: ChatCategory = .other
     var routineList: [RoutineItemProtocol] = []
     var originalList: [RoutineItemProtocol] = []
     
@@ -34,26 +23,22 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
         tableView.tableFooterView = UIView()
     }
     
-    // REDUNDANCY RESOLVED: Single load function using RoutineRepository
     func loadData() {
+        // Fetch from Repository using the assigned category
         let data = RoutineRepository.getRoutineData(for: category)
         
-        // We add .map { $0 } to tell Swift to treat each RoutineItem as a Protocol item
-        self.routineList = data.map { $0 as! any RoutineItemProtocol as RoutineItemProtocol }
-        self.originalList = data.map { $0 as! any RoutineItemProtocol as RoutineItemProtocol }
+        self.routineList = data
+        self.originalList = data
         
-        self.title = "\(category)".capitalized + " Routine"
+        // Update UI Title
+        self.title = "\(category.rawValue.capitalized) Routine"
         tableView.reloadData()
     }
     
-    // MARK: - Navigation & Menu
+    // MARK: - Menu Setup
     func setupNavigationBarMenu() {
-        let selectAction = UIAction(title: "Select", image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
-            self?.tableView.setEditing(!(self?.tableView.isEditing ?? false), animated: true)
-        }
-        
-        let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
-            self?.routineList.sort { $0.title < $1.title }
+     let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
+            self?.routineList.sort { $0.title.lowercased() < $1.title.lowercased() }
             self?.tableView.reloadData()
         }
         
@@ -62,10 +47,11 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
             self?.tableView.reloadData()
         }
 
-        let sortByMenu = UIMenu(title: "Sort By", children: [sortReset, sortTitle])
-        let mainMenu = UIMenu(title: "", children: [selectAction, sortByMenu])
+        let sortByMenu = UIMenu(title: "Sort By", children: [sortTitle,sortReset ])
+    
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "ellipsis.circle"), target: nil, action: nil, menu: mainMenu)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "line.3.horizontal.decrease"),
+                                                            target: nil, action: nil, menu: sortByMenu)
     }
 
     // MARK: - TableView Logic
@@ -74,8 +60,9 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as! RoutineTableViewCell
-        // Using the unified configuration method we created in RoutineTableViewCell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as? RoutineTableViewCell else {
+            return UITableViewCell()
+        }
         cell.configure(with: routineList[indexPath.row])
         return cell
     }
@@ -100,10 +87,10 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
         let alert = UIAlertController(title: "Edit Title", message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = self.routineList[indexPath.row].title }
         
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             if let newName = alert.textFields?.first?.text, !newName.isEmpty {
-                self.routineList[indexPath.row].title = newName
-                self.tableView.reloadRows(at: [indexPath], with: .automatic)
+                self?.routineList[indexPath.row].title = newName
+                self?.tableView.reloadRows(at: [indexPath], with: .automatic)
             }
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
@@ -113,7 +100,8 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     // MARK: - Navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo",
-           let destination = (segue.destination as? UINavigationController)?.topViewController as? InfoViewController,
+           let nav = segue.destination as? UINavigationController,
+           let destination = nav.topViewController as? InfoViewController,
            let indexPath = tableView.indexPathForSelectedRow {
             
             destination.existingNote = routineList[indexPath.row].notes
@@ -126,8 +114,7 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
 }
 
 // MARK: - Storyboard Compatibility Aliases
-// These allow you to delete all the subclass files while keeping Storyboard working.
 typealias FamilyRoutineViewController = BaseRoutineViewController
 typealias FriendsRoutineViewController = BaseRoutineViewController
 typealias OfficeRoutineViewController = BaseRoutineViewController
-typealias RoutineViewController1 = BaseRoutineViewController
+typealias OtherRoutineViewController = BaseRoutineViewController
