@@ -8,7 +8,7 @@
 import UIKit
 import PDFKit
 
-class GNSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, GroupNewNotesCardCellDelegate, GroupNewSummaryCardDelegate {
+class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, GroupNewNotesCardCellDelegate, GroupNewSummaryCardDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var optionsButton: UIBarButtonItem!

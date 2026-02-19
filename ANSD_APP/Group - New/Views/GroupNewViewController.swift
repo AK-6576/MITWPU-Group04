@@ -28,7 +28,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-            layout.minimumLineSpacing = 4
+            layout.minimumLineSpacing = 2
             layout.sectionInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
         }
         
@@ -162,7 +162,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             let storyboard = UIStoryboard(name: "Group-New.", bundle: nil)
             
             if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
-               let summaryVC = summaryNav.topViewController as? GNSummaryViewController {
+               let summaryVC = summaryNav.topViewController as? GroupNewSummaryViewController {
 
                 summaryVC.participantsData = [
                     GroupNewParticipants(

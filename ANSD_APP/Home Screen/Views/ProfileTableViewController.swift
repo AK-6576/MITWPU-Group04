@@ -26,11 +26,12 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     private let genderKey = "user_gender"
     private let dobKey = "user_dob"
+    private let imageKey = "profileImage"
     
-    // Function - Initializes the view lifecycle, setting up default values, UI design, listeners, and loading persistent data.
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // 1. Load Name
         if let name = incomingName, !name.isEmpty {
             firstNameTextField.text = name
             firstNameTextField.textColor = .label
@@ -39,17 +40,21 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             firstNameTextField.textColor = .black
         }
         
-        if let image = incomingImage { profileImageView.image = image }
+        // 2. Load Image (Check UserDefaults first!)
+        if let data = UserDefaults.standard.data(forKey: imageKey),
+           let savedImage = UIImage(data: data) {
+            profileImageView.image = savedImage
+        } else if let image = incomingImage {
+            profileImageView.image = image
+        }
         
         setupHideKeyboardOnTap()
         setupGenderMenu()
         setupTextFieldListeners()
-        
         setupDatePicker()
         loadPersistentData()
     }
     
-    // Function - Adjusts the subview layout, specifically ensuring the profile picture design is applied after layout passes.
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         setupProfileDesign()
@@ -57,7 +62,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     // MARK: - Setup & Configuration
     
-    // Function - Configures the profile image view with a circular shape and border.
     func setupProfileDesign() {
         guard let profileImageView = profileImageView else { return }
         profileImageView.contentMode = .scaleAspectFill
@@ -67,20 +71,17 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         profileImageView.layer.borderColor = UIColor.systemGray5.cgColor
     }
     
-    // Function - Attaches event listeners to the text fields to handle editing changes.
     func setupTextFieldListeners() {
         firstNameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         firstNameTextField.addTarget(self, action: #selector(textFieldDidBeginEditing), for: .editingDidBegin)
     }
     
-    // Function - Sets up the date picker target to handle value changes.
     func setupDatePicker() {
         datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
     }
     
     // MARK: - Persistence (Saving & Loading)
     
-    // Function - Loads saved gender and date of birth from UserDefaults, defaulting to Male if no gender is saved.
     func loadPersistentData() {
         if let savedGender = UserDefaults.standard.string(forKey: genderKey) {
             genderButton.setTitle(savedGender, for: .normal)
@@ -95,12 +96,10 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
 
     // MARK: - Actions & Handlers
 
-    // Function - Saves the selected date to UserDefaults when the date picker value changes.
     @objc func datePickerChanged(_ sender: UIDatePicker) {
         UserDefaults.standard.set(sender.date, forKey: dobKey)
     }
 
-    // Function - Configures the gender selection menu with available options and their handlers.
     func setupGenderMenu() {
         guard genderButton != nil else { return }
         
@@ -112,24 +111,20 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         genderButton.showsMenuAsPrimaryAction = true
     }
     
-    // Function - Updates the gender button title and saves the selection to UserDefaults.
     func updateGender(_ title: String) {
         genderButton.setTitle(title, for: .normal)
         UserDefaults.standard.set(title, forKey: genderKey)
     }
     
-    // Function - Resets the text color to the default label color when editing begins.
     @objc func textFieldDidBeginEditing() {
         firstNameTextField.textColor = .label
     }
 
-    // Function - Triggers an auto-save operation whenever the text field content changes.
     @objc func textFieldDidChange() {
         performAutoSave()
         firstNameTextField.textColor = .label
     }
     
-    // Function - Captures current input and notifies the delegate of profile updates.
     func performAutoSave() {
         let name = firstNameTextField.text ?? "User"
         let image = profileImageView.image
@@ -138,7 +133,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     // MARK: - Button Actions
     
-    // Function - Dismisses the current view controller, popping from navigation stack if applicable.
     @IBAction func closeButtonTapped(_ sender: Any) {
         if let nav = navigationController, nav.viewControllers.count > 1 {
             nav.popViewController(animated: true)
@@ -147,7 +141,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
     }
     
-    // Function - Opens the image picker to allow the user to select a profile picture.
     @IBAction func setProfilePictureTapped(_ sender: Any) {
         let picker = UIImagePickerController()
         picker.delegate = self
@@ -156,10 +149,8 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         present(picker, animated: true)
     }
     
-    // Function - Saves the profile changes and dismisses the view controller.
     @IBAction func saveButtonTapped(_ sender: Any) {
         performAutoSave()
-        
         if let nav = navigationController {
             nav.popViewController(animated: true)
         } else {
@@ -169,19 +160,18 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     // MARK: - Utilities
     
-    // Function - Adds a gesture recognizer to the view to dismiss the keyboard on tap.
     func setupHideKeyboardOnTap() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
 
-    // Function - Resigns the first responder status to hide the keyboard.
     @objc func dismissKeyboard() {
         view.endEditing(true)
     }
     
-    // Function - Delegate method handling the image selection, updating the UI, and saving the image.
+    // MARK: - Image Picker Delegate
+    
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         var selectedImage: UIImage?
         
@@ -192,7 +182,18 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
         
         if let finalImage = selectedImage {
+            // 1. Update Profile Screen UI
             profileImageView.image = finalImage
+            
+            // 2. Save to Storage
+            if let data = finalImage.jpegData(compressionQuality: 0.8) {
+                UserDefaults.standard.set(data, forKey: imageKey)
+            }
+            
+            // 3. BROADCAST CHANGE TO HOME SCREEN
+            NotificationCenter.default.post(name: NSNotification.Name("ProfileImageUpdated"), object: finalImage)
+            
+            // 4. Trigger generic delegate if used
             performAutoSave()
         }
         

@@ -890,7 +890,7 @@
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <subviews>
                                                         <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Emo-Xe-YWZ">
-                                                            <rect key="frame" x="35" y="96.666666666666686" width="61.333333333333343" height="40.333333333333314"/>
+                                                            <rect key="frame" x="51" y="4" width="61.333333333333343" height="40.333333333333336"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" ambiguous="YES" text="Label" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lul-yq-d8i">
                                                                     <rect key="frame" x="10" y="10" width="41.333333333333336" height="20.333333333333329"/>
@@ -907,31 +907,31 @@
                                                                 <constraint firstAttribute="bottom" secondItem="lul-yq-d8i" secondAttribute="bottom" constant="10" id="lVR-vM-Aae"/>
                                                             </constraints>
                                                         </view>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eoS-WA-e12">
-                                                            <rect key="frame" x="39" y="4" width="28.666666666666671" height="13.333333333333336"/>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" ambiguous="YES" misplaced="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eoS-WA-e12">
+                                                            <rect key="frame" x="39" y="81.333333333333329" width="28.666666666666671" height="13.333333333333329"/>
                                                             <fontDescription key="fontDescription" type="system" pointSize="11"/>
                                                             <color key="textColor" systemColor="systemGray2Color"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person.circle.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="EYl-vb-XEb">
-                                                            <rect key="frame" x="15" y="117.66666666666667" width="30" height="28.666666666666671"/>
+                                                            <rect key="frame" x="15" y="111.66666666666667" width="36" height="34.666666666666671"/>
                                                             <color key="tintColor" white="0.66666666669999997" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <constraints>
-                                                                <constraint firstAttribute="width" constant="30" id="3vt-Da-dBL"/>
-                                                                <constraint firstAttribute="height" constant="30" id="N6q-ND-n4A"/>
+                                                                <constraint firstAttribute="width" constant="36" id="3vt-Da-dBL"/>
+                                                                <constraint firstAttribute="height" constant="36" id="N6q-ND-n4A"/>
                                                             </constraints>
                                                         </imageView>
                                                     </subviews>
                                                     <constraints>
-                                                        <constraint firstAttribute="bottom" secondItem="Emo-Xe-YWZ" secondAttribute="bottom" constant="10" id="767-tP-NaO"/>
-                                                        <constraint firstItem="eoS-WA-e12" firstAttribute="leading" secondItem="Emo-Xe-YWZ" secondAttribute="leading" constant="4" id="H9i-D9-deF"/>
-                                                        <constraint firstItem="Emo-Xe-YWZ" firstAttribute="top" secondItem="eoS-WA-e12" secondAttribute="bottom" constant="2" id="YGY-oR-PHr"/>
-                                                        <constraint firstItem="eoS-WA-e12" firstAttribute="top" secondItem="0L1-xQ-FME" secondAttribute="top" constant="4" id="be4-TW-bD4"/>
+                                                        <constraint firstItem="Emo-Xe-YWZ" firstAttribute="top" secondItem="0L1-xQ-FME" secondAttribute="top" constant="4" id="DUz-jN-bfa"/>
+                                                        <constraint firstItem="eoS-WA-e12" firstAttribute="top" secondItem="Emo-Xe-YWZ" secondAttribute="bottom" id="UH4-hE-4L5"/>
                                                         <constraint firstAttribute="bottom" secondItem="EYl-vb-XEb" secondAttribute="bottom" id="gXl-Zh-hzz"/>
-                                                        <constraint firstItem="Emo-Xe-YWZ" firstAttribute="leading" secondItem="EYl-vb-XEb" secondAttribute="trailing" constant="-10" id="iWp-CS-v8k"/>
+                                                        <constraint firstItem="Emo-Xe-YWZ" firstAttribute="leading" secondItem="EYl-vb-XEb" secondAttribute="trailing" id="iWp-CS-v8k"/>
                                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Emo-Xe-YWZ" secondAttribute="trailing" constant="42" id="mSi-iz-oL0"/>
+                                                        <constraint firstAttribute="bottom" secondItem="eoS-WA-e12" secondAttribute="bottom" constant="8" id="oAh-gK-0Ty"/>
                                                         <constraint firstItem="EYl-vb-XEb" firstAttribute="leading" secondItem="0L1-xQ-FME" secondAttribute="leading" constant="15" id="ogx-ip-ki7"/>
                                                         <constraint firstItem="Emo-Xe-YWZ" firstAttribute="leading" secondItem="0L1-xQ-FME" secondAttribute="leading" constant="35" id="omh-N7-fF1"/>
+                                                        <constraint firstItem="eoS-WA-e12" firstAttribute="leading" secondItem="EYl-vb-XEb" secondAttribute="trailing" id="xRR-vL-VHe"/>
                                                     </constraints>
                                                 </collectionViewCellContentView>
                                                 <size key="customSize" width="191" height="147"/>
@@ -1014,7 +1014,7 @@
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
                                                         <buttonConfiguration key="configuration" style="gray">
-                                                            <imageReference key="image" image="pause.fill" catalog="system" symbolScale="small"/>
+                                                            <imageReference key="image" image="pause.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
                                                             <action selector="didTapPauseButton:" destination="9c8-7o-CVo" eventType="touchUpInside" id="Qu6-TQ-RbG"/>
@@ -1028,7 +1028,7 @@
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
                                                         <buttonConfiguration key="configuration" style="gray">
-                                                            <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="small"/>
+                                                            <imageReference key="image" image="microphone.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="dIR-Wc-TEO">
@@ -1039,7 +1039,7 @@
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
                                                         <buttonConfiguration key="configuration" style="gray">
-                                                            <imageReference key="image" image="square.fill" catalog="system" symbolScale="small"/>
+                                                            <imageReference key="image" image="square.fill" catalog="system" symbolScale="medium"/>
                                                         </buttonConfiguration>
                                                         <connections>
                                                             <action selector="didTapStopButton:" destination="9c8-7o-CVo" eventType="touchUpInside" id="9tF-0h-bmg"/>
@@ -1126,7 +1126,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="VTr-V3-AAX"/>
+        <segue reference="cZN-SB-jLP"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="calendar" catalog="system" width="128" height="107"/>

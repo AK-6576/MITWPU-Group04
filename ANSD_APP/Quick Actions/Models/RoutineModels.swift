@@ -13,7 +13,7 @@ struct RoutineConversation: Codable, Identifiable {
     let status: String
     var conversationTopic: String
     let topicImage: String
-    let startTime: String
+    var startTime: String
     let description: String?
     let date: String?
     let timeImage: String

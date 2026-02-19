@@ -32,7 +32,7 @@ class FriendsJoinViewController: UIViewController, UICollectionViewDelegate, UIC
         
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-            layout.minimumLineSpacing = 4
+            layout.minimumLineSpacing = 2
             layout.sectionInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
         }
         

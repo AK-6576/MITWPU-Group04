@@ -2,85 +2,235 @@
 //  HomeViewController.swift
 //  ANSD_APP
 //
+//  Created by Daiwiik Harihar on 12/12/25.
+//
 
 import UIKit
+import UserNotifications
 
 class HomeViewController: UIViewController {
     
+    // MARK: - Outlets & Properties
     @IBOutlet weak var tableView: UITableView!
 
     var quickActions: [RoutineConversation] = []
     var routineConversations: [RoutineConversation] = []
     
-    // Function - Initializes the view lifecycle, configuring the table view and hiding the back button.
+    private let profileButton = UIButton(type: .custom)
+    
+    // MARK: - View Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
+        setupProfileButton()
+        loadSavedProfileImage()
         navigationItem.hidesBackButton = true
+        
+        // Listen for profile updates
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleProfileUpdate(_:)),
+                                               name: NSNotification.Name("ProfileImageUpdated"),
+                                               object: nil)
+        
+        // Optional: Request permissions on load to ensure they are active
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
     }
     
-    // Function - Reloads the data whenever the view is about to appear on screen.
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadData()
+        loadSavedProfileImage()
     }
     
-    // Function - Configures the table view's delegate, data source, and visual appearance settings.
-    func setupTableView() {
-        tableView.delegate = self
-        tableView.dataSource = self
-        
-        if #available(iOS 15.0, *) {
-            tableView.sectionHeaderTopPadding = 0
-        }
-        
-        tableView.backgroundColor = .systemBackground
-        tableView.separatorStyle = .none
-        tableView.tableFooterView = UIView()
-        tableView.estimatedRowHeight = 80
-        tableView.rowHeight = UITableView.automaticDimension
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
-
-    // Function - Fetches active actions from the repository, categorizes them into lists, and reloads the table view.
+    
+    // MARK: - Data Loading & Notification Sync
+    
     func loadData() {
+        // 1. Get ALL items (including ones that happened earlier today)
         let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
+        
+        // 2. Prepare UI Data (Filter out old items for the visual list)
+        let cutoffTime = Date().addingTimeInterval(-1800) // Hide items older than 30 mins
+        
+        let sortedFutureActions = allItems.filter { item in
+            guard let itemDate = getDate(from: item.startTime) else { return false }
+            return itemDate > cutoffTime
+        }.sorted { (item1, item2) -> Bool in
+            guard let date1 = getDate(from: item1.startTime),
+                  let date2 = getDate(from: item2.startTime) else { return false }
+            return date1 < date2
+        }
 
-        self.routineConversations = Array(allItems.prefix(2))
-        self.quickActions = Array(allItems.dropFirst(2))
+        self.quickActions = sortedFutureActions
+        self.routineConversations = allItems
+        
+        // 3. Sync Notifications for ALL items.
+        // Important: We pass 'allItems', not 'sortedFutureActions'.
+        // This ensures a 9:00 AM meeting gets rescheduled for tomorrow even if it's currently 4:00 PM.
+        syncNotifications(for: allItems)
         
         self.tableView.reloadData()
     }
-
-    // MARK: - Actions (Profile / Footer Buttons)
     
-    // Function - Action triggered by a tap gesture to navigate to the new conversation screen.
+    private func syncNotifications(for items: [RoutineConversation]) {
+        let now = Date()
+        
+        for item in items {
+            // Get today's date with the item's time (seconds = 00)
+            guard var targetDate = getDate(from: item.startTime) else { continue }
+            
+            // Logic to handle past times
+            if targetDate < now {
+                // If the time passed within the last 60 seconds (e.g. It is 4:19:30 and target was 4:19:00)
+                if now.timeIntervalSince(targetDate) < 60 {
+                    // Fire almost immediately (1 sec delay) so we don't miss it
+                    targetDate = now.addingTimeInterval(1)
+                } else {
+                    // If it passed more than a minute ago, schedule for Tomorrow
+                    targetDate = Calendar.current.date(byAdding: .day, value: 1, to: targetDate) ?? targetDate
+                }
+            }
+            
+            // 1. Schedule "On Time" Notification
+            NotificationManager.shared.scheduleNotification(
+                identifier: item.id,
+                title: item.conversationTopic,
+                body: "Join \(item.categoryTitle).",
+                for: targetDate
+            )
+            
+            // 2. Schedule "5 Mins Before" Notification
+            // We calculate this based on the ADJUSTED targetDate (which might be tomorrow)
+            let preNotificationDate = targetDate.addingTimeInterval(-300)
+            
+            // Only schedule if the 5-min warning is actually in the future
+            if preNotificationDate > Date() {
+                NotificationManager.shared.scheduleNotification(
+                    identifier: "\(item.id)_pre",
+                    title: item.conversationTopic,
+                    body: "Starts in 5 minutes.",
+                    for: preNotificationDate
+                )
+            }
+        }
+    }
+    
+    private func cancelNotifications(for item: RoutineConversation) {
+        NotificationManager.shared.cancelNotification(identifier: item.id)
+        NotificationManager.shared.cancelNotification(identifier: "\(item.id)_pre")
+    }
+    
+    private func getDate(from timeString: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        formatter.amSymbol = "AM"
+        formatter.pmSymbol = "PM"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        
+        guard let timeDate = formatter.date(from: timeString) else { return nil }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
+        
+        // Returns Today at HH:MM:00
+        return calendar.date(bySettingHour: timeComponents.hour ?? 0,
+                             minute: timeComponents.minute ?? 0,
+                             second: 0,
+                             of: now)
+    }
+    
+    // MARK: - Edit Logic (Name & Time)
+    
+    private func showEditSheet(for item: RoutineConversation, row: Int) {
+        let alert = UIAlertController(title: "Edit Action", message: "\n\n\n\n\n\n", preferredStyle: .alert)
+        
+        // 1. Edit Name
+        alert.addTextField { textField in
+            textField.text = item.conversationTopic
+            textField.placeholder = "Topic Name"
+            textField.clearButtonMode = .whileEditing
+        }
+        
+        // 2. Edit Time
+        let datePicker = UIDatePicker()
+        datePicker.datePickerMode = .time
+        datePicker.preferredDatePickerStyle = .wheels
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+        if let currentTimeDate = getDate(from: item.startTime) {
+            datePicker.date = currentTimeDate
+        }
+
+        alert.view.addSubview(datePicker)
+        
+        NSLayoutConstraint.activate([
+            datePicker.topAnchor.constraint(equalTo: alert.view.topAnchor, constant: 60),
+            datePicker.centerXAnchor.constraint(equalTo: alert.view.centerXAnchor),
+            datePicker.heightAnchor.constraint(equalToConstant: 120)
+        ])
+        
+        // 3. Save
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            formatter.amSymbol = "AM"
+            formatter.pmSymbol = "PM"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            let newTimeStr = formatter.string(from: datePicker.date)
+            
+            // Cancel old notifications first
+            self.cancelNotifications(for: item)
+
+            var updatedItem = item
+            updatedItem.conversationTopic = newName
+            updatedItem.startTime = newTimeStr
+            
+            QuickActionsRepository.shared.updateAction(updatedItem)
+            
+            // Schedule New Notifications immediately
+            self.syncNotifications(for: [updatedItem])
+            
+            // Update UI
+            if self.quickActions.indices.contains(row) {
+                self.quickActions[row] = updatedItem
+                self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
+            }
+            
+            // Reload all data to ensure sorting is correct if time changed
+            self.loadData()
+        }
+        
+        alert.addAction(saveAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    // MARK: - Actions & Navigation
+    
     @IBAction func didTapNewConversation(_ sender: UITapGestureRecognizer) {
         performSegue(withIdentifier: "showNewConversation", sender: self)
     }
 
-    // Function - Action triggered by a tap gesture to navigate to the join conversation screen.
     @IBAction func didTapJoinConversation(_ sender: UITapGestureRecognizer) {
         performSegue(withIdentifier: "showJoinConversation", sender: self)
     }
 
-    // Function - Action triggered by a tap gesture to navigate to the quick captioning screen.
     @IBAction func didTapQuickCaption(_ sender: UITapGestureRecognizer) {
         performSegue(withIdentifier: "Test1", sender: self)
     }
     
-    // MARK: - Navigation Preparation
-    
-    // Function - Prepares for segues by configuring destination view controllers with necessary data.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-
-        if segue.identifier == "showProfile" {
-            let _ = (segue.destination as? UINavigationController)?.viewControllers.first as? ProfileTableViewController ?? segue.destination as? ProfileTableViewController
-        }
+        if segue.identifier == "showProfile" { }
         else if segue.identifier == "viewConvoCell" {
-
             guard let destVC = segue.destination as? ChatHistoryViewController,
                   let selectedItem = sender as? RoutineConversation else { return }
-           
+            
             if let fullData = DataManager.shared.getConversation(byId: selectedItem.id) {
                 destVC.histconversationData = fullData
             } else {
@@ -97,46 +247,57 @@ class HomeViewController: UIViewController {
                 destVC.histconversationData = fallbackConv
             }
         }
-        // MARK: New Halfway Modal Segue Logic
-        else if segue.identifier == "showInfoHalfway" {
-
-            // 2. Configure Halfway Sheet
-            if let sheet = segue.destination.sheetPresentationController {
-                // Allows the sheet to snap to halfway or full screen
-                sheet.detents = [.medium(), .large()]
-                
-                // Adds the grey drag handle at the top
-                sheet.prefersGrabberVisible = true
-                
-                // Optional: Round corners to match system look
-                sheet.preferredCornerRadius = 24
+    }
+    
+    @objc func handleProfileUpdate(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            if let newImage = notification.object as? UIImage {
+                self?.profileButton.setImage(newImage, for: .normal)
             }
         }
     }
     
-    // MARK: - Helper Methods
+    // MARK: - UI Setup
     
-    // Function - Displays an alert allowing the user to rename a specific quick action and saves the changes.
-    private func showRenameAlert(for item: RoutineConversation, row: Int) {
-        let alert = UIAlertController(title: "Rename", message: nil, preferredStyle: .alert)
-        alert.addTextField { $0.text = item.conversationTopic }
-        
-        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
-            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
-           
-            var updatedItem = item
-            updatedItem.conversationTopic = newName
-           
-            // Update Repo
-            QuickActionsRepository.shared.updateAction(updatedItem)
-           
-            // Update Local
-            self.quickActions[row] = updatedItem
-            self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
+    private func setupTableView() {
+        tableView.delegate = self
+        tableView.dataSource = self
+        if #available(iOS 15.0, *) { tableView.sectionHeaderTopPadding = 0 }
+        tableView.backgroundColor = .systemBackground
+        tableView.separatorStyle = .none
+        tableView.tableFooterView = UIView()
+        tableView.estimatedRowHeight = 80
+        tableView.rowHeight = UITableView.automaticDimension
+    }
+    
+    private func setupProfileButton() {
+        let size: CGFloat = 36
+        let containerView = UIView(frame: CGRect(x: 0, y: 0, width: size, height: size))
+        profileButton.frame = containerView.bounds
+        profileButton.setImage(UIImage(systemName: "person.crop.circle.fill"), for: .normal)
+        profileButton.tintColor = .label
+        profileButton.imageView?.contentMode = .scaleAspectFill
+        profileButton.layer.cornerRadius = size / 2
+        profileButton.clipsToBounds = true
+        profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
+        containerView.addSubview(profileButton)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: containerView)
+    }
+    
+    @objc private func profileTapped() {
+        performSegue(withIdentifier: "showProfile", sender: self)
+    }
+
+    private func loadSavedProfileImage() {
+        if let data = UserDefaults.standard.data(forKey: "profileImage"),
+           let image = UIImage(data: data) {
+            profileButton.setImage(image, for: .normal)
         }
-        
-        alert.addAction(saveAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    }
+    
+    private func presentInfoScreen(for item: RoutineConversation) {
+        let alert = UIAlertController(title: item.conversationTopic, message: item.description, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }
@@ -144,53 +305,39 @@ class HomeViewController: UIViewController {
 // MARK: - TableView Delegate & DataSource
 extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
-    // Function - Returns the total number of sections in the table view.
     func numberOfSections(in tableView: UITableView) -> Int {
         return 2
     }
     
-    // Function - Returns the number of rows for the specified section.
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return (section == 0) ? quickActions.count : routineConversations.count
+        if section == 0 { return min(quickActions.count, 3) }
+        return min(routineConversations.count, 2)
     }
     
-    // MARK: - Header Configuration
-    
-    // Function - Configures and returns the custom header view for each section.
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        
         let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"
-
-        guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else {
-            return nil
-        }
+        guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else { return nil }
 
         if section == 0 {
             header.titleLabel.text = "Quick Actions"
             header.subtitleLabel?.text = "Upcoming"
         } else {
             header.titleLabel.text = "View Conversations"
+            header.subtitleLabel?.text = ""
         }
-        
         return header.contentView
     }
     
-    // Function - Returns the height for the section header based on the section index.
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return (section == 0) ? 70 : 50
     }
     
-    // MARK: - Row Configuration
-    
-    // Function - Dequeues and configures the appropriate cell type for the given index path.
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
             let item = quickActions[indexPath.row]
-            let isLastRow = indexPath.row == quickActions.count - 1
+            let isLastRow = indexPath.row == min(quickActions.count, 3) - 1
             cell.configure(with: item, isLast: isLastRow)
-            
-            // Note: This is the existing closure for the cell's internal info button
             cell.onInfoTapped = { [weak self] in self?.presentInfoScreen(for: item) }
             return cell
         } else {
@@ -201,10 +348,8 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         }
     }
     
-    // Function - Handles row selection to trigger specific segues based on the item category.
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        
         let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
         
         var segueID = ""
@@ -221,58 +366,36 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         performSegue(withIdentifier: segueID, sender: item)
     }
     
-    // Function - Displays an alert containing details about the selected routine conversation.
-    // (Used by the cell's internal button, not the swipe action)
-    func presentInfoScreen(for item: RoutineConversation) {
-        let alert = UIAlertController(title: item.conversationTopic, message: item.description, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
+    // MARK: - Swipe Actions (Delete & Edit)
     
-    // MARK: - Swipe Actions
-    
-    // Function - Configures swipe actions for Delete, Edit, and Info (Halfway Modal).
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+
         guard indexPath.section == 0 else { return nil }
-        
         let item = quickActions[indexPath.row]
         
-        // 1. Delete Action
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
             
-            // Delete from Repo
+            // Cancel Notifs & Remove Data
+            self.cancelNotifications(for: item)
             QuickActionsRepository.shared.deleteAction(item)
             
-            // Delete from Local Array
             self.quickActions.remove(at: indexPath.row)
-            
-            // Delete Row
-            tableView.deleteRows(at: [indexPath], with: .fade)
-            
+            self.tableView.deleteRows(at: [indexPath], with: .automatic)
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
         
-        // 2. Rename Action
-        let renameAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
-            self?.showRenameAlert(for: item, row: indexPath.row)
+        let editAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
+            // Show new Edit Sheet with Time Picker
+            self?.showEditSheet(for: item, row: indexPath.row)
             completion(true)
         }
-        renameAction.backgroundColor = .systemOrange
-        renameAction.image = UIImage(systemName: "pencil")
+        editAction.backgroundColor = .systemOrange
+        editAction.image = UIImage(systemName: "pencil")
         
-        // 3. Info Action (New Halfway Modal)
-        let infoAction = UIContextualAction(style: .normal, title: "Info") { [weak self] (_, _, completion) in
-            // This triggers the segue that is caught in prepare(for:) to set the sheet detents
-            self?.performSegue(withIdentifier: "showInfoHalfway", sender: item)
-            completion(true)
-        }
-        infoAction.backgroundColor = .systemBlue
-        infoAction.image = UIImage(systemName: "info.circle")
-        
-        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction, infoAction])
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
         config.performsFirstActionWithFullSwipe = false
         return config
     }
