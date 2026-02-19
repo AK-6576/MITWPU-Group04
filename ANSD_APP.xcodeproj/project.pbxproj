@@ -10,9 +10,22 @@
 		02AE994B2ED5711C0079EA2B /* ANSD_APP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANSD_APP.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		19818F462F46D92E00024AE0 /* Exceptions for "ANSD_APP" folder in "ANSD_APP" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 02AE994A2ED5711C0079EA2B /* ANSD_APP */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		02AE994D2ED5711C0079EA2B /* ANSD_APP */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				19818F462F46D92E00024AE0 /* Exceptions for "ANSD_APP" folder in "ANSD_APP" target */,
+			);
 			path = ANSD_APP;
 			sourceTree = "<group>";
 		};
