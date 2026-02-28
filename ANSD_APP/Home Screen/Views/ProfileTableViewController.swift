@@ -92,11 +92,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
     }
     
-    @IBAction func saveButtonTapped(_ sender: Any) {
-        performAutoSave()
-        closeButtonTapped(sender)
-    }
-    
     @IBAction func setProfilePictureTapped(_ sender: Any) {
         let picker = UIImagePickerController()
         picker.delegate = self
