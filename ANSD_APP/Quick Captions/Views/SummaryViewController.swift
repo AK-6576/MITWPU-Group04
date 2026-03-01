@@ -386,14 +386,18 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             }
         }
         
-        // 3. Package everything into a Conversation Object
+        // 3. Grab the AI notes (or fallback text) and format for the 1-2 liner description
+        let finalNotes = self.notesContent == "Generating summary..." ? "No notes generated." : self.notesContent
+        let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ") // Removes enters for a clean preview
+        
+        // 4. Package everything into a Conversation Object
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
             messages: historyMessages,
             participants: historyParticipants,
-            notes: self.notesContent == "Generating summary..." ? "No notes generated." : self.notesContent,
-            description: self.locationString,
+            notes: finalNotes,
+            description: cleanOneLiner, // <--- Feeds the AI summary into the subtitle!
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
@@ -401,7 +405,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             icon: "waveform"
         )
         
-        // 4. Send to DataManager to permanently save!
+        // 5. Send to DataManager to permanently save!
         DataManager.shared.addConversation(newConversation)
         print("✅ Success: Saved '\(self.conversationTitle)' to History!")
     }

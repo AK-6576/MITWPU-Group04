@@ -97,7 +97,17 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             let pinImage = isPinned ? UIImage(systemName: "pin.slash") : UIImage(systemName: "pin")
             
             let pinAction = UIAction(title: pinTitle, image: pinImage) { action in
+                // 1. Toggle the local UI array
                 self.conversationSections[indexPath.section].conversations[indexPath.row].isPinned.toggle()
+                let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
+                
+                // 2. Find it in DataManager and save the pin state permanently!
+                if let index = DataManager.shared.conversations.firstIndex(where: { $0.id == updatedConvo.id }) {
+                    DataManager.shared.conversations[index].isPinned = updatedConvo.isPinned
+                    DataManager.shared.saveData()
+                }
+                
+                // 3. Reload the cell visually
                 self.collectionView.reloadItems(at: [indexPath])
             }
             
@@ -124,7 +134,17 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
             if let newName = alert.textFields?.first?.text, !newName.isEmpty {
+                // 1. Update the local UI array
                 self.conversationSections[indexPath.section].conversations[indexPath.row].title = newName
+                let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
+                
+                // 2. Find it in DataManager and save it permanently!
+                if let index = DataManager.shared.conversations.firstIndex(where: { $0.id == updatedConvo.id }) {
+                    DataManager.shared.conversations[index].title = newName
+                    DataManager.shared.saveData()
+                }
+                
+                // 3. Reload the cell visually
                 self.collectionView.reloadItems(at: [indexPath])
             }
         }
