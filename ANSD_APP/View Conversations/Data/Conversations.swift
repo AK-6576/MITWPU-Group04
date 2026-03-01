@@ -61,9 +61,10 @@ struct Message: Codable, Identifiable, Sendable {
 
 // MARK: - Participant Model
 
-struct Participants: Codable, Sendable {
-    let name: String
+struct Participant: Codable, Sendable {
+    var name: String
     var summary: String
+    var image: String
 }
 
 // MARK: - Conversation Model
@@ -79,7 +80,7 @@ struct Conversation: Codable, Identifiable, Sendable {
     var info: Bool?
     var calendarDate: Date?
     var notes: String?
-    var participants: [Participants]?
+    var participants: [Participant]?
     var isPinned: Bool = false
     var messages: [Message]?
 
@@ -89,7 +90,7 @@ struct Conversation: Codable, Identifiable, Sendable {
         case endTime = "end_time"
     }
 
-    init(id: String, title: String, messages: [Message] = [], participants: [Participants] = [], notes: String = "", description: String = "", date: String = "", startTime: String = "", endTime: String = "", category: String = "", icon: String = "") {
+    init(id: String, title: String, messages: [Message] = [], participants: [Participant] = [], notes: String = "", description: String = "", date: String = "", startTime: String = "", endTime: String = "", category: String = "", icon: String = "") {
         self.id = id
         self.title = title
         self.messages = messages

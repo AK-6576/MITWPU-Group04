@@ -57,6 +57,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        loadConversationData()
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
@@ -146,6 +147,13 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
     
     func performSingleDeletion(at indexPath: IndexPath) {
+        let convoToDelete = conversationSections[indexPath.section].conversations[indexPath.row]
+        
+        // 1. Delete permanently from DataManager
+        DataManager.shared.conversations.removeAll { $0.id == convoToDelete.id }
+        DataManager.shared.saveData()
+        
+        // 2. Remove from the UI gracefully
         collectionView.performBatchUpdates({
             self.conversationSections[indexPath.section].conversations.remove(at: indexPath.row)
             self.collectionView.deleteItems(at: [indexPath])
@@ -257,15 +265,33 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
     
     func loadConversationData() {
-        let response = ConversationsResponse()
-        var loadedSections: [ConversationSection] = []
+        let allConvos = DataManager.shared.conversations
         
-        if !response.conversations.isEmpty {
-            loadedSections.append(ConversationSection(title: "October", conversations: response.conversations))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy" // e.g., "March 2026"
+        
+        var sectionsDict: [String: [Conversation]] = [:]
+        var sectionTitles: [String] = []
+        
+        for convo in allConvos {
+            
+            let title = convo.calendarDate != nil ? formatter.string(from: convo.calendarDate!) : "Recent History"
+            
+            if sectionsDict[title] == nil {
+                sectionsDict[title] = []
+                sectionTitles.append(title)
+            }
+            sectionsDict[title]?.append(convo)
         }
         
-        for monthData in response.previousMonths {
-            loadedSections.append(ConversationSection(title: monthData.month, conversations: monthData.conversations))
+        var loadedSections: [ConversationSection] = []
+        for title in sectionTitles {
+            loadedSections.append(ConversationSection(title: title, conversations: sectionsDict[title]!))
+        }
+        
+        // Show an empty state title if there are no conversations yet
+        if loadedSections.isEmpty {
+            loadedSections = [ConversationSection(title: "No History Yet", conversations: [])]
         }
         
         allConversationSections = loadedSections

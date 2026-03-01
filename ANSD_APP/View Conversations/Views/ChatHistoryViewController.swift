@@ -92,7 +92,7 @@ class ViewParticipantsCardCell: UITableViewCell {
         mainCardView.backgroundColor = .white
     }
     
-    func configure(with data: Participants) {
+    func configure(with data: Participant) {
         detailsLabel.text = data.summary
     }
 }
@@ -152,7 +152,7 @@ class ChatHistoryViewController: UIViewController {
     var histconversationData: Conversation?
     var isHighlightModeActive = false
     var conversationTitle = "Conversation Summary"
-    var participantsData: [Participants] = []
+    var participantsData: [Participant] = []
     
     var transcript: [Message] {
         return histconversationData?.messages ?? []
@@ -212,7 +212,7 @@ class ChatHistoryViewController: UIViewController {
         // Note: Make sure your `Participants` model has an initializer like this.
         // Adjust if your initializer parameters are named differently.
         self.participantsData = ordering.map { name in
-            Participants(name: name, summary: "Waiting for analysis...")
+            Participant(name: name, summary: "Waiting for analysis...", image: "person.circle.fill")
         }
         
         tableView.reloadData()

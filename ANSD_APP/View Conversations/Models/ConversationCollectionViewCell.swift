@@ -53,7 +53,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         let iconName: String
         let tintColor: UIColor
         
-        switch categoryString.lowercased() {
+        switch categoryString {
         case "family":
             iconName = "figure.2.and.child.holdinghands"
             tintColor = .systemRed
@@ -74,6 +74,18 @@ class ConversationCollectionViewCell: UICollectionViewCell {
             iconName = "note.text"
             tintColor = .systemGray
             categoryAccessibilityName = "General"
+        case "Quick Captions":
+            iconName = "waveform"
+            tintColor = .systemBlue
+            categoryAccessibilityName = "Quick Captions"
+        case "Group Join":
+            iconName = "person.bubble"
+            tintColor = .systemBlue
+            categoryAccessibilityName = "Group Join"
+        case "Group New":
+            iconName = "square.and.pencil"
+            tintColor = .systemBlue
+            categoryAccessibilityName = "Group New"
         default:
             iconName = "folder.fill"
             tintColor = .systemGray

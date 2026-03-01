@@ -177,6 +177,8 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     @IBAction func backTapped(_ sender: Any) {
+        self.saveSessionToHistory()
+        self.view.endEditing(true)
         // Return to Home Storyboard
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
@@ -347,5 +349,60 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     func didChangeTitle(text: String) {
         self.conversationTitle = text
+    }
+    
+    // MARK: - Save to History Translator
+        
+    private func saveSessionToHistory() {
+        // 1. Map Participants to History Format
+        let historyParticipants: [Participant] = participantsData.map { person in
+            Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
+        }
+        
+        // 2. Map Transcript back into Message Bubbles
+        var historyMessages: [Message] = []
+        let lines = rawTranscriptText.components(separatedBy: "\n")
+        
+        for line in lines {
+            let parts = line.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: true)
+            if parts.count == 2 {
+                let sender = String(parts[0]).trimmingCharacters(in: .whitespaces)
+                let text = String(parts[1]).trimmingCharacters(in: .whitespaces)
+                
+                // If it's not you, it's incoming
+                let isIncoming = (sender != UIDevice.current.name && sender != "Me")
+                
+                let msg = Message(
+                    id: UUID(),
+                    text: text,
+                    senderId: sender,
+                    senderName: sender,
+                    isIncoming: isIncoming,
+                    timestamp: Date(),
+                    isHighlighted: false,
+                    isEdited: false
+                )
+                historyMessages.append(msg)
+            }
+        }
+        
+        // 3. Package everything into a Conversation Object
+        let newConversation = Conversation(
+            id: UUID().uuidString,
+            title: self.conversationTitle,
+            messages: historyMessages,
+            participants: historyParticipants,
+            notes: self.notesContent == "Generating summary..." ? "No notes generated." : self.notesContent,
+            description: self.locationString,
+            date: self.dateString,
+            startTime: self.timeString,
+            endTime: self.timeString,
+            category: "Quick Captions",
+            icon: "waveform"
+        )
+        
+        // 4. Send to DataManager to permanently save!
+        DataManager.shared.addConversation(newConversation)
+        print("✅ Success: Saved '\(self.conversationTitle)' to History!")
     }
 }
