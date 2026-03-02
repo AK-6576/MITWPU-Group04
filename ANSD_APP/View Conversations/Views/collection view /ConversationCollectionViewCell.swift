@@ -36,7 +36,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
     
     func configure(with conversation: Conversation) {
         titleLabel.text = conversation.title
-        descriptionLabel.text = conversation.description
+        descriptionLabel.text = conversation.details
         
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()

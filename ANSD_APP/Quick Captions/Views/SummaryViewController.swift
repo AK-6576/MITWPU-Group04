@@ -390,19 +390,20 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         let finalNotes = self.notesContent == "Generating summary..." ? "No notes generated." : self.notesContent
         let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ") // Removes enters for a clean preview
         
-        // 4. Package everything into a Conversation Object
+        // 4. Package everything into a Conversation Object (SwiftData Model parameters)
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
-            messages: historyMessages,
-            participants: historyParticipants,
-            notes: finalNotes,
-            description: cleanOneLiner, // <--- Feeds the AI summary into the subtitle!
+            details: cleanOneLiner, // <--- SwiftData model change from 'description' to 'details'
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
             category: "Quick Captions",
-            icon: "waveform"
+            icon: "waveform",
+            calendarDate: Date(), // <--- Feed the current date so sorting works
+            notes: finalNotes,
+            participants: historyParticipants,
+            messages: historyMessages
         )
         
         // 5. Send to DataManager to permanently save!

@@ -7,6 +7,7 @@
 
 import UIKit
 import Foundation
+import SwiftData // Added for SwiftData compatibility
 
 class SimpleMonthHeaderView: UICollectionReusableView {
     let label = UILabel()
@@ -97,17 +98,16 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             let pinImage = isPinned ? UIImage(systemName: "pin.slash") : UIImage(systemName: "pin")
             
             let pinAction = UIAction(title: pinTitle, image: pinImage) { action in
-                // 1. Toggle the local UI array
-                self.conversationSections[indexPath.section].conversations[indexPath.row].isPinned.toggle()
+                // 1. Get the object reference
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
                 
-                // 2. Find it in DataManager and save the pin state permanently!
-                if let index = DataManager.shared.conversations.firstIndex(where: { $0.id == updatedConvo.id }) {
-                    DataManager.shared.conversations[index].isPinned = updatedConvo.isPinned
-                    DataManager.shared.saveData()
-                }
+                // 2. Toggle the pin (updates the SwiftData model in memory)
+                updatedConvo.isPinned.toggle()
                 
-                // 3. Reload the cell visually
+                // 3. Commit the change to the database directly
+                DataManager.shared.saveData()
+                
+                // 4. Reload UI
                 self.collectionView.reloadItems(at: [indexPath])
             }
             
@@ -134,17 +134,16 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
             if let newName = alert.textFields?.first?.text, !newName.isEmpty {
-                // 1. Update the local UI array
-                self.conversationSections[indexPath.section].conversations[indexPath.row].title = newName
+                // 1. Get the object reference
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
                 
-                // 2. Find it in DataManager and save it permanently!
-                if let index = DataManager.shared.conversations.firstIndex(where: { $0.id == updatedConvo.id }) {
-                    DataManager.shared.conversations[index].title = newName
-                    DataManager.shared.saveData()
-                }
+                // 2. Update the property
+                updatedConvo.title = newName
                 
-                // 3. Reload the cell visually
+                // 3. Commit change to database
+                DataManager.shared.saveData()
+                
+                // 4. Reload UI
                 self.collectionView.reloadItems(at: [indexPath])
             }
         }
@@ -169,9 +168,8 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     func performSingleDeletion(at indexPath: IndexPath) {
         let convoToDelete = conversationSections[indexPath.section].conversations[indexPath.row]
         
-        // 1. Delete permanently from DataManager
-        DataManager.shared.conversations.removeAll { $0.id == convoToDelete.id }
-        DataManager.shared.saveData()
+        // 1. Delete permanently from DataManager's Context
+        DataManager.shared.deleteConversation(convoToDelete)
         
         // 2. Remove from the UI gracefully
         collectionView.performBatchUpdates({
@@ -285,7 +283,8 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
     
     func loadConversationData() {
-        let allConvos = DataManager.shared.conversations
+        // 🔥 Replaced '.conversations' with the new SwiftData '.fetchConversations()' helper
+        let allConvos = DataManager.shared.fetchConversations()
         
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy" // e.g., "March 2026"
@@ -361,8 +360,9 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             let lowercasedSearchText = searchText.lowercased()
             self.conversationSections = self.allConversationSections.compactMap { section in
                 let filtered = section.conversations.filter { convo in
+                    // Updated .description to .details
                     convo.title.lowercased().contains(lowercasedSearchText) ||
-                    convo.description.lowercased().contains(lowercasedSearchText)
+                    convo.details.lowercased().contains(lowercasedSearchText)
                 }
                 return filtered.isEmpty ? nil : ConversationSection(title: section.title, conversations: filtered)
             }

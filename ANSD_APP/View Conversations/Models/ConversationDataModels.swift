@@ -1,0 +1,92 @@
+
+//
+//  Participant.swift
+//  ANSD_APP
+//
+//  Created by SDC-USER on 02/03/26.
+//
+
+
+import Foundation
+import SwiftData
+
+// MARK: - Participant Model
+@Model
+class Participant {
+    var name: String
+    var summary: String
+    var image: String
+    
+    // Optional: Reference back to the conversation
+    var conversation: Conversation?
+    
+    init(name: String, summary: String, image: String) {
+        self.name = name
+        self.summary = summary
+        self.image = image
+    }
+}
+
+// MARK: - Message Model
+@Model
+class Message {
+    @Attribute(.unique) var id: UUID
+    var text: String
+    var senderName: String
+    var isIncoming: Bool
+    var isHighlighted: Bool
+    var senderId: String
+    var timestamp: Date
+    var isEdited: Bool
+    
+    // Optional: Reference back to the parent conversation
+    var conversation: Conversation?
+    
+    init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false, isEdited: Bool = false) {
+        self.id = id
+        self.text = text
+        self.senderId = senderId
+        self.senderName = senderName
+        self.isIncoming = isIncoming
+        self.timestamp = timestamp
+        self.isHighlighted = isHighlighted
+        self.isEdited = isEdited
+    }
+}
+
+// MARK: - Conversation Model
+@Model
+class Conversation {
+    @Attribute(.unique) var id: String
+    var title: String
+    var details: String // Renamed from 'description' to avoid Apple framework conflicts
+    var date: String
+    var startTime: String
+    var endTime: String
+    var category: String
+    var icon: String
+    var info: Bool?
+    var calendarDate: Date?
+    var notes: String?
+    var isPinned: Bool
+    
+    @Relationship(deleteRule: .cascade, inverse: \Participant.conversation) var participants: [Participant]?
+    @Relationship(deleteRule: .cascade, inverse: \Message.conversation) var messages: [Message]?
+
+    init(id: String, title: String, details: String = "", date: String = "", startTime: String = "", endTime: String = "", category: String = "", icon: String = "", info: Bool? = nil, calendarDate: Date? = nil, notes: String? = nil, isPinned: Bool = false, participants: [Participant]? = [], messages: [Message]? = []) {
+        self.id = id
+        self.title = title
+        self.details = details
+        self.date = date
+        self.startTime = startTime
+        self.endTime = endTime
+        self.category = category
+        self.icon = icon
+        self.info = info
+        self.calendarDate = calendarDate
+        self.notes = notes
+        self.isPinned = isPinned
+        self.participants = participants
+        self.messages = messages
+    }
+}

@@ -20,7 +20,6 @@ protocol ViewSummaryCardDelegate: AnyObject {
 }
 
 // MARK: - Custom TableView Cell Classes
-// (Kept exactly as you provided)
 
 class ViewSummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
@@ -163,7 +162,6 @@ class ChatHistoryViewController: UIViewController {
     private var isProcessing = false
     private(set) var generatedNotesText: String = "Generating summary..."
 
-    // Function - Initializes the view lifecycle, setting up the table view properties and gesture recognizers.
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
@@ -186,7 +184,6 @@ class ChatHistoryViewController: UIViewController {
             self.participantsData = histconversationData!.participants!
             self.generatedNotesText = histconversationData?.notes ?? ""
         } else if !transcript.isEmpty {
-            // No summary saved yet -> Generate it!
             prepareParticipantsFromMessages()
             generateAISummary()
         }
@@ -209,8 +206,6 @@ class ChatHistoryViewController: UIViewController {
             }
         }
         
-        // Note: Make sure your `Participants` model has an initializer like this.
-        // Adjust if your initializer parameters are named differently.
         self.participantsData = ordering.map { name in
             Participant(name: name, summary: "Waiting for analysis...", image: "person.circle.fill")
         }
@@ -242,7 +237,7 @@ class ChatHistoryViewController: UIViewController {
                     self.parseAIResponse(response.content)
                     self.isProcessing = false
                     self.tableView.reloadData()
-                    self.notifyDataChanged() // Save to history
+                    self.notifyDataChanged() // This will now save the AI summary to the DB!
                 }
                 
             } catch {
@@ -353,9 +348,14 @@ class ChatHistoryViewController: UIViewController {
         shareAsPDF()
     }
     
-
+    // 🔥 CORE SWIFTDATA UPDATE 🔥
     private func notifyDataChanged() {
         if let updatedConvo = self.histconversationData {
+            
+            // 1. Permanently save the changes to the SwiftData SQLite file
+            DataManager.shared.saveData()
+            
+            // 2. Broadcast the change to other open views
             NotificationCenter.default.post(
                 name: NSNotification.Name("ConversationUpdated"),
                 object: nil,
@@ -414,14 +414,14 @@ class ChatHistoryViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newText = alert.textFields?.first?.text {
-                // 1. Update the text
+                // Because SwiftData models are reference classes, editing these properties
+                // directly queues the update in the local database.
                 self.histconversationData?.messages?[indexPath.row].text = newText
-                
-                // 2. Set the edited flag to true
                 self.histconversationData?.messages?[indexPath.row].isEdited = true
                 
-                // 3. Refresh the UI
                 self.collectionView.reloadItems(at: [indexPath])
+                
+                // This will now trigger DataManager.shared.saveData() automatically!
                 self.notifyDataChanged()
             }
         })
@@ -437,12 +437,10 @@ extension ChatHistoryViewController {
     private func shareAsPDF() {
         var pdfContent = "Conversation Title: \(conversationTitle)\n\n"
         
-        // Print Participants
         for person in participantsData {
             pdfContent += "\(person.name):\n\(person.summary)\n\n"
         }
         
-        // Print AI Generated Notes or saved notes
         let notesToPrint = histconversationData?.notes ?? generatedNotesText
         if !notesToPrint.isEmpty {
             pdfContent += "Notes:\n\(notesToPrint)\n\n"
@@ -541,6 +539,8 @@ extension ChatHistoryViewController: UICollectionViewDelegate, UICollectionViewD
                 let currentStatus = self.histconversationData?.messages?[indexPath.row].isHighlighted ?? false
                 self.histconversationData?.messages?[indexPath.row].isHighlighted = !currentStatus
                 collectionView.reloadItems(at: [indexPath])
+                
+                // This will now trigger DataManager.shared.saveData() automatically!
                 self.notifyDataChanged()
             }
             let edit = UIAction(title: "Edit", image: UIImage(systemName: "pencil")) { _ in
@@ -563,6 +563,7 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
             tableView.beginUpdates()
             tableView.endUpdates()
             
+            // This will now trigger DataManager.shared.saveData() automatically!
             self.notifyDataChanged()
         }
     }
@@ -571,6 +572,8 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
         self.conversationTitle = text
         self.histconversationData?.title = text
         self.navigationItem.title = text
+        
+        // This will now trigger DataManager.shared.saveData() automatically!
         self.notifyDataChanged()
     }
         
@@ -578,7 +581,6 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
         return 6
     }
         
-
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 3 { return participantsData.count }
         return 1
@@ -613,14 +615,13 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCNotesCardCell", for: indexPath) as! ViewNotesCardCell
             
-            // Feed parsed notes or fallback to existing data
             let displayNotes = histconversationData?.notes ?? generatedNotesText
             
             if !displayNotes.isEmpty && displayNotes != "Generating summary..." {
                 cell.notesTextView.text = displayNotes
                 cell.notesTextView.textColor = .label
             } else {
-                cell.notesTextView.text = displayNotes // Will show "Generating summary..."
+                cell.notesTextView.text = displayNotes
                 cell.notesTextView.textColor = .lightGray
             }
             
