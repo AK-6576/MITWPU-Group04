@@ -370,18 +370,22 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ")
         
         // 4. Package everything into a Conversation Object
+        // 4. Package everything into a Conversation Object
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
-            messages: historyMessages,
-            participants: historyParticipants,
-            notes: finalNotes,
-            description: cleanOneLiner,
+            details: cleanOneLiner,     // Matches 'details' in ConversationDataModels.swift
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
             category: "Group-New",
-            icon: "square.and.pencil"
+            icon: "square.and.pencil",
+            info: nil,                  // Matches 'info' in @Model
+            calendarDate: Date(),          // Matches 'calendarDate' in @Model
+            notes: finalNotes,          // Matches 'notes' in @Model
+            isPinned: false,            // Matches 'isPinned' in @Model
+            participants: historyParticipants, // Matches relationship
+            messages: historyMessages          // Matches relationship
         )
         
         // 5. Send to DataManager to permanently save!

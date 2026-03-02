@@ -36,7 +36,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
     
     func configure(with conversation: Conversation) {
         titleLabel.text = conversation.title
-        descriptionLabel.text = conversation.description
+        descriptionLabel.text = conversation.details
         
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
@@ -81,7 +81,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         case "Group-Join":
             iconName = "person.bubble"
             tintColor = .systemBlue
-            categoryAccessibilityName = "Group Join"
+            categoryAccessibilityName = "Group-Join"
         case "Group-New":
             iconName = "square.and.pencil"
             tintColor = .systemBlue

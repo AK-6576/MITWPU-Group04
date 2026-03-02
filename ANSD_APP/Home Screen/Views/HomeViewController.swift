@@ -199,8 +199,23 @@ class HomeViewController: UIViewController {
                 destVC.incomingName = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
             }
         } else if segue.identifier == "viewConvoCell" {
-            guard let destVC = segue.destination as? ChatHistoryViewController, let selectedItem = sender as? RoutineConversation else { return }
-            destVC.histconversationData = DataManager.shared.getConversation(byId: selectedItem.id) ?? Conversation(id: selectedItem.id, title: selectedItem.conversationTopic, messages: [], participants: [], notes: selectedItem.description ?? "", startTime: selectedItem.startTime, category: selectedItem.categoryTitle, icon: selectedItem.iconName)
+            guard let destVC = segue.destination as? ChatHistoryViewController,
+                  let selectedItem = sender as? RoutineConversation else { return }
+            
+            let existingConversation = DataManager.shared.fetchConversation(byId: selectedItem.id)
+            
+            // 2. If it doesn't exist, create a new one with the CORRECT argument order
+            destVC.histconversationData = existingConversation ?? Conversation(
+                id: selectedItem.id,
+                title: selectedItem.conversationTopic,
+                details: "", // 'description' was renamed to 'details' in the new model
+                startTime: selectedItem.startTime,
+                category: selectedItem.categoryTitle,
+                icon: selectedItem.iconName,
+                notes: selectedItem.description ?? "",
+                participants: [],
+                messages: []
+            )
         }
     }
     

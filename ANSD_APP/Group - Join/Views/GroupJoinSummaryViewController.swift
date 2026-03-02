@@ -316,17 +316,19 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
-            messages: historyMessages,
-            participants: historyParticipants,
-            notes: finalNotes,
-            description: cleanOneLiner,
+            details: cleanOneLiner,     // Matches 'details' in ConversationDataModels.swift
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
             category: "Group-Join",
-            icon: "person.bubble"
+            icon: "person.bubble",
+            info: nil,                  // Matches 'info' in @Model
+            calendarDate: Date(),          // Matches 'calendarDate' in @Model
+            notes: finalNotes,          // Matches 'notes' in @Model
+            isPinned: false,            // Matches 'isPinned' in @Model
+            participants: historyParticipants, // Matches relationship
+            messages: historyMessages          // Matches relationship
         )
-        
         // 5. Send to DataManager to permanently save!
         DataManager.shared.addConversation(newConversation)
         print("✅ Success: Saved Group Join session '\(self.conversationTitle)' to History!")
