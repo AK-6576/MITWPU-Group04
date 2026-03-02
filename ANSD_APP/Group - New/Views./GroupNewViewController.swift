@@ -303,6 +303,14 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     // MARK: - Firebase Logic
     private func startSession() {
         firebase.setupSession(id: currentSessionID, isHost: isHost)
+        
+        // --- ADD THIS: Listen for Global End Signal ---
+            firebase.observeSessionStatus { [weak self] status in
+                if status == "ended" {
+                    self?.handleGlobalSessionEnd()
+                }
+            }
+        
         firebase.observeMessages { [weak self] data in
             guard let self = self else { return }
             
@@ -365,26 +373,47 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     @IBAction func endButtonTapped(_ sender: UIButton) {
-        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+        let actionSheet = UIAlertController(
+            title: "End Session?",
+            message: "This will end the session for all participants and show the summary.",
+            preferredStyle: .alert
+        )
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            guard let self = self else { return }
-            self.stopRecording()
-            
-            let storyboard = UIStoryboard(name: "Group-New", bundle: nil)
-            if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupNewSummaryViewController") as? GroupNewSummaryViewController {
-                summaryVC.transcriptMessages = self.messages
-                summaryVC.conversationTitle = "Room \(self.currentSessionID)"
-                let nav = UINavigationController(rootViewController: summaryVC)
-                nav.modalPresentationStyle = .pageSheet
-                self.present(nav, animated: true)
-            }
+            // We no longer navigate here.
+            // We just tell Firebase to set status to "ended".
+            // All devices (including this one) will react via the listener in startSession().
+            self?.firebase.endSession()
         }
         
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
         actionSheet.addAction(endAction)
-        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        actionSheet.addAction(cancelAction)
         
         present(actionSheet, animated: true)
+    }
+    
+    private func handleGlobalSessionEnd() {
+        // 1. Stop Recording
+        self.stopRecording()
+        
+        // 2. Clear UI artifacts
+        self.removeListeningBubble()
+        
+        // 3. Navigate to Summary
+        let storyboard = UIStoryboard(name: "Group-New", bundle: nil)
+        if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupNewSummaryViewController") as? GroupNewSummaryViewController {
+            summaryVC.transcriptMessages = self.messages
+            summaryVC.conversationTitle = "Room \(self.currentSessionID)"
+            
+            let nav = UINavigationController(rootViewController: summaryVC)
+            nav.modalPresentationStyle = .pageSheet
+            self.present(nav, animated: true)
+        }
+        
+        // 4. Cleanup Firebase
+        firebase.stop()
     }
     
     // MARK: - Helpers

@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FirebaseAuth
 
 class CreateAccountViewController: UIViewController {
 
@@ -48,10 +49,42 @@ class CreateAccountViewController: UIViewController {
         }
     }
     
-    // MARK: - Actions
     @IBAction func continueTapped(_ sender: UIButton) {
-        print("Continue tapped! Moving to the next screen.")
-        // We will add the navigation code here next!
+        // 1. Validate Password Match
+        guard let password = passwordTextField.text,
+              let confirmPassword = confirmPasswordTextField.text,
+              password == confirmPassword else {
+            print("Passwords do not match") // Replace with an Alert UI
+            return
+        }
+
+        // 2. Package the data
+        let userDetails = [
+            "firstName": firstNameTextField.text ?? "",
+            "lastName": lastNameTextField.text ?? "",
+            "email": emailTextField.text ?? "",
+            "password": password,
+            "phone": phoneTextField.text ?? ""
+        ]
+
+        // 3. Call the FirebaseManager
+        FirebaseManager.shared.createAccount(details: userDetails) { result in
+            switch result {
+            case .success(let user):
+                print("Successfully registered: \(user.uid)")
+                self.performSegue(withIdentifier: "createToHome", sender: self)
+                
+            case .failure(let error):
+                print("Registration failed: \(error.localizedDescription)")
+                
+                // ADD THIS: Show the user (and yourself) exactly what went wrong
+                let alert = UIAlertController(title: "Registration Error",
+                                              message: error.localizedDescription,
+                                              preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self.present(alert, animated: true)
+            }
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="sM8-Po-CiM">
     <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
@@ -70,6 +70,9 @@
                                                         <buttonConfiguration key="configuration" style="filled" image="apple.logo" catalog="system" imagePlacement="leading" title="Sign in with Apple" imagePadding="8" cornerStyle="dynamic" titleAlignment="center">
                                                             <color key="baseBackgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </buttonConfiguration>
+                                                        <connections>
+                                                            <action selector="appleSignInTapped:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="4Xk-WN-sNh"/>
+                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="K7r-LY-MiZ">
                                                         <rect key="frame" x="0.0" y="62" width="345" height="50"/>
@@ -81,6 +84,9 @@
                                                             <color key="baseForegroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <color key="baseBackgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </buttonConfiguration>
+                                                        <connections>
+                                                            <action selector="googleSignInTapped:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="OuR-ol-bEy"/>
+                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DUb-pC-qF2">
                                                         <rect key="frame" x="0.0" y="124" width="345" height="50"/>
@@ -93,7 +99,8 @@
                                                             <color key="baseBackgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </buttonConfiguration>
                                                         <connections>
-                                                            <segue destination="lGr-uB-ayk" kind="show" id="fw1-aT-AYz"/>
+                                                            <action selector="createAccountTapped:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="xri-RK-2I9"/>
+                                                            <segue destination="lGr-uB-ayk" kind="show" identifier="showCreateAccount" id="fw1-aT-AYz"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="m9u-Ng-ggW">
@@ -106,6 +113,10 @@
                                                         <buttonConfiguration key="configuration" style="plain" title="Login to existing account">
                                                             <backgroundConfiguration key="background"/>
                                                         </buttonConfiguration>
+                                                        <connections>
+                                                            <action selector="loginTapped:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="hwu-mD-Hn7"/>
+                                                            <segue destination="rqB-Fu-B5g" kind="showDetail" identifier="showLoginAccount" id="Je4-ML-4au"/>
+                                                        </connections>
                                                     </button>
                                                 </subviews>
                                                 <constraints>
@@ -153,6 +164,13 @@
                     <navigationItem key="navigationItem" id="ZX3-Dh-XzX">
                         <barButtonItem key="backBarButtonItem" title=" " id="KEI-gH-vbf"/>
                     </navigationItem>
+                    <connections>
+                        <outlet property="appleSignInButton" destination="Mdq-nd-z8y" id="sE3-f0-5Hs"/>
+                        <outlet property="createAccountButton" destination="DUb-pC-qF2" id="ji1-CP-acO"/>
+                        <outlet property="googleSignInButton" destination="K7r-LY-MiZ" id="V2W-J1-ArK"/>
+                        <outlet property="loginButton" destination="m9u-Ng-ggW" id="hVv-tc-hNU"/>
+                        <outlet property="logoImageView" destination="dsz-bm-unE" id="DSB-Kc-7xS"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ief-a0-LHa" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -391,11 +409,89 @@
                         <outlet property="lastNameTextField" destination="ZV7-6R-0SE" id="QBp-c2-3cp"/>
                         <outlet property="passwordTextField" destination="s1F-q1-H3n" id="gS6-5P-4ZK"/>
                         <outlet property="phoneTextField" destination="3Pc-90-taJ" id="TSJ-hm-H2C"/>
+                        <segue destination="KzG-rr-mfo" kind="show" identifier="createToHome" id="JkC-J8-BWK"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="aBq-gP-tqL" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2110.6870229007632" y="147.88732394366198"/>
+            <point key="canvasLocation" x="2219" y="148"/>
+        </scene>
+        <!--Login View Controller-->
+        <scene sceneID="5kP-rc-p3h">
+            <objects>
+                <viewController id="rqB-Fu-B5g" customClass="LoginViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="v1O-PM-Bsy">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="793"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="cF5-0h-M6F">
+                                <rect key="frame" x="148" y="187" width="97" height="34"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="kBK-4K-Vup">
+                                <rect key="frame" x="148" y="334" width="97" height="34"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="UZP-mh-dUW">
+                                <rect key="frame" x="159" y="459" width="75" height="35"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Button"/>
+                                <buttonConfiguration key="configuration" style="plain" title="Button"/>
+                                <connections>
+                                    <action selector="loginTapped:" destination="rqB-Fu-B5g" eventType="touchUpInside" id="CRD-pC-95Y"/>
+                                    <segue destination="KzG-rr-mfo" kind="show" identifier="loginToHome" id="THe-Dd-pK5"/>
+                                </connections>
+                            </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Email" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ady-tD-QWO">
+                                <rect key="frame" x="175" y="143" width="41" height="21"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Password" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="zLg-Zw-dd4">
+                                <rect key="frame" x="158" y="298" width="74" height="21"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="c1L-r2-lyj"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                    <navigationItem key="navigationItem" id="ygm-XH-c4P"/>
+                    <connections>
+                        <outlet property="emailTextField" destination="cF5-0h-M6F" id="fhs-Sy-NE9"/>
+                        <outlet property="loginButton" destination="UZP-mh-dUW" id="b1C-uf-WaD"/>
+                        <outlet property="passwordTextField" destination="kBK-4K-Vup" id="5Sx-sX-ycU"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="3Ap-AG-jOf" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1265" y="904"/>
+        </scene>
+        <!--Storyboard Reference-->
+        <scene sceneID="mAB-P3-DTh">
+            <objects>
+                <viewControllerPlaceholder id="pf6-Bm-rnO" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="qPQ-sf-4K5" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="3530" y="253"/>
+        </scene>
+        <!--HomeNav-->
+        <scene sceneID="8iu-dJ-Oql">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Home" referencedIdentifier="HomeNav" id="KzG-rr-mfo" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="ipo-xf-aad"/>
+                </viewControllerPlaceholder>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="yfK-pU-lTD" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2218" y="904"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="WYo-oo-9hF">
@@ -413,6 +509,9 @@
             <point key="canvasLocation" x="420" y="148"/>
         </scene>
     </scenes>
+    <inferredMetricsTieBreakers>
+        <segue reference="THe-Dd-pK5"/>
+    </inferredMetricsTieBreakers>
     <resources>
         <image name="Google" width="24" height="24"/>
         <image name="Image" width="1024" height="1024"/>

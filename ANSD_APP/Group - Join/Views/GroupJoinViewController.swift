@@ -290,7 +290,20 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     // MARK: - Firebase Logic
     private func startSession() {
+        // 1. Initialize the session node in Firebase
         firebase.setupSession(id: currentSessionID, isHost: isHost)
+        
+        // 2. Listen for Global Session Status (NEW)
+        // This allows the host to end the session for everyone
+        firebase.observeSessionStatus { [weak self] status in
+            guard let self = self else { return }
+            if status == "ended" {
+                print("DEBUG: Session ended by host. Transitioning to summary.")
+                self.handleGlobalSessionEnd()
+            }
+        }
+        
+        // 3. Existing Message Observation Logic
         firebase.observeMessages { [weak self] data in
             guard let self = self else { return }
             
@@ -298,6 +311,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                let sender = data["sender"] as? String,
                let senderID = data["senderID"] as? String {
                 
+                // Deduplication check: Don't add if we just sent this locally
                 if senderID == self.currentUserID {
                     let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && $0.text != "..." && !$0.isIncoming })
                     if let last = lastFinalized, last.text == text {
@@ -305,16 +319,19 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                     }
                 }
                 
+                // Visual management for the "Listening..." bubble
                 let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
                 
                 if isListeningPresent {
                     self.removeListeningBubble()
                 }
                 
+                // Create and append the new message bubble
                 let msg = GroupJoinChatMessage(text: text, isIncoming: (senderID != self.currentUserID), sender: sender, senderID: senderID)
                 self.messages.append(msg)
                 self.reloadDataAndScroll()
                 
+                // Re-add the listening indicator if user is still recording
                 if isListeningPresent && self.isRecording {
                     self.addListeningBubble()
                 }
@@ -335,29 +352,48 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     @IBAction func endButtonTapped(_ sender: UIButton) {
-        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: "End Session?",
+            message: "This will end the session for all participants and show the summary.",
+            preferredStyle: .alert
+        )
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            guard let self = self else { return }
-            self.stopRecording()
-            
-            let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
-            if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
-                
-                // Pass Data
-                summaryVC.transcriptMessages = self.messages
-                summaryVC.conversationTitle = self.sessionTitle
-                
-                let nav = UINavigationController(rootViewController: summaryVC)
-                nav.modalPresentationStyle = .pageSheet
-                self.present(nav, animated: true)
-            }
+            // Simply update Firebase.
+            // The listener in startSession will trigger handleGlobalSessionEnd() for everyone.
+            self?.firebase.endSession()
         }
         
-        actionSheet.addAction(endAction)
-        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
-        present(actionSheet, animated: true)
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alert.addAction(endAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
+    }
+    
+    private func handleGlobalSessionEnd() {
+        // 1. Stop local audio engine & mic
+        self.stopRecording()
+        
+        // 2. Remove any transient UI elements
+        self.removeListeningBubble()
+        
+        // 3. Navigate to Summary Screen
+        let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
+        if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
+            
+            // Pass the final transcript data
+            summaryVC.transcriptMessages = self.messages
+            summaryVC.conversationTitle = self.sessionTitle
+            
+            let nav = UINavigationController(rootViewController: summaryVC)
+            nav.modalPresentationStyle = .pageSheet
+            self.present(nav, animated: true)
+        }
+        
+        // 4. Detach Firebase listeners
+        firebase.stop()
     }
     
     // MARK: - Helpers
