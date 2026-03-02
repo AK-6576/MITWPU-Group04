@@ -217,6 +217,9 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     }
     
     @IBAction func didTapDone(_ sender: Any) {
+        
+        self.view.endEditing(true)
+        self.saveSessionToHistory()
         // Return to Home Storyboard
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
@@ -339,5 +342,50 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     
     func didChangeTitle(text: String) {
         self.conversationTitle = text
+    }
+    
+    // MARK: - Save to History
+    private func saveSessionToHistory() {
+        // 1. Map Participants to History Format
+        let historyParticipants: [Participant] = participantsData.map { person in
+            Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
+        }
+        
+        // 2. Map Transcript back into standard Message Bubbles
+        let historyMessages: [Message] = transcriptMessages.map { msg in
+            Message(
+                id: UUID(),
+                text: msg.text,
+                senderId: msg.sender,
+                senderName: msg.sender,
+                isIncoming: msg.isIncoming,
+                timestamp: Date(),
+                isHighlighted: false,
+                isEdited: false
+            )
+        }
+        
+        // 3. Grab the AI notes and format for the 1-2 liner description
+        let finalNotes = self.notesText == "Generating summary..." ? "No notes generated." : self.notesText
+        let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ")
+        
+        // 4. Package everything into a Conversation Object
+        let newConversation = Conversation(
+            id: UUID().uuidString,
+            title: self.conversationTitle,
+            messages: historyMessages,
+            participants: historyParticipants,
+            notes: finalNotes,
+            description: cleanOneLiner,
+            date: self.dateString,
+            startTime: self.timeString,
+            endTime: self.timeString,
+            category: "Group-New",
+            icon: "square.and.pencil"
+        )
+        
+        // 5. Send to DataManager to permanently save!
+        DataManager.shared.addConversation(newConversation)
+        print("✅ Success: Saved Group New session '\(self.conversationTitle)' to History!")
     }
 }

@@ -78,14 +78,14 @@ class ConversationCollectionViewCell: UICollectionViewCell {
             iconName = "waveform"
             tintColor = .systemBlue
             categoryAccessibilityName = "Quick Captions"
-        case "Group Join":
+        case "Group-Join":
             iconName = "person.bubble"
             tintColor = .systemBlue
             categoryAccessibilityName = "Group Join"
-        case "Group New":
+        case "Group-New":
             iconName = "square.and.pencil"
             tintColor = .systemBlue
-            categoryAccessibilityName = "Group New"
+            categoryAccessibilityName = "Group-New"
         default:
             iconName = "folder.fill"
             tintColor = .systemGray
