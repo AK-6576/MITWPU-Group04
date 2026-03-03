@@ -370,7 +370,6 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                 let sender = String(parts[0]).trimmingCharacters(in: .whitespaces)
                 let text = String(parts[1]).trimmingCharacters(in: .whitespaces)
                 
-                // If it's not you, it's incoming
                 let isIncoming = (sender != UIDevice.current.name && sender != "Me")
                 
                 let msg = Message(
@@ -395,10 +394,11 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
-            details: cleanOneLiner, // <--- SwiftData model change from 'description' to 'details'
+            details: cleanOneLiner,
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
+            location: self.locationString,
             category: "Quick Captions",
             icon: "waveform",
             calendarDate: Date(), // <--- Feed the current date so sorting works
@@ -409,6 +409,6 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         // 5. Send to DataManager to permanently save!
         DataManager.shared.addConversation(newConversation)
-        print("✅ Success: Saved '\(self.conversationTitle)' to History!")
+        print("Success: Saved '\(self.conversationTitle)' to History!")
     }
 }

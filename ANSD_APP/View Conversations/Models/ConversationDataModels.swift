@@ -65,6 +65,7 @@ class Conversation {
     var endTime: String
     var category: String
     var icon: String
+    var location: String = ""
     var info: Bool?
     var calendarDate: Date?
     var notes: String?
@@ -73,13 +74,14 @@ class Conversation {
     @Relationship(deleteRule: .cascade, inverse: \Participant.conversation) var participants: [Participant]?
     @Relationship(deleteRule: .cascade, inverse: \Message.conversation) var messages: [Message]?
 
-    init(id: String, title: String, details: String = "", date: String = "", startTime: String = "", endTime: String = "", category: String = "", icon: String = "", info: Bool? = nil, calendarDate: Date? = nil, notes: String? = nil, isPinned: Bool = false, participants: [Participant]? = [], messages: [Message]? = []) {
+    init(id: String, title: String, details: String = "", date: String = "", startTime: String = "", endTime: String = "", location: String = "", category: String = "", icon: String = "", info: Bool? = nil, calendarDate: Date? = nil, notes: String? = nil, isPinned: Bool = false, participants: [Participant]? = [], messages: [Message]? = []) {
         self.id = id
         self.title = title
         self.details = details
         self.date = date
         self.startTime = startTime
         self.endTime = endTime
+        self.location = location
         self.category = category
         self.icon = icon
         self.info = info

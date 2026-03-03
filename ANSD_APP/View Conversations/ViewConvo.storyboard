@@ -262,6 +262,7 @@
                                                     <outlet property="dateLabel" destination="sbh-3R-V1l" id="y5Z-57-oQa"/>
                                                     <outlet property="locationLabel" destination="AKH-lA-1pY" id="wGh-Fe-IL3"/>
                                                     <outlet property="mainCardView" destination="Dnh-ex-jut" id="od4-9m-55F"/>
+                                                    <outlet property="timeLabel" destination="l9Z-OH-mJg" id="XIa-FG-zhe"/>
                                                     <outlet property="titleTextField" destination="vo4-wC-pph" id="oho-Jp-i7I"/>
                                                 </connections>
                                             </tableViewCell>

@@ -60,6 +60,7 @@ class ViewSummaryCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     
     weak var delegate: ViewSummaryCardDelegate?
@@ -593,9 +594,15 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummaryCardCell", for: indexPath) as! ViewSummaryCardCell
             cell.titleTextField.text = conversationTitle
-            cell.delegate = self
-            return cell
-            
+                    
+            if let convo = histconversationData {
+                cell.dateLabel.text = convo.date
+                cell.locationLabel.text = convo.location.isEmpty ? "No Location" : convo.location
+                cell.timeLabel.text = convo.startTime
+            }
+                    
+                cell.delegate = self
+                return cell
         case 2:
             return tableView.dequeueReusableCell(withIdentifier: "PCParticipantsSummaryHeaderCell", for: indexPath) as! ViewParticipantsSummaryHeaderCell
             

@@ -379,6 +379,7 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
+            location: self.locationString,
             category: "Group-New",
             icon: "square.and.pencil",
             info: nil,                  // Matches 'info' in @Model

@@ -320,6 +320,7 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
             date: self.dateString,
             startTime: self.timeString,
             endTime: self.timeString,
+            location: self.locationString,
             category: "Group-Join",
             icon: "person.bubble",
             info: nil,                  // Matches 'info' in @Model
