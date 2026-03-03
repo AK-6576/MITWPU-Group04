@@ -15,7 +15,7 @@ class HomeViewController: UIViewController {
     @IBOutlet weak var tableView: UITableView!
 
     var quickActions: [RoutineConversation] = []
-    var routineConversations: [RoutineConversation] = []
+    var recentHistory: [Conversation] = []
     
     private let profileButton = UIButton(type: .custom)
     
@@ -85,23 +85,28 @@ class HomeViewController: UIViewController {
     // MARK: - Data Loading & Logic
     
     func loadData() {
-        let allItems = QuickActionsRepository.shared.getAllActions().filter { $0.status != "Done" }
-        let cutoffTime = Date().addingTimeInterval(-1800)
         
+        let allItems = QuickActionsRepository.shared.getAllActions()
+        
+        let cutoffTime = Date().addingTimeInterval(-1800)
         let sortedFutureActions = allItems.filter { item in
-            guard let itemDate = getDate(from: item.startTime) else { return false }
+            guard item.status != "Done", let itemDate = getDate(from: item.startTime) else { return false }
             return itemDate > cutoffTime
         }.sorted { (item1, item2) -> Bool in
             guard let date1 = getDate(from: item1.startTime),
                   let date2 = getDate(from: item2.startTime) else { return false }
             return date1 < date2
         }
-
+        
         self.quickActions = sortedFutureActions
-        self.routineConversations = allItems
+        
+        self.recentHistory = Array(DataManager.shared.fetchConversations().prefix(2))
         
         syncNotifications(for: allItems)
-        self.tableView.reloadData()
+        
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
     }
     
     private func syncNotifications(for items: [RoutineConversation]) {
@@ -201,22 +206,8 @@ class HomeViewController: UIViewController {
             }
         } else if segue.identifier == "viewConvoCell" {
             guard let destVC = segue.destination as? ChatHistoryViewController,
-                  let selectedItem = sender as? RoutineConversation else { return }
-            
-            let existingConversation = DataManager.shared.fetchConversation(byId: selectedItem.id)
-            
-            // 2. If it doesn't exist, create a new one with the CORRECT argument order
-            destVC.histconversationData = existingConversation ?? Conversation(
-                id: selectedItem.id,
-                title: selectedItem.conversationTopic,
-                details: "", // 'description' was renamed to 'details' in the new model
-                startTime: selectedItem.startTime,
-                category: selectedItem.categoryTitle,
-                icon: selectedItem.iconName,
-                notes: selectedItem.description ?? "",
-                participants: [],
-                messages: []
-            )
+                  let selectedConvo = sender as? Conversation else { return }
+            destVC.histconversationData = selectedConvo
         }
     }
     
@@ -271,9 +262,10 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
-            return quickActions.isEmpty ? 1 : min(quickActions.count, 3)
+            return quickActions.isEmpty ? 1 : quickActions.count
+        } else {
+            return recentHistory.isEmpty ? 1 : recentHistory.count
         }
-        return min(routineConversations.count, 2)
     }
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
@@ -301,32 +293,52 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 return cell
             }
         } else {
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: "ConversationCardCell", for: indexPath) as? ConversationCardCell else { return UITableViewCell() }
-            let item = routineConversations[indexPath.row]
-            cell.configure(with: item)
-            return cell
+            if recentHistory.isEmpty {
+                let emptyCell = UITableViewCell(style: .default, reuseIdentifier: nil)
+                emptyCell.textLabel?.text = "No recent conversations."
+                emptyCell.textLabel?.textColor = .systemGray
+                emptyCell.textLabel?.textAlignment = .center
+                emptyCell.backgroundColor = .clear
+                emptyCell.selectionStyle = .none
+                return emptyCell
+            } else {
+                guard let cell = tableView.dequeueReusableCell(withIdentifier: "ConversationCardCell", for: indexPath) as? ConversationCardCell else { return UITableViewCell() }
+                
+                let historyItem = recentHistory[indexPath.row]
+
+                cell.configure(with: historyItem)
+                
+                return cell
+            }
         }
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        
-        if indexPath.section == 0 && quickActions.isEmpty { return }
-        
-        let item = (indexPath.section == 0) ? quickActions[indexPath.row] : routineConversations[indexPath.row]
-        var segueID = ""
-        if indexPath.section == 0 {
-            switch item.categoryTitle {
-            case "Office": segueID = "office"
-            case "Family": segueID = "family"
-            case "Friends": segueID = "friends"
-            default: return
+            tableView.deselectRow(at: indexPath, animated: true)
+            
+            if indexPath.section == 0 {
+                if quickActions.isEmpty { return }
+                
+                let item = quickActions[indexPath.row]
+                var segueID = ""
+                
+                switch item.categoryTitle {
+                case "Office": segueID = "office"
+                case "Family": segueID = "family"
+                case "Friends": segueID = "friends"
+                default: return
+                }
+                
+                performSegue(withIdentifier: segueID, sender: item)
+                
+            } else {
+                if recentHistory.isEmpty { return }
+                
+                let historyItem = recentHistory[indexPath.row]
+                
+                performSegue(withIdentifier: "viewConvoCell", sender: historyItem)
             }
-        } else {
-            segueID = "viewConvoCell"
         }
-        performSegue(withIdentifier: segueID, sender: item)
-    }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard indexPath.section == 0 && !quickActions.isEmpty else { return nil }

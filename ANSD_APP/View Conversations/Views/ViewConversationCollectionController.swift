@@ -276,11 +276,10 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
     
     func loadConversationData() {
-        // 🔥 Replaced '.conversations' with the new SwiftData '.fetchConversations()' helper
         let allConvos = DataManager.shared.fetchConversations()
         
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy" // e.g., "March 2026"
+        formatter.dateFormat = "MMMM"
         
         var sectionsDict: [String: [Conversation]] = [:]
         var sectionTitles: [String] = []

@@ -41,6 +41,23 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         titleLabel.text = conversation.title
         descriptionLabel.text = conversation.details
         
+        if let date = conversation.calendarDate {
+            let calendar = Calendar.current
+            let day = calendar.component(.day, from: date)
+            
+            let monthFormatter = DateFormatter()
+            monthFormatter.dateFormat = "MMMM"
+            let month = monthFormatter.string(from: date)
+            
+            let numberFormatter = NumberFormatter()
+            numberFormatter.numberStyle = .ordinal
+            let dayString = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
+            
+            dateLabel.text = "\(month) \(dayString)"
+        } else {
+            dateLabel.text = conversation.date
+        }
+        
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory

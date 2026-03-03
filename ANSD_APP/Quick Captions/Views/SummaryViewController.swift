@@ -75,10 +75,8 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         Task {
             do {
-                // 1. Dynamically build instructions for EVERY participant in the list
                 var participantPrompts = ""
                 for person in participantsData {
-                    // Create a clean tag (e.g., PETER_PARKER)
                     let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
                     participantPrompts += """
                     Step: Write a section strictly labeled "PARTICIPANT_\(safeName):" summarizing what \(person.name) said in their own perspective using the third person (e.g., "\(person.name) believes that...").
@@ -284,14 +282,14 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! QuickCaptionsSummaryCardCell
             
-            // ✅ Configure Data
+
             cell.configure(
                 title: self.conversationTitle,
                 date: self.dateString,
                 time: self.timeString,
                 location: self.locationString
             )
-            // ✅ Connect Delegate for Title Changes
+            
             cell.delegate = self
             
             cell.selectionStyle = .none
@@ -300,7 +298,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         // MARK: SECTION 2 - Header: "Participants Summary"
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
-            // Updated to match Figma text
+            
             cell.headerLabel.text = "Participants Summary"
             cell.headerIcon.image = UIImage(systemName: "person.2.fill")
             cell.selectionStyle = .none
@@ -311,7 +309,6 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantCardCell", for: indexPath) as! QuickCaptionsParticipantCardCell
             let participant = participantsData[indexPath.row]
             
-            // ✅ Configure Data
             cell.configure(with: participant)
             
             cell.selectionStyle = .none

@@ -72,7 +72,7 @@ class ConversationCardCell: UITableViewCell {
     @IBOutlet weak var cardContainer: UIView!
     @IBOutlet weak var topicLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
-
+    
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
@@ -80,53 +80,66 @@ class ConversationCardCell: UITableViewCell {
     @IBOutlet weak var calendarIcon: UIImageView!
     @IBOutlet weak var clockIcon: UIImageView!
     @IBOutlet weak var categoryIcon: UIImageView!
-
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         setupDesign()
     }
     
     func setupDesign() {
-
+        
         self.backgroundColor = .clear
         self.contentView.backgroundColor = .clear
         self.selectionStyle = .none
         
-
+        
         cardContainer.backgroundColor = .secondarySystemGroupedBackground
         cardContainer.layer.cornerRadius = 20
         cardContainer.layer.cornerCurve = .continuous
         cardContainer.layer.masksToBounds = false
-
+        
         cardContainer.layer.borderWidth = 1
         cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
     }
-
-    func configure(with item: RoutineConversation) {
-
-        topicLabel.text = item.conversationTopic
-        descriptionLabel.text = item.description ?? item.status
-
-        dateLabel.text = item.date ?? "Today"
-        timeLabel.text = item.startTime
+    
+    func configure(with conversation: Conversation) {
+        topicLabel.text = conversation.title
+        descriptionLabel.text = conversation.details
         
-
+        if let date = conversation.calendarDate {
+            let calendar = Calendar.current
+            let day = calendar.component(.day, from: date)
+            
+            let monthFormatter = DateFormatter()
+            monthFormatter.dateFormat = "MMMM"
+            let month = monthFormatter.string(from: date)
+            
+            let numberFormatter = NumberFormatter()
+            numberFormatter.numberStyle = .ordinal
+            let dayString = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
+            
+            dateLabel.text = "\(month) \(dayString)"
+        } else {
+            dateLabel.text = conversation.date
+        }
+        
+        timeLabel.text = "\(conversation.startTime)"
+        
         calendarIcon.image = UIImage(systemName: "calendar")
         calendarIcon.tintColor = .systemGray2
         
         clockIcon.image = UIImage(systemName: "clock")
         clockIcon.tintColor = .systemGray2
         
- 
-        let categoryString = item.categoryTitle
-
+        let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
+        // 2. Fix the SF Symbols (using lowercase to perfectly match any input)
         let iconName: String
         let tintColor: UIColor
         
-        switch categoryString.lowercased() {
+        switch categoryString {
         case "family":
             iconName = "figure.2.and.child.holdinghands"
             tintColor = .systemPurple
@@ -139,6 +152,15 @@ class ConversationCardCell: UITableViewCell {
         case "medical", "health":
             iconName = "cross.case.fill"
             tintColor = .systemGreen
+        case "Quick Captions":
+            iconName = "waveform"
+            tintColor = .systemBlue
+        case "Group-Join":
+            iconName = "person.bubble"
+            tintColor = .systemBlue
+        case "Group-New":
+            iconName = "square.and.pencil"
+            tintColor = .systemBlue
         default:
             iconName = "folder.fill"
             tintColor = .systemGray
