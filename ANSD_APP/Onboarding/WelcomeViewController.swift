@@ -1,3 +1,11 @@
+//
+//  WelcomeViewController.swift
+//  ANSD_APP
+//
+//  Created by Dhiraj Bodake on 19/02/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
 class WelcomeViewController: UIViewController {
@@ -29,6 +37,21 @@ class WelcomeViewController: UIViewController {
         googleSignInButton.layer.cornerRadius = 28
         googleSignInButton.layer.borderWidth = 1
         googleSignInButton.layer.borderColor = UIColor.systemGray4.cgColor
+        
+        if let googleIcon = UIImage(named: "google_icon")?.withRenderingMode(.alwaysOriginal) {
+            googleSignInButton.setImage(googleIcon, for: .normal)
+        }
+
+        googleSignInButton.configuration?.imagePadding = 10
+        googleSignInButton.imageView?.contentMode = .scaleAspectFit
+        
+        createAccountButton.layer.cornerRadius = 28
+        createAccountButton.layer.borderWidth = 1
+        createAccountButton.layer.borderColor = UIColor.systemGray4.cgColor
+        
+        loginButton.layer.cornerRadius = 28
+        loginButton.layer.borderWidth = 1
+        loginButton.layer.borderColor = UIColor.systemGray4.cgColor
     }
 
     // MARK: - Actions

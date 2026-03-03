@@ -1,10 +1,15 @@
 //
 //  QuickActionsData.swift
-//  Group_4-ANSD_App
+//  ANSD_APP
+//
+//  Created by Daiwiik Harihar on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import Foundation
 
+// MARK: - Quick Actions Repository
+// Singleton class responsible for managing persistent storage and retrieval of quick action items.
 class QuickActionsRepository {
     
     static let shared = QuickActionsRepository()

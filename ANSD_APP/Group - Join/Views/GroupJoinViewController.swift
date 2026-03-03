@@ -3,6 +3,7 @@
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
@@ -23,7 +24,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     private let firebase = FirebaseManager.shared
     private let cleanupManager = TextCleanupManager()
     
-    // Apple Intelligence Model
+    // Apple Intelligence on-device language model used for text cleanup.
     private let model = SystemLanguageModel.default
     
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -38,10 +39,10 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     var messages: [GroupJoinChatMessage] = []
     
-    // Buffering State
+    // Tracks the character offset into the full cumulative transcript string to extract only new speech.
     var consumedTranscriptOffset = 0
     
-    // Data from Selection Screen
+    // Session identifiers passed from the session selection screen.
     var currentSessionID: String = ""
     var sessionTitle: String = "Session"
     
@@ -105,14 +106,14 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    // MARK: - Speech Logic (Monolithic + Offset + AI Cleanup)
+    // MARK: - Speech Recognition
     private func startRecording() {
         if recognitionTask != nil {
             recognitionTask?.cancel()
             recognitionTask = nil
         }
         
-        // Reset offset
+        // Resets the cumulative transcript offset before starting a new recognition cycle.
         consumedTranscriptOffset = 0
         addListeningBubble()
         
@@ -144,12 +145,12 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             if let result = result {
                 let fullString = result.bestTranscription.formattedString
                 
-                // Safety check
+                // Guards against the recognizer shrinking the transcript due to correction.
                 if self.consumedTranscriptOffset > fullString.count {
                     self.consumedTranscriptOffset = 0
                 }
                 
-                // Calculate Delta
+                // Slices only the newly recognized text since the last processed position.
                 let index = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
                 let newContent = String(fullString[index...])
                 self.consumedTranscriptOffset = fullString.count
@@ -162,16 +163,16 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                     let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
                     let combinedText = baseText + newContent
                     
-                    // CHECK LIMIT (3-4 Lines Logic)
+                    // Splits the transcript into a new bubble when the character limit is reached.
                     if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                        // 1. Finalize Current Bubble
+                        // Finalizes the current bubble text before starting a new one.
                         self.messages[lastIndex].text = combinedText
                         self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
                         
-                        // 2. Trigger AI Cleanup for this bubble
+                        // Sends the finalized bubble text through Apple Intelligence for cleanup.
                         self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
                         
-                        // 3. Start NEW Bubble
+                        // Appends a new placeholder bubble for continued speech input.
                         let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
                         self.messages.append(newMsg)
                         self.reloadDataAndScroll()
@@ -213,7 +214,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    // MARK: - Apple Intelligence Logic
+    // MARK: - Apple Intelligence Text Processing
     private func processTextWithAppleIntelligence(text: String, index: Int) {
         Task {
             do {
@@ -228,7 +229,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                         self.messages[index].text = cleanedText
                         self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
                         
-                        // Send to Firebase
+                        // Sends the AI-cleaned text to Firebase for other participants to receive.
                         self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
                     }
                 }
@@ -290,11 +291,10 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     // MARK: - Firebase Logic
     private func startSession() {
-        // 1. Initialize the session node in Firebase
+        // Initializes the Firebase session node and sets the initial active status.
         firebase.setupSession(id: currentSessionID, isHost: isHost)
         
-        // 2. Listen for Global Session Status (NEW)
-        // This allows the host to end the session for everyone
+        // Observes the session status node so any participant can detect when the host ends the session.
         firebase.observeSessionStatus { [weak self] status in
             guard let self = self else { return }
             if status == "ended" {
@@ -303,7 +303,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             }
         }
         
-        // 3. Existing Message Observation Logic
+        // Observes incoming messages from other participants.
         firebase.observeMessages { [weak self] data in
             guard let self = self else { return }
             
@@ -311,7 +311,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                let sender = data["sender"] as? String,
                let senderID = data["senderID"] as? String {
                 
-                // Deduplication check: Don't add if we just sent this locally
+                // Skips messages that were already added locally to prevent duplicate bubbles.
                 if senderID == self.currentUserID {
                     let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && $0.text != "..." && !$0.isIncoming })
                     if let last = lastFinalized, last.text == text {
@@ -319,7 +319,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                     }
                 }
                 
-                // Visual management for the "Listening..." bubble
+                // Preserves the listening indicator position when an incoming message arrives.
                 let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
                 
                 if isListeningPresent {
@@ -331,7 +331,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 self.messages.append(msg)
                 self.reloadDataAndScroll()
                 
-                // Re-add the listening indicator if user is still recording
+                // Re-adds the listening bubble if recording was active when the incoming message arrived.
                 if isListeningPresent && self.isRecording {
                     self.addListeningBubble()
                 }
@@ -359,8 +359,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         )
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            // Simply update Firebase.
-            // The listener in startSession will trigger handleGlobalSessionEnd() for everyone.
+            // Delegates session termination to Firebase so all connected participants are notified.
             self?.firebase.endSession()
         }
         
@@ -383,7 +382,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
         if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
             
-            // Pass the final transcript data
+            // Passes the final transcript to the summary view controller.
             summaryVC.transcriptMessages = self.messages
             summaryVC.conversationTitle = self.sessionTitle
             
@@ -392,7 +391,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             self.present(nav, animated: true)
         }
         
-        // 4. Detach Firebase listeners
+        // Removes all Firebase observers to free resources after the session ends.
         firebase.stop()
     }
     

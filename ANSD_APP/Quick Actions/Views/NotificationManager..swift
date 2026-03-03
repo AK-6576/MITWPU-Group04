@@ -2,7 +2,8 @@
 //  NotificationManager.swift
 //  ANSD_APP
 //
-//  Created by SDC-USER on 28/01/26.
+//  Created by Anshul Kumaria on 22/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import Foundation

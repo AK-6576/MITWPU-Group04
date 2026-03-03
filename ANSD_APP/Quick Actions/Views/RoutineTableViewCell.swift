@@ -1,6 +1,15 @@
+//
+//  RoutineTableViewCell.swift
+//  ANSD_APP
+//
+//  Created by Daiwiik Harihar on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
-/// A single, reusable cell class for all routine-based tables (Family, Friends, Office).
+// MARK: - Routine Table View Cell
+// Custom table view cell for displaying routine items with an icon, title, and time.
 class RoutineTableViewCell: UITableViewCell {
 
     @IBOutlet weak var titleLabel: UILabel!

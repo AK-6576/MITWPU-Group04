@@ -1,12 +1,15 @@
 //
 //  ConversationCollectionViewCell.swift
-//  Group_4-ANSD_App
+//  ANSD_APP
 //
-//  Created by Omkar Varpe on 26/11/25.
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 
+// MARK: - Conversation Collection View Cell
+// Specialized cell for displaying conversation summaries, including topic, date, time, and category icons.
 class ConversationCollectionViewCell: UICollectionViewCell {
     
     @IBOutlet weak var titleLabel: UILabel!

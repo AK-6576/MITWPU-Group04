@@ -3,6 +3,7 @@
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
@@ -43,7 +44,7 @@ class GroupJoinParticipantsCardCell: UITableViewCell {
         backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        // Avatar Styling
+        // Applies circular clipping mask and configures the avatar image view appearance.
         if let avatar = avatarImageView {
             avatar.layer.cornerRadius = avatar.frame.height / 2
             avatar.clipsToBounds = true
@@ -58,7 +59,7 @@ class GroupJoinParticipantsCardCell: UITableViewCell {
     }
 }
 
-// MARK: - CHANGED: Title is now a UILabel (Read Only)
+// MARK: - Summary Card Cell (Read-Only Title)
 class GroupJoinSummaryCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleLabel: UILabel!

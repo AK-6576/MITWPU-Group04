@@ -1,6 +1,15 @@
-import Foundation
+//
+//  ActionRoutineData.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
 
-// MARK: - Protocol for Data Consistency
+import UIKit
+
+// MARK: - Routine Data Structure
+// Defines the data structure for routine items, including task details and completion status.
 protocol RoutineItemProtocol {
     var title: String { get set }
     var time: String { get }
@@ -8,6 +17,7 @@ protocol RoutineItemProtocol {
 }
 
 // MARK: - Concrete Data Model
+// Represents a concrete implementation of a routine item.
 struct TestItem: RoutineItemProtocol {
     var title: String
     var time: String
@@ -15,6 +25,7 @@ struct TestItem: RoutineItemProtocol {
 }
 
 // MARK: - Routine Repository
+// Manages the retrieval of routine data based on different categories.
 class RoutineRepository {
     static func getRoutineData(for category: ChatCategory) -> [RoutineItemProtocol] {
         // This logic handles EVERY category dynamically based on the Enum passed

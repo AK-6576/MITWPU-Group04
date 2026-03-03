@@ -2,7 +2,8 @@
 //  SignUpScreen.swift
 //  ANSD_APP
 //
-//  Created by SDC-USER on 22/01/26.
+//  Created by Daiwiik Harihar on 22/01/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import Foundation

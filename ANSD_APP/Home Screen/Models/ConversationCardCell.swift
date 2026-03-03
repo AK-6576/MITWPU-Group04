@@ -1,8 +1,10 @@
 //
-//  ConversationCardCells.swift
-//  Group_4-ANSD_App
+//  ConversationCardCell.swift
+//  ANSD_APP
 //
-
+//  Created by Daiwiik Harihar on 15/01/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
 import UIKit
 
 // MARK: - Routine Cell (Quick Actions - Top List)

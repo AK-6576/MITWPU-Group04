@@ -1,9 +1,9 @@
-
 //
-//  Participant.swift
+//  ConversationDataModels.swift
 //  ANSD_APP
 //
-//  Created by SDC-USER on 02/03/26.
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 
@@ -59,7 +59,7 @@ class Message {
 class Conversation {
     @Attribute(.unique) var id: String
     var title: String
-    var details: String // Renamed from 'description' to avoid Apple framework conflicts
+    var details: String
     var date: String
     var startTime: String
     var endTime: String

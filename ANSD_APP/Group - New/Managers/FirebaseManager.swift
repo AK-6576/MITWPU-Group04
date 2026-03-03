@@ -2,7 +2,8 @@
 //  FirebaseManager.swift
 //  ANSD_APP
 //
-//  Created by Daiwiik on 10/02/26.
+//  Created by Anshul Kumaria on 10/02/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import Foundation

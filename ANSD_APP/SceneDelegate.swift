@@ -1,5 +1,15 @@
+//
+//  SceneDelegate.swift
+//  ANSD_APP
+//
+//  Created by Dhiraj Bodake on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
+// MARK: - Scene Delegate
+// Manages the application's scene lifecycle, handling session connections and state transitions.
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?

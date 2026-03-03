@@ -1,6 +1,15 @@
+//
+//  InfoViewController.swift
+//  ANSD_APP
+//
+//  Created by Daiwiik Harihar on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
-/// A single class to handle all 'Info' or 'Note' popups across Family, Friends, and Office modules.
+// MARK: - Information View Controller
+// Displays detailed information about a specific action, including participants and notes.
 class InfoViewController: UIViewController, UITextViewDelegate {
     
     // MARK: - Properties

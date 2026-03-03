@@ -3,6 +3,7 @@
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
@@ -20,11 +21,10 @@ class GroupJoinOutgoingCell: UICollectionViewCell {
         
         GroupJoinMessageLabel.numberOfLines = 0
         
-        // Optimize constraints for auto-sizing
+        // Pins contentView width to the screen width so Auto Layout can correctly compute self-sizing cell height.
         contentView.translatesAutoresizingMaskIntoConstraints = false
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let screenWidth = windowScene.screen.bounds.width
-            // Width constraint helps Auto Layout calculate height correctly
             contentView.widthAnchor.constraint(equalToConstant: screenWidth).isActive = true
         }
     }

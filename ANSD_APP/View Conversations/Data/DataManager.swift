@@ -1,8 +1,10 @@
 //
 //  DataManager.swift
-//  Group_4-ANSD_App
+//  ANSD_APP
 //
-
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
 import Foundation
 import SwiftData
 import UIKit

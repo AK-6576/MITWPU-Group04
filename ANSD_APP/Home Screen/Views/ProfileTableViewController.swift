@@ -2,12 +2,13 @@
 //  ProfileTableViewController.swift
 //  ANSD_APP
 //
-//  Created by Omkar Varpe on 12/12/25.
+//  Created by Daiwiik Harihar on 12/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 
-// Protocol to update Home Screen instantly
+// Defines the delegate protocol for propagating profile updates to the Home Screen.
 protocol ProfileUpdateDelegate: AnyObject {
     func didUpdateProfile(firstName: String, image: UIImage?)
 }
@@ -18,7 +19,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     weak var delegate: ProfileUpdateDelegate?
     
     // MARK: - Outlets
-    // Make sure these are connected in Storyboard!
+    // Verifies outlet connections before use.
     @IBOutlet weak var genderButton: UIButton!
     @IBOutlet weak var datePicker: UIDatePicker!
     @IBOutlet weak var profileImageView: UIImageView!
@@ -57,16 +58,16 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
     }
     
-    // === FIX 1: THIS MAKES THE IMAGE CIRCULAR ===
+        // Applies circular styling and a border to the profile image view.
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
-        // Ensure the image view is a perfect circle
+        // Configures the image view with aspect fill and a rounded corner radius.
         profileImageView.layer.cornerRadius = profileImageView.frame.size.width / 2
         profileImageView.layer.masksToBounds = true
         profileImageView.contentMode = .scaleAspectFill
         
-        // Optional: Add a border to make it look cleaner
+        // Adds a subtle border around the profile photo for visual clarity.
         profileImageView.layer.borderWidth = 3
         profileImageView.layer.borderColor = UIColor.systemGray5.cgColor
     }
@@ -78,7 +79,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     // MARK: - Actions
     
-    // === FIX 2: THIS FIXES THE DISMISS X BUTTON ===
+    // Dismisses the profile screen by popping or dimissing the view controller depending on presentation context.
     @IBAction func closeButtonTapped(_ sender: Any) {
         print("DEBUG: Close button tapped") // Look for this in Console
         
@@ -114,11 +115,11 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         let name = firstNameTextField.text ?? "Steve"
         let lastName = lastNameTextField.text ?? ""
         
-        // 1. Save to Disk
+        // Persists the first name to UserDefaults.
         UserDefaults.standard.set(name, forKey: firstNameKey)
         UserDefaults.standard.set(lastName, forKey: lastNameKey)
         
-        // 2. Broadcast INSTANTLY to Home Screen (The Name Fix)
+        // Broadcasts the updated name via NotificationCenter to refresh the Home Screen greeting.
         NotificationCenter.default.post(name: NSNotification.Name("ProfileNameUpdated"),
                                       object: nil,
                                       userInfo: ["name": name])
@@ -144,15 +145,15 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
         
         if let finalImage = selectedImage {
-            // Update UI
+            // Updates the profile image view with the selected photo.
             profileImageView.image = finalImage
             
-            // Save to Disk
+            // Persists the selected image as JPEG data in UserDefaults.
             if let data = finalImage.jpegData(compressionQuality: 0.8) {
                 UserDefaults.standard.set(data, forKey: imageKey)
             }
             
-            // Broadcast INSTANTLY to Home Screen (The Image Fix)
+            // Broadcasts the new profile image to the Home Screen via NotificationCenter.
             NotificationCenter.default.post(name: NSNotification.Name("ProfileImageUpdated"), object: finalImage)
         }
         dismiss(animated: true)

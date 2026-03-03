@@ -3,6 +3,7 @@
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
@@ -18,10 +19,10 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     var conversationTitle = "Session Summary"
     var transcriptMessages: [GroupJoinChatMessage] = []
     
-    // Using correct data model
+    // Using the correct data model for group join participants.
     var participantsData: [GroupJoinParticipants] = []
     
-    // State
+    // State variables for session metadata displayed on the summary card.
     var dateString: String = ""
     var timeString: String = ""
     var locationString: String = "Location Unknown"
@@ -59,7 +60,7 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     @IBAction func doneButtonTapped(_ sender: Any) {
         self.view.endEditing(true)
         self.saveSessionToHistory()
-        // Return to Home Storyboard
+        // Returns to the Home storyboard after saving the session to history.
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
         
@@ -107,8 +108,7 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
                 TRANSCRIPT:
                 \(text)
                 """
-                
-                // CORRECT AI CALL
+                // Trigger AI text cleanup for a finalized speech bubble.
                 let session = LanguageModelSession(model: model)
                 let response = try await session.respond(to: prompt)
                 
@@ -289,12 +289,12 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - Save to History
     private func saveSessionToHistory() {
-        // 1. Map Participants to History Format
+        // Converts participant data to the history-compatible Participant model.
         let historyParticipants: [Participant] = participantsData.map { person in
             Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
         }
         
-        // 2. Map Transcript back into standard Message Bubbles
+        // Maps transcript messages to the generic Message model for history storage.
         let historyMessages: [Message] = transcriptMessages.map { msg in
             Message(
                 id: UUID(),
@@ -308,11 +308,11 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
             )
         }
         
-        // 3. Grab the AI notes and format for the 1-2 liner description
+        // Falls back to a default message if the AI summary is not yet available.
         let finalNotes = self.notesText == "Generating summary..." ? "No notes generated." : self.notesText
         let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ")
         
-        // 4. Package everything into a Conversation Object
+        // Packages the full session data into a Conversation object for persistent storage.
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,

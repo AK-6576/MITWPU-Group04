@@ -1,6 +1,15 @@
+//
+//  ActionSummaryCells.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
-// MARK: - Protocols
+// MARK: - Summary Card Protocol
+// Protocol for handling updates from the notes card cell.
 protocol NotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: NotesCardCell)
 }

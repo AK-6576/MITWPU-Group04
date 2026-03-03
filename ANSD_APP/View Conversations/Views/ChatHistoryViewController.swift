@@ -2,7 +2,8 @@
 //  ChatHistoryViewController.swift
 //  ANSD_APP
 //
-//  Created by SDC-USER on 06/01/26.
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
@@ -136,8 +137,8 @@ class ViewNotesCardCell: UITableViewCell, UITextViewDelegate {
     }
 }
 
-// MARK: - Main View Controller
-
+// MARK: - Chat History View Controller
+// Displays the full message history for a specific conversation, using a collection view for alignment-aware messaging.
 class ChatHistoryViewController: UIViewController {
     
     @IBOutlet var segmentedControl: UISegmentedControl!
@@ -176,9 +177,8 @@ class ChatHistoryViewController: UIViewController {
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
         
-        // --- AI Processing Logic Check ---
         let hasExistingParticipants = histconversationData?.participants?.isEmpty == false
-        let hasExistingNotes = histconversationData?.notes?.isEmpty == false
+        _ = histconversationData?.notes?.isEmpty == false
         
         if hasExistingParticipants {
             self.participantsData = histconversationData!.participants!
@@ -237,7 +237,7 @@ class ChatHistoryViewController: UIViewController {
                     self.parseAIResponse(response.content)
                     self.isProcessing = false
                     self.tableView.reloadData()
-                    self.notifyDataChanged() // This will now save the AI summary to the DB!
+                    self.notifyDataChanged()
                 }
                 
             } catch {
@@ -348,14 +348,13 @@ class ChatHistoryViewController: UIViewController {
         shareAsPDF()
     }
     
-    // 🔥 CORE SWIFTDATA UPDATE 🔥
     private func notifyDataChanged() {
         if let updatedConvo = self.histconversationData {
             
-            // 1. Permanently save the changes to the SwiftData SQLite file
+            // Persist changes to the local storage.
             DataManager.shared.saveData()
             
-            // 2. Broadcast the change to other open views
+            // Notify other components of the update.
             NotificationCenter.default.post(
                 name: NSNotification.Name("ConversationUpdated"),
                 object: nil,
@@ -414,14 +413,13 @@ class ChatHistoryViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newText = alert.textFields?.first?.text {
-                // Because SwiftData models are reference classes, editing these properties
-                // directly queues the update in the local database.
+                // Update the message content directly in the model.
                 self.histconversationData?.messages?[indexPath.row].text = newText
                 self.histconversationData?.messages?[indexPath.row].isEdited = true
                 
                 self.collectionView.reloadItems(at: [indexPath])
                 
-                // This will now trigger DataManager.shared.saveData() automatically!
+                // Save changes and broadcast completion.
                 self.notifyDataChanged()
             }
         })

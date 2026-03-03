@@ -2,7 +2,8 @@
 //  QuickActionCell.swift
 //  ANSD_APP
 //
-//  Created by Dhiraj Bodake on 16/12/25.
+//  Created by Daiwiik Harihar on 16/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit

@@ -1,17 +1,25 @@
+//
+//  SpeechManager.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import Foundation
 import Speech
 
 class SpeechManager: NSObject {
-    // 1. Change to optional 'var' so we can re-initialize it with different languages
+    // Declared as an optional var to allow re-initialization with different language locales.
     private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
 
-    // 2. Added languageCode parameter (e.g., "en-US", "hi-IN", "es-ES")
+    // Begins speech recognition using the specified BCP-47 language code (e.g., "en-US", "hi-IN").
     func startTranscribing(languageCode: String, completion: @escaping (String) -> Void) {
         
-        // 3. Initialize with the chosen language
+        // Initializes the recognizer with the user-specified locale.
         speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: languageCode))
         
         guard let recognizer = speechRecognizer, recognizer.isAvailable else {

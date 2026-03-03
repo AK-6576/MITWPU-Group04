@@ -1,16 +1,21 @@
 //
-//  CalendarViewController.swift
+//  CalenderViewController.swift
 //  ANSD_APP
 //
-//  Created by SDC-USER on 06/01/26.
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 
+// MARK: - Calendar Delegate
+// Protocol for notifying the delegate when a date is selected from the calendar.
 protocol CalendarDelegate: AnyObject {
     func didSelectDate(_ date: Date)
 }
 
+// MARK: - Calendar View Controller
+// Manages the calendar interface, allowing users to filter conversations by date.
 class CalenderViewController: UIViewController {
 
     @IBOutlet weak var datePicker: UIDatePicker!

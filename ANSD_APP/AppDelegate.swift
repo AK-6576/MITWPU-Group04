@@ -1,3 +1,11 @@
+//
+//  AppDelegate.swift
+//  ANSD_APP
+//
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 import FirebaseCore
 import SwiftData
@@ -7,7 +15,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var sharedModelContainer: ModelContainer?
 
-    // NEW: A quick helper so any View Controller can get the database scratchpad
+    // MARK: - Core Data Context
+    // Global access point for the SwiftData persistent context, enabling database operations across the application.
     static var dbContext: ModelContext? {
         guard let delegate = UIApplication.shared.delegate as? AppDelegate else { return nil }
         return delegate.sharedModelContainer?.mainContext

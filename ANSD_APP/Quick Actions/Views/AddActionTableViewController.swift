@@ -2,16 +2,21 @@
 //  AddActionTableViewController.swift
 //  ANSD_APP
 //
-//  Created by Dhiraj Bodake on 05/1/26.
+//  Created by Anshul Kumaria on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 import UserNotifications
 
+// MARK: - Add Action Delegate
+// Protocol for notifying the delegate when a new action is created.
 protocol AddActionDelegate: AnyObject {
     func didCreateNewAction(_ action: RoutineConversation)
 }
 
+// MARK: - Add Action View Controller
+// Manages the interface for adding new actions, including input validation and data persistence.
 class AddActionTableViewController: UITableViewController, ParticipantsSelectionDelegate {
 
     @IBOutlet weak var nameTextField: UITextField!

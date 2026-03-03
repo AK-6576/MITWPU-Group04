@@ -1,3 +1,11 @@
+//
+//  QuickActionsViewController.swift
+//  ANSD_APP
+//
+//  Created by Daiwiik Harihar on 05/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
 // MARK: - Quick Actions View Controller

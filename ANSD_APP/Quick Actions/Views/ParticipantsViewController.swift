@@ -2,8 +2,9 @@
 //  ParticipantsViewController.swift
 //  ANSD_APP
 //
-//  Created by Daiwiik Harihar on 05/1/26.
-
+//  Created by Daiwiik Harihar on 07/01/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
 import UIKit
 import Contacts
 

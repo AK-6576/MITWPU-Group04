@@ -1,8 +1,9 @@
 //
-//  ContactCell..swift
+//  ContactCell.swift
 //  ANSD_APP
 //
 //  Created by Anshul Kumaria on 07/01/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit

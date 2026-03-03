@@ -1,3 +1,11 @@
+//
+//  ActionChatCell.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 05/02/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 
 // MARK: - 1. Base Chat Cell (The Engine)

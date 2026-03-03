@@ -2,7 +2,8 @@
 //  TextCleanupManager.swift
 //  ANSD_APP
 //
-//  Created by Anshul Kumaria on 25/11/25.
+//  Created by Anshul Kumaria on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import Foundation
@@ -15,7 +16,7 @@ class TextCleanupManager {
     private var workItems: [Int: DispatchWorkItem] = [:]
     
     // CHANGED: 1.0 second delay after stopping speaking
-    private let delay: TimeInterval = 1.0
+    private let delay: TimeInterval = 0.3
     
     // MARK: - API
     

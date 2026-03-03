@@ -2,7 +2,9 @@
 //  HomeViewController.swift
 //  ANSD_APP
 //
-
+//  Created by Daiwiik Harihar on 22/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
 import UIKit
 import UserNotifications
 import Foundation
@@ -31,7 +33,6 @@ class HomeViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileImageUpdate(_:)), name: NSNotification.Name("ProfileImageUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileNameUpdate(_:)), name: NSNotification.Name("ProfileNameUpdated"), object: nil)
         
-        // --- ONLY NECESSARY CHANGE: Listen for the save signal ---
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
     }
     

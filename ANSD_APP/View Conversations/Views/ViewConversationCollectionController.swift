@@ -1,13 +1,14 @@
 //
-//  ViewConversationCollection.swift
-//  Group_4-ANSD_App
+//  ViewConversationCollectionController.swift
+//  ANSD_APP
 //
-//  Created by Omkar Varpe on 26/11/25.
+//  Created by Omkar Varpe on 15/12/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 import Foundation
-import SwiftData // Added for SwiftData compatibility
+import SwiftData
 
 class SimpleMonthHeaderView: UICollectionReusableView {
     let label = UILabel()
@@ -74,7 +75,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         let selectedConversation = conversationSections[indexPath.section].conversations[indexPath.row]
         
         guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistory2ViewController") as? ChatHistoryViewController else {
-            print("DIAGNOSTIC FAILURE: Could not instantiate chatHistory2ViewController. Check Storyboard ID.")
+            print("Error: Could not instantiate ChatHistoryViewController from storyboard.")
             return
         }
         
@@ -98,16 +99,12 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             let pinImage = isPinned ? UIImage(systemName: "pin.slash") : UIImage(systemName: "pin")
             
             let pinAction = UIAction(title: pinTitle, image: pinImage) { action in
-                // 1. Get the object reference
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
                 
-                // 2. Toggle the pin (updates the SwiftData model in memory)
+                // Toggle pinning status and persist change.
                 updatedConvo.isPinned.toggle()
-                
-                // 3. Commit the change to the database directly
                 DataManager.shared.saveData()
                 
-                // 4. Reload UI
                 self.collectionView.reloadItems(at: [indexPath])
             }
             
@@ -134,16 +131,12 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
             if let newName = alert.textFields?.first?.text, !newName.isEmpty {
-                // 1. Get the object reference
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
                 
-                // 2. Update the property
+                // Update title and persist change.
                 updatedConvo.title = newName
-                
-                // 3. Commit change to database
                 DataManager.shared.saveData()
                 
-                // 4. Reload UI
                 self.collectionView.reloadItems(at: [indexPath])
             }
         }
@@ -168,7 +161,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     func performSingleDeletion(at indexPath: IndexPath) {
         let convoToDelete = conversationSections[indexPath.section].conversations[indexPath.row]
         
-        // 1. Delete permanently from DataManager's Context
+        // Remove from persistent storage.
         DataManager.shared.deleteConversation(convoToDelete)
         
         // 2. Remove from the UI gracefully
