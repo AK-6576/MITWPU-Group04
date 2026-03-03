@@ -287,7 +287,8 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             } else {
                 guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
                 let item = quickActions[indexPath.row]
-                let isLastRow = indexPath.row == min(quickActions.count, 3) - 1
+                // Corrected isLastRow logic to handle more than 3 items correctly
+                let isLastRow = indexPath.row == quickActions.count - 1
                 cell.configure(with: item, isLast: isLastRow)
                 cell.onInfoTapped = { [weak self] in self?.presentInfoScreen(for: item) }
                 return cell
@@ -303,42 +304,33 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 return emptyCell
             } else {
                 guard let cell = tableView.dequeueReusableCell(withIdentifier: "ConversationCardCell", for: indexPath) as? ConversationCardCell else { return UITableViewCell() }
-                
                 let historyItem = recentHistory[indexPath.row]
-
                 cell.configure(with: historyItem)
-                
                 return cell
             }
         }
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            tableView.deselectRow(at: indexPath, animated: true)
-            
-            if indexPath.section == 0 {
-                if quickActions.isEmpty { return }
-                
-                let item = quickActions[indexPath.row]
-                var segueID = ""
-                
-                switch item.categoryTitle {
-                case "Office": segueID = "office"
-                case "Family": segueID = "family"
-                case "Friends": segueID = "friends"
-                default: return
-                }
-                
-                performSegue(withIdentifier: segueID, sender: item)
-                
-            } else {
-                if recentHistory.isEmpty { return }
-                
-                let historyItem = recentHistory[indexPath.row]
-                
-                performSegue(withIdentifier: "viewConvoCell", sender: historyItem)
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        if indexPath.section == 0 {
+            if quickActions.isEmpty { return }
+            let item = quickActions[indexPath.row]
+            var segueID = ""
+            switch item.categoryTitle {
+            case "Office": segueID = "office"
+            case "Family": segueID = "family"
+            case "Friends": segueID = "friends"
+            default: return
             }
+            performSegue(withIdentifier: segueID, sender: item)
+        } else {
+            if recentHistory.isEmpty { return }
+            let historyItem = recentHistory[indexPath.row]
+            performSegue(withIdentifier: "viewConvoCell", sender: historyItem)
         }
+    }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard indexPath.section == 0 && !quickActions.isEmpty else { return nil }
@@ -352,8 +344,6 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             
             if self.quickActions.isEmpty {
                 self.tableView.reloadSections(IndexSet(integer: 0), with: .fade)
-            } else if self.quickActions.count >= 3 {
-                self.tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
             } else {
                 self.tableView.deleteRows(at: [indexPath], with: .automatic)
             }
@@ -372,5 +362,80 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
         config.performsFirstActionWithFullSwipe = false
         return config
+    }
+    
+    // MARK: - Context Menu (Same as ViewConversationCollection)
+    func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+        guard indexPath.section == 1 && !recentHistory.isEmpty else { return nil }
+        
+        let historyItem = recentHistory[indexPath.row]
+        
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+            
+            // 1. PIN ACTION
+            let isPinned = historyItem.isPinned
+            let pinTitle = isPinned ? "Unpin" : "Pin"
+            let pinImage = isPinned ? UIImage(systemName: "pin.slash") : UIImage(systemName: "pin")
+            let pinAction = UIAction(title: pinTitle, image: pinImage) { _ in
+                historyItem.isPinned.toggle()
+                DataManager.shared.saveData()
+                tableView.reloadRows(at: [indexPath], with: .automatic)
+            }
+            
+            // 2. RENAME ACTION
+            let renameAction = UIAction(title: "Rename", image: UIImage(systemName: "pencil")) { _ in
+                self.showRenameAlert(for: indexPath)
+            }
+            
+            // 3. DELETE ACTION
+            let deleteAction = UIAction(title: "Delete", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
+                self.showDeleteConfirmation(for: indexPath)
+            }
+            
+            return UIMenu(title: "", children: [pinAction, renameAction, deleteAction])
+        }
+    }
+    
+    // MARK: - Helper Methods for Context Menu
+    func showRenameAlert(for indexPath: IndexPath) {
+        let historyItem = recentHistory[indexPath.row]
+        let alert = UIAlertController(title: "Rename Conversation", message: nil, preferredStyle: .alert)
+        
+        alert.addTextField { textField in
+            textField.text = historyItem.title
+            textField.autocapitalizationType = .sentences
+        }
+        
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
+                historyItem.title = newName
+                DataManager.shared.saveData()
+                self.tableView.reloadRows(at: [indexPath], with: .automatic)
+            }
+        }
+        
+        alert.addAction(saveAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    func showDeleteConfirmation(for indexPath: IndexPath) {
+        let alert = UIAlertController(title: "Delete Conversation?", message: "This action cannot be undone.", preferredStyle: .alert)
+        
+        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
+            let historyItem = self.recentHistory[indexPath.row]
+            DataManager.shared.deleteConversation(historyItem)
+            self.recentHistory.remove(at: indexPath.row)
+            
+            if self.recentHistory.isEmpty {
+                self.tableView.reloadSections(IndexSet(integer: 1), with: .automatic)
+            } else {
+                self.tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
+        }
+        
+        alert.addAction(deleteAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
     }
 }
