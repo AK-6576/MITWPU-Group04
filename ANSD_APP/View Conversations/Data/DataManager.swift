@@ -75,4 +75,33 @@ class DataManager {
             print("DataManager: Failed to save context. Error: \(error.localizedDescription)")
         }
     }
+    
+    // 6. FETCH BY DATE: Fetches conversations for a specific day
+    func fetchConversations(for date: Date) -> [Conversation] {
+        guard let context = context else { return [] }
+
+        // Define the start and end of the selected day
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return [] }
+        let fallbackDate = Date.distantPast
+
+        // Fetch using a Predicate to filter at the database level
+        let descriptor = FetchDescriptor<Conversation>(
+            predicate: #Predicate {
+                ($0.calendarDate ?? fallbackDate) >= startOfDay &&
+                ($0.calendarDate ?? fallbackDate) < endOfDay
+            },
+            sortBy: [SortDescriptor(\.calendarDate, order: .reverse)]
+        )
+
+        do {
+            let fetchedData = try context.fetch(descriptor)
+            print("DataManager: 📅 Successfully fetched \(fetchedData.count) conversations for date: \(date)")
+            return fetchedData
+        } catch {
+            print("DataManager: ❌ Failed to fetch filtered data. Error: \(error.localizedDescription)")
+            return []
+        }
+    }
 }

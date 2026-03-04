@@ -8,28 +8,21 @@
 
 import UIKit
 
-// MARK: - Calendar Delegate
-// Protocol for notifying the delegate when a date is selected from the calendar.
 protocol CalendarDelegate: AnyObject {
     func didSelectDate(_ date: Date)
 }
 
-// MARK: - Calendar View Controller
-// Manages the calendar interface, allowing users to filter conversations by date.
 class CalenderViewController: UIViewController {
 
     @IBOutlet weak var datePicker: UIDatePicker!
-    
     weak var delegate: CalendarDelegate?
 
-    // Function - Initializes the view lifecycle, calling setup methods for the sheet and date picker.
     override func viewDidLoad() {
         super.viewDidLoad()
         setupSheet()
-
+        datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
     }
 
-    // Function - Configures the modal presentation style to be a medium detent (half-screen) with a visible grabber.
     private func setupSheet() {
         if let sheet = sheetPresentationController {
             sheet.detents = [.medium()]
@@ -37,18 +30,15 @@ class CalenderViewController: UIViewController {
         }
     }
 
-
-    // Function - Delegate method triggered when the user selects a date, passing the date back to the main controller.
     @objc private func dateChanged(_ sender: UIDatePicker) {
+        // 1. Send the date to the delegate
         delegate?.didSelectDate(sender.date)
-    }
-
-    // Function - Dismisses the calendar view controller when the exit button is tapped.
-    @IBAction func exitButtonTapped(_ sender: UIButton) {
+        // 2. Immediately dismiss the calendar
         dismiss(animated: true)
     }
-    
-    
-    
-    
+
+    @IBAction func exitButtonTapped(_ sender: UIButton) {
+        // Just close the calendar without triggering a search
+        dismiss(animated: true)
+    }
 }

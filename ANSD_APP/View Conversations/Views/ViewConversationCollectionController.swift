@@ -23,7 +23,6 @@ class SimpleMonthHeaderView: UICollectionReusableView {
         setupView()
     }
     
-    // Function - Configures the header view layout, adding the label and setting constraints.
     private func setupView() {
         addSubview(label)
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -48,6 +47,9 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     var conversationSections: [ConversationSection] = []
     var originalBottomConstant: CGFloat = 0
     
+    // Tracks the current filter
+    var activeSelectedDate: Date? = nil
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupNavBar()
@@ -59,7 +61,12 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        loadConversationData()
+       
+        // ONLY fetch everything if we are NOT currently filtering by a calendar date
+        if activeSelectedDate == nil {
+            loadConversationData()
+        }
+        
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
@@ -74,37 +81,24 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         
         let selectedConversation = conversationSections[indexPath.section].conversations[indexPath.row]
         
-        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistory2ViewController") as? ChatHistoryViewController else {
-            print("Error: Could not instantiate ChatHistoryViewController from storyboard.")
-            return
-        }
-        
+        guard let chatVC = self.storyboard?.instantiateViewController(withIdentifier: "ChatHistory2ViewController") as? ChatHistoryViewController else { return }
         chatVC.histconversationData = selectedConversation
         
-        guard let navController = self.navigationController else {
-            print("Error: Navigation Controller missing")
-            return
-        }
-        
+        guard let navController = self.navigationController else { return }
         navController.pushViewController(chatVC, animated: true)
         searchBar.resignFirstResponder()
     }
     
     func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
-        
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggestedActions in
-            
             let isPinned = self.conversationSections[indexPath.section].conversations[indexPath.row].isPinned
             let pinTitle = isPinned ? "Unpin" : "Pin"
             let pinImage = isPinned ? UIImage(systemName: "pin.slash") : UIImage(systemName: "pin")
             
             let pinAction = UIAction(title: pinTitle, image: pinImage) { action in
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
-                
-                // Toggle pinning status and persist change.
                 updatedConvo.isPinned.toggle()
                 DataManager.shared.saveData()
-                
                 self.collectionView.reloadItems(at: [indexPath])
             }
             
@@ -123,24 +117,18 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     func showRenameAlert(for indexPath: IndexPath) {
         let currentTitle = conversationSections[indexPath.section].conversations[indexPath.row].title
         let alert = UIAlertController(title: "Rename Conversation", message: nil, preferredStyle: .alert)
-        
         alert.addTextField { textField in
             textField.text = currentTitle
             textField.autocapitalizationType = .sentences
         }
-        
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
             if let newName = alert.textFields?.first?.text, !newName.isEmpty {
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
-                
-                // Update title and persist change.
                 updatedConvo.title = newName
                 DataManager.shared.saveData()
-                
                 self.collectionView.reloadItems(at: [indexPath])
             }
         }
-        
         alert.addAction(saveAction)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
@@ -148,11 +136,9 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     
     func showDeleteConfirmation(for indexPath: IndexPath) {
         let alert = UIAlertController(title: "Delete Conversation?", message: "This action cannot be undone.", preferredStyle: .alert)
-        
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
             self.performSingleDeletion(at: indexPath)
         }
-        
         alert.addAction(deleteAction)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
@@ -160,15 +146,11 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     
     func performSingleDeletion(at indexPath: IndexPath) {
         let convoToDelete = conversationSections[indexPath.section].conversations[indexPath.row]
-        
-        // Remove from persistent storage.
         DataManager.shared.deleteConversation(convoToDelete)
         
-        // 2. Remove from the UI gracefully
         collectionView.performBatchUpdates({
             self.conversationSections[indexPath.section].conversations.remove(at: indexPath.row)
             self.collectionView.deleteItems(at: [indexPath])
-            
             if self.conversationSections[indexPath.section].conversations.isEmpty {
                 self.conversationSections.remove(at: indexPath.section)
                 self.collectionView.deleteSections(IndexSet(integer: indexPath.section))
@@ -176,7 +158,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         }, completion: nil)
     }
     
-    // Function - Configures the search bar’s visual style and enables the bookmark button for the calendar.
     func setupSearchBarUI() {
         searchBar.backgroundImage = UIImage()
         searchBar.barTintColor = .clear
@@ -217,19 +198,13 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         let targetHeight = keyboardFrame.height
         let distanceToLift = targetHeight - view.safeAreaInsets.bottom
         
-        UIView.animate(
-            withDuration: duration,
-            delay: 0,
-            options: [animationCurve],
-            animations: {
-                self.searchBarBottomConstraint.constant = -distanceToLift + self.originalBottomConstant
-                let bottomInset = distanceToLift + self.searchBar.frame.height + 10
-                self.collectionView.contentInset.bottom = bottomInset
-                self.collectionView.verticalScrollIndicatorInsets.bottom = bottomInset
-                self.view.layoutIfNeeded()
-            },
-            completion: nil
-        )
+        UIView.animate(withDuration: duration, delay: 0, options: [animationCurve], animations: {
+            self.searchBarBottomConstraint.constant = -distanceToLift + self.originalBottomConstant
+            let bottomInset = distanceToLift + self.searchBar.frame.height + 10
+            self.collectionView.contentInset.bottom = bottomInset
+            self.collectionView.verticalScrollIndicatorInsets.bottom = bottomInset
+            self.view.layoutIfNeeded()
+        }, completion: nil)
     }
     
     @objc func keyboardWillHide(notification: NSNotification) {
@@ -240,18 +215,12 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         let animationCurve = UIView.AnimationOptions(rawValue: curveValue.uintValue << 16)
         let originalBottomPadding: CGFloat = 100.0
         
-        UIView.animate(
-            withDuration: duration,
-            delay: 0,
-            options: [animationCurve],
-            animations: {
-                self.searchBarBottomConstraint.constant = self.originalBottomConstant
-                self.collectionView.contentInset.bottom = originalBottomPadding
-                self.collectionView.verticalScrollIndicatorInsets.bottom = originalBottomPadding
-                self.view.layoutIfNeeded()
-            },
-            completion: nil
-        )
+        UIView.animate(withDuration: duration, delay: 0, options: [animationCurve], animations: {
+            self.searchBarBottomConstraint.constant = self.originalBottomConstant
+            self.collectionView.contentInset.bottom = originalBottomPadding
+            self.collectionView.verticalScrollIndicatorInsets.bottom = originalBottomPadding
+            self.view.layoutIfNeeded()
+        }, completion: nil)
     }
     
     func setupCollectionView() {
@@ -267,17 +236,14 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             layout.estimatedItemSize = .zero
             layout.minimumLineSpacing = 8
             let horizontalPadding: CGFloat = 16.0
-            let topSpacing: CGFloat = 0
             let bottomSpacing: CGFloat = 12.0
-            layout.sectionInset = UIEdgeInsets(top: topSpacing, left: horizontalPadding, bottom: bottomSpacing, right: horizontalPadding)
+            layout.sectionInset = UIEdgeInsets(top: 0, left: horizontalPadding, bottom: bottomSpacing, right: horizontalPadding)
         }
-        
         collectionView.contentInset.bottom = 100
     }
     
     func loadConversationData() {
         let allConvos = DataManager.shared.fetchConversations()
-        
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM"
         
@@ -285,9 +251,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         var sectionTitles: [String] = []
         
         for convo in allConvos {
-            
             let title = convo.calendarDate != nil ? formatter.string(from: convo.calendarDate!) : "Recent History"
-            
             if sectionsDict[title] == nil {
                 sectionsDict[title] = []
                 sectionTitles.append(title)
@@ -300,14 +264,35 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             loadedSections.append(ConversationSection(title: title, conversations: sectionsDict[title]!))
         }
         
-        // Show an empty state title if there are no conversations yet
         if loadedSections.isEmpty {
-            loadedSections = [ConversationSection(title: "No History Yet", conversations: [])]
+            loadedSections = [ConversationSection(title: "No Conversations Found.", conversations: [])]
         }
         
         allConversationSections = loadedSections
         conversationSections = loadedSections
         collectionView.reloadData()
+    }
+    
+    // UPDATED: Properly resets the title and rebuilds the calendar button
+    @objc func clearFilter() {
+        // 1. Reset the active date
+        self.activeSelectedDate = nil
+        
+        // 2. Reset the navigation bar UI safely using self.title
+        self.title = "View Conversations"
+        
+        // 3. Rebuild the Calendar button and connect it back to your Storyboard action
+        let calendarIcon = UIImage(systemName: "calendar")
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: calendarIcon,
+            style: .plain,
+            target: self,
+            action: #selector(calenderbuttontapped(_:))
+        )
+        
+        // 4. Reload all data
+        self.loadConversationData()
+     
     }
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -322,7 +307,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "conversationCell", for: indexPath) as? ConversationCollectionViewCell else {
             return UICollectionViewCell()
         }
-        
         let item = conversationSections[indexPath.section].conversations[indexPath.row]
         cell.configure(with: item)
         return cell
@@ -352,7 +336,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             let lowercasedSearchText = searchText.lowercased()
             self.conversationSections = self.allConversationSections.compactMap { section in
                 let filtered = section.conversations.filter { convo in
-                    // Updated .description to .details
                     convo.title.lowercased().contains(lowercasedSearchText) ||
                     convo.details.lowercased().contains(lowercasedSearchText)
                 }
@@ -372,11 +355,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
     
     @IBAction func calenderbuttontapped(_ sender: Any) {
-        guard let calendarVC = self.storyboard?.instantiateViewController(withIdentifier: "calenderViewController") as? CalenderViewController else {
-            print("Error: Could not find calenderViewController in Storyboard. Check the Storyboard ID.")
-            return
-        }
-        
+        guard let calendarVC = self.storyboard?.instantiateViewController(withIdentifier: "calenderViewController") as? CalenderViewController else { return }
         calendarVC.delegate = self
         
         if let sheet = calendarVC.sheetPresentationController {
@@ -384,7 +363,6 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             sheet.prefersGrabberVisible = true
             sheet.preferredCornerRadius = 24
         }
-        
         present(calendarVC, animated: true)
     }
 }
@@ -392,32 +370,33 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
 extension ViewConversationCollection: CalendarDelegate {
     
     func didSelectDate(_ date: Date) {
+       
+        
+        self.activeSelectedDate = date
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         let displayDate = formatter.string(from: date)
         
-        self.conversationSections = self.allConversationSections.compactMap { section in
-            let filtered = section.conversations.filter { convo in
-                guard let convoDate = convo.calendarDate else { return false }
-                return Calendar.current.isDate(convoDate, inSameDayAs: date)
-            }
-            return filtered.isEmpty ? nil : ConversationSection(title: section.title, conversations: filtered)
+        // Ask DataManager to fetch only the relevant records
+        let filteredConversations = DataManager.shared.fetchConversations(for: date)
+        
+        // Update UI state
+        if filteredConversations.isEmpty {
+            self.conversationSections = [ConversationSection(title: "No chats on \(displayDate)", conversations: [])]
+        } else {
+            self.conversationSections = [ConversationSection(title: displayDate, conversations: filteredConversations)]
         }
-
+        
         self.collectionView.reloadData()
-        self.navigationItem.title = displayDate
+        
+        // UPDATED: Update Navigation Bar safely using self.title and boldly stylized Clear button
+        self.title = displayDate
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Clear",
             style: .plain,
             target: self,
             action: #selector(clearFilter)
         )
-    }
     
-    @objc func clearFilter() {
-        self.conversationSections = self.allConversationSections
-        self.navigationItem.title = "View Conversations"
-        self.navigationItem.rightBarButtonItem = nil
-        self.collectionView.reloadData()
     }
 }

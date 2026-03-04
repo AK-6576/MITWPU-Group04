@@ -25,7 +25,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     @IBOutlet weak var profileImageView: UIImageView!
     @IBOutlet weak var firstNameTextField: UITextField!
     @IBOutlet weak var lastNameTextField: UITextField!
-    @IBOutlet weak var impairmentSlider: UISlider!
     
     var incomingName: String?
     var incomingImage: UIImage?

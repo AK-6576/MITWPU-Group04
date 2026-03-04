@@ -58,8 +58,23 @@ class QuickCaptioningViewController: UIViewController,
         bindDiarizer()
         setupLocation()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.promptForEnrollment()
+        checkCalibrationStatus()
+    }
+            
+            // MARK: - Voice Profile Check
+    private func checkCalibrationStatus() {
+        if let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byId: 0) {
+            // Profile exists! Load it into the Diarizer memory
+            diarizer.speakerProfiles[0] = savedProfile.embedding
+            diarizer.speakerNames[0] = savedProfile.name
+            hasEnrolled = true
+            
+            startSession()
+        } else {
+            // No profile exists. Trigger the Calibration Prompt
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.promptForEnrollment()
+            }
         }
     }
 
@@ -81,7 +96,8 @@ class QuickCaptioningViewController: UIViewController,
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
         let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(loc) { placemarks, error in
+        geocoder.reverseGeocodeLocation(loc) { [weak self] placemarks, error in
+            guard let self = self else { return }
             if let place = placemarks?.first {
                 let city = place.locality ?? ""
                 let country = place.country ?? ""
@@ -118,10 +134,20 @@ class QuickCaptioningViewController: UIViewController,
         let alert = UIAlertController(title: "Voice Saved", message: "What is your name?", preferredStyle: .alert)
         alert.addTextField { tf in tf.placeholder = "Your Name"; tf.autocapitalizationType = .words }
         alert.addAction(UIAlertAction(title: "Save & Start", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            
             let name = alert.textFields?.first?.text ?? "Me"
-            self?.diarizer.setUserName(name)
-            self?.hasEnrolled = true
-            self?.startSession()
+            
+            // 1. Update the Diarizer locally
+            self.diarizer.setUserName(name)
+            
+            // 2. Extract the mathematical vector and Save Permanently to SwiftData!
+            if let userVector = self.diarizer.speakerProfiles[0] {
+                VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: name, embedding: userVector)
+            }
+            
+            self.hasEnrolled = true
+            self.startSession()
         })
         present(alert, animated: true)
     }
@@ -375,6 +401,7 @@ class QuickCaptioningViewController: UIViewController,
                 let transcript = self.messages.toTranscriptString()
                 
                 summaryVC.rawTranscriptText = transcript
+                summaryVC.rawMessages = self.messages
                 summaryVC.conversationTitle = "Conversation 1"
                 
                 let now = Date()

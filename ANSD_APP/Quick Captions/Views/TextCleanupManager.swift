@@ -16,7 +16,7 @@ class TextCleanupManager {
     private var workItems: [Int: DispatchWorkItem] = [:]
     
     // CHANGED: 1.0 second delay after stopping speaking
-    private let delay: TimeInterval = 0.3
+    private let delay: TimeInterval = 1.0
     
     // MARK: - API
     

@@ -27,7 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         FirebaseApp.configure()
         
         do {
-            sharedModelContainer = try ModelContainer(for: Conversation.self, Message.self, Participant.self)
+            sharedModelContainer = try ModelContainer(for: Conversation.self, Message.self, Participant.self, VoiceProfile.self)
             print("SwiftData: Successfully initialized the ModelContainer.")
         } catch {
             print("SwiftData: Failed to initialize ModelContainer. Error: \(error.localizedDescription)")

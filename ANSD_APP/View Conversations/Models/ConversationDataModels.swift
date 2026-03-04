@@ -13,11 +13,12 @@ import SwiftData
 // MARK: - Participant Model
 @Model
 class Participant {
+    @Attribute(.unique) var id: UUID = UUID()
     var name: String
     var summary: String
     var image: String
-    
-    // Optional: Reference back to the conversation
+  
+  
     var conversation: Conversation?
     
     init(name: String, summary: String, image: String) {
@@ -39,7 +40,6 @@ class Message {
     var timestamp: Date
     var isEdited: Bool
     
-    // Optional: Reference back to the parent conversation
     var conversation: Conversation?
     
     init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false, isEdited: Bool = false) {
