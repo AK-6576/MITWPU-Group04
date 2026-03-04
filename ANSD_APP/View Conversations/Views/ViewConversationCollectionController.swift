@@ -57,6 +57,18 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         setupSearchBarUI()
         loadConversationData()
         originalBottomConstant = searchBarBottomConstraint.constant
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
+    }
+    
+    @objc func handleDataUpdate() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadConversationData()
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     override func viewWillAppear(_ animated: Bool) {

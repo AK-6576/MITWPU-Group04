@@ -18,9 +18,9 @@ class QuickActionsRepository {
 
     private var viewOnlyItems: [RoutineConversation] = []
     
-    // We have scrubbed the dummy data here. It now starts empty.
+    // Initializer loads existing data from disk to ensure persistence.
     private init() {
-        self.quickActionBubbles = []
+        loadFromDisk()
     }
     
     // MARK: - Data Access Methods
@@ -40,16 +40,48 @@ class QuickActionsRepository {
     
     func addAction(_ action: RoutineConversation) {
         quickActionBubbles.append(action)
+        saveToDisk()
+        notifyObservers()
     }
 
     func deleteAction(_ action: RoutineConversation) {
         self.quickActionBubbles.removeAll { $0.id == action.id }
+        saveToDisk()
+        notifyObservers()
     }
 
     func updateAction(_ action: RoutineConversation) {
         if let index = self.quickActionBubbles.firstIndex(where: { $0.id == action.id }) {
             self.quickActionBubbles[index] = action
+            saveToDisk()
+            notifyObservers()
         }
+    }
+    
+    // MARK: - Persistence Logic
+    
+    private func saveToDisk() {
+        do {
+            let data = try JSONEncoder().encode(quickActionBubbles)
+            UserDefaults.standard.set(data, forKey: "saved_quick_actions")
+        } catch {
+            print("QuickActionsRepository: Failed to save data. Error: \(error)")
+        }
+    }
+    
+    private func loadFromDisk() {
+        if let data = UserDefaults.standard.data(forKey: "saved_quick_actions") {
+            do {
+                quickActionBubbles = try JSONDecoder().decode([RoutineConversation].self, from: data)
+                print("QuickActionsRepository: Successfully loaded \(quickActionBubbles.count) actions.")
+            } catch {
+                print("QuickActionsRepository: Failed to load data. Error: \(error)")
+            }
+        }
+    }
+    
+    private func notifyObservers() {
+        NotificationCenter.default.post(name: NSNotification.Name("ActionsUpdated"), object: nil)
     }
     
     private func compareTimes(time1: String, time2: String) -> Bool {
