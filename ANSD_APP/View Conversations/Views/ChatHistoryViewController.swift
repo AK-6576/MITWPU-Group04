@@ -156,7 +156,7 @@ class ChatHistoryViewController: UIViewController {
     var participantsData: [Participant] = []
     
     var transcript: [Message] {
-        return histconversationData?.messages ?? []
+        return (histconversationData?.messages ?? []).sorted { $0.timestamp < $1.timestamp }
     }
 
     // MARK: - AI & State Properties
@@ -262,13 +262,11 @@ class ChatHistoryViewController: UIViewController {
                 currentSection = "NOTES"
                 continue
             }
-            if line.contains("SUMMARY_") && line.contains(":") {
-                let start = line.index(line.startIndex, offsetBy: 8)
-                if let end = line.firstIndex(of: ":") {
-                    let name = String(line[start..<end])
-                    currentSection = name
-                    continue
-                }
+            if let startRange = line.range(of: "SUMMARY_"),
+               let endRange = line.range(of: ":", range: startRange.upperBound..<line.endIndex) {
+                let name = String(line[startRange.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+                currentSection = name
+                continue
             }
             
             if currentSection == "NOTES" {

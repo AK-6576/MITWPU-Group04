@@ -18,6 +18,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     // MARK: - Data Sources
     var conversationTitle = "Conversation 1"
     var rawTranscriptText: String = ""
+    var rawMessages: [QuickCaptionsChat] = []
     var participantsData: [QuickCaptionsParticipantData] = []
     
     // MARK: - Header Data
@@ -357,30 +358,21 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
         }
         
-        // 2. Map Transcript back into Message Bubbles
+        // 2. Map Transcript back into Message Bubbles using the rich rawMessages array
         var historyMessages: [Message] = []
-        let lines = rawTranscriptText.components(separatedBy: "\n")
-        
-        for line in lines {
-            let parts = line.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: true)
-            if parts.count == 2 {
-                let sender = String(parts[0]).trimmingCharacters(in: .whitespaces)
-                let text = String(parts[1]).trimmingCharacters(in: .whitespaces)
                 
-                let isIncoming = (sender != UIDevice.current.name && sender != "Me")
-                
-                let msg = Message(
-                    id: UUID(),
-                    text: text,
-                    senderId: sender,
-                    senderName: sender,
-                    isIncoming: isIncoming,
-                    timestamp: Date(),
-                    isHighlighted: false,
-                    isEdited: false
-                )
-                historyMessages.append(msg)
-            }
+        for chat in rawMessages {
+            let msg = Message(
+                id: UUID(),
+                text: chat.text,
+                senderId: String(chat.speakerID ?? -1),
+                senderName: chat.sender,
+                isIncoming: chat.isIncoming, // Pass the exact flag from the diarizer
+                timestamp: Date(),
+                isHighlighted: false,
+                isEdited: false
+            )
+            historyMessages.append(msg)
         }
         
         // 3. Grab the AI notes (or fallback text) and format for the 1-2 liner description
