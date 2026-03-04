@@ -1,78 +1,68 @@
-//
-//  GroupNewViewController.swift
-//  ANSD_APP
-//
-//  Created by Anshul Kumaria on 25/11/25.
-//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
-//
-
 import UIKit
 import AVFoundation
 import Speech
 import Combine
-import FoundationModels // Apple Intelligence
+import FoundationModels
+import FirebaseAuth
+import FirebaseDatabase
 
 class GroupNewViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
-    
-    // MARK: - IBOutlets
-    @IBOutlet weak var collectionView: UICollectionView!
-    @IBOutlet weak var pauseButton: UIButton!
-    @IBOutlet weak var micButton: UIButton!
-    @IBOutlet weak var endButton: UIButton!
-    
-    // MARK: - Properties
-    private let firebase = FirebaseManager.shared
-    private let cleanupManager = TextCleanupManager()
-    
-    // Apple Intelligence Model
-    private let model = SystemLanguageModel.default
-    
-    // Monolithic Speech Engine
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private let audioEngine = AVAudioEngine()
-    
-    // State
-    var isRecording = false
-    var isPaused = false
-    var isHost = true
-    var isRestarting = false
-    var roomCodeShown = false
-    
-    var otherPersonName = "Guest"
-    var messages: [GroupNewChatMessage] = []
-    var currentSessionID: String = ""
-    
-    // Buffering State
-    var consumedTranscriptOffset = 0
-    
-    // Identity
-    let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
-    let myName = UIDevice.current.name
-    
-    // MARK: - Lifecycle
-    override func viewDidLoad() {
-        super.viewDidLoad()
+        @IBOutlet weak var collectionView: UICollectionView!
+        @IBOutlet weak var pauseButton: UIButton!
+        @IBOutlet weak var micButton: UIButton!
+        @IBOutlet weak var endButton: UIButton!
         
-        setupCollectionView()
-        setupSpeechPermissions()
-        setupAudioSession()
+        private let firebase = FirebaseManager.shared
+        private let cleanupManager = TextCleanupManager()
         
-        // Host logic: Create session ID or use existing
-        if currentSessionID.isEmpty {
-            self.currentSessionID = String(Int.random(in: 1000...9999))
-        }
-        self.title = "Room: \(currentSessionID)"
+        private let model = SystemLanguageModel.default
         
-        // Start Firebase
-        startSession()
+        private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+        private var recognitionTask: SFSpeechRecognitionTask?
+        private let audioEngine = AVAudioEngine()
         
-        // Show Room Code Popup
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.showRoomCodeAlert()
-        }
+        // State
+        var isRecording = false
+        var isPaused = false
+        var isHost = true
+        var isRestarting = false
+        var roomCodeShown = false
+        
+        var otherPersonName = "Guest"
+        var messages: [GroupNewChatMessage] = []
+        var currentSessionID: String = ""
+        
+    // --- FIXED PROPERTY DECLARATIONS ---
+    var currentUserID: String {
+        let rawID = Auth.auth().currentUser?.uid ?? UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
+        // Remove illegal characters to prevent Firebase key errors
+        return rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
     }
+        
+        let myName = UIDevice.current.name
+        // -----------------------------------
+        
+        var consumedTranscriptOffset = 0
+    
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            
+            setupCollectionView()
+            setupSpeechPermissions()
+            setupAudioSession()
+            
+            if currentSessionID.isEmpty {
+                self.currentSessionID = String(Int.random(in: 1000...9999))
+            }
+            self.title = "Room: \(currentSessionID)"
+            
+            startSession()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.showRoomCodeAlert()
+            }
+        }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -301,47 +291,56 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         reloadDataAndScroll()
     }
     
-    // MARK: - Firebase Logic
     private func startSession() {
-        firebase.setupSession(id: currentSessionID, isHost: isHost)
+        let hostID = currentUserID
         
-        // --- ADD THIS: Listen for Global End Signal ---
-            firebase.observeSessionStatus { [weak self] status in
-                if status == "ended" {
-                    self?.handleGlobalSessionEnd()
-                }
+        // PRINT THIS: You need this UID to let the other user join your room
+        print("DEBUG: Host UID is: \(hostID)")
+        print("DEBUG: Room ID is: \(currentSessionID)")
+            firebase.registerRoom(code: currentSessionID, hostUID: hostID)
+
+            // 2. Setup the actual room path
+            firebase.setupSession(hostUID: hostID, conversationID: currentSessionID, isHost: isHost)
+        
+        firebase.observeSessionStatus { [weak self] status in
+            guard let self = self else { return }
+            if status == "ended" {
+                self.handleGlobalSessionEnd()
             }
+        }
         
         firebase.observeMessages { [weak self] data in
             guard let self = self else { return }
             
+            // Corrected syntax for the if-let block
             if let text = data["text"] as? String,
                let sender = data["sender"] as? String,
                let senderID = data["senderID"] as? String {
                 
-                // 1. Check for Duplicate (Echo from Self)
                 if senderID == self.currentUserID {
-                    // Find last finalized message
-                    let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && $0.text != "..." && !$0.isIncoming })
+                    let lastFinalized = self.messages.last(where: {
+                        $0.text != "Listening..." && $0.text != "..." && !$0.isIncoming
+                    })
                     if let last = lastFinalized, last.text == text {
-                        // Already exists locally. Ignore.
                         return
                     }
                 }
                 
-                // 2. Handle Bubble Position for others
                 let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
                 
                 if isListeningPresent {
                     self.removeListeningBubble()
                 }
                 
-                // 3. Append
-                let msg = GroupNewChatMessage(text: text, isIncoming: (senderID != self.currentUserID), sender: sender, senderID: senderID)
+                let msg = GroupNewChatMessage(
+                    text: text,
+                    isIncoming: (senderID != self.currentUserID),
+                    sender: sender,
+                    senderID: senderID
+                )
                 self.messages.append(msg)
                 self.reloadDataAndScroll()
                 
-                // 4. Restore Listening
                 if isListeningPresent && self.isRecording {
                     self.addListeningBubble()
                 }
@@ -381,9 +380,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         )
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            // We no longer navigate here.
-            // We just tell Firebase to set status to "ended".
-            // All devices (including this one) will react via the listener in startSession().
             self?.firebase.endSession()
         }
         

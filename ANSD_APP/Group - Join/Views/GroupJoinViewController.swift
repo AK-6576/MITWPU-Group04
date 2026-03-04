@@ -1,16 +1,10 @@
-//
-//  GroupJoinViewController.swift
-//  ANSD_APP
-//
-//  Created by Anshul Kumaria on 25/11/25.
-//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
-//
-
 import UIKit
 import AVFoundation
 import Speech
 import Combine
 import FoundationModels // Apple Intelligence
+import FirebaseAuth    // Required to fix "Cannot find 'Auth' in scope"
+import FirebaseDatabase // Required for Firebase types
 
 class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
     
@@ -45,11 +39,18 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     // Session identifiers passed from the session selection screen.
     var currentSessionID: String = ""
     var sessionTitle: String = "Session"
+    var hostUserIDFromLink: String = ""
     
-    let currentUserID = UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
+    // Fixed: Using a computed property to safely fetch the Firebase UID
+    var currentUserID: String {
+        return Auth.auth().currentUser?.uid ?? UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
+    }
+    
     let myName = UIDevice.current.name
-    
     var otherPersonName = "Host"
+    
+    // Constant for bubble splitting (Adjust based on your UI)
+    let MAX_BUBBLE_CHAR_LIMIT = 150
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -61,8 +62,16 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         self.title = sessionTitle
         
         if !currentSessionID.isEmpty {
-            startSession()
-        }
+                // Only have the code? Find the Host UID first!
+                firebase.findHostID(for: currentSessionID) { [weak self] hostUID in
+                    guard let self = self, let uid = hostUID else {
+                        print("DEBUG: Room code not found.")
+                        return
+                    }
+                    self.hostUserIDFromLink = uid
+                    self.startSession() // Now startSession has the correct UID
+                }
+            }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -113,7 +122,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             recognitionTask = nil
         }
         
-        // Resets the cumulative transcript offset before starting a new recognition cycle.
         consumedTranscriptOffset = 0
         addListeningBubble()
         
@@ -145,57 +153,42 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             if let result = result {
                 let fullString = result.bestTranscription.formattedString
                 
-                // Guards against the recognizer shrinking the transcript due to correction.
                 if self.consumedTranscriptOffset > fullString.count {
                     self.consumedTranscriptOffset = 0
                 }
                 
-                // Slices only the newly recognized text since the last processed position.
                 let index = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
                 let newContent = String(fullString[index...])
                 self.consumedTranscriptOffset = fullString.count
                 
                 guard !newContent.isEmpty else { return }
                 
-                // Update Bubble Logic
                 if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
                     let currentText = self.messages[lastIndex].text
                     let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
                     let combinedText = baseText + newContent
                     
-                    // Splits the transcript into a new bubble when the character limit is reached.
-                    if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                        // Finalizes the current bubble text before starting a new one.
+                    if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
                         self.messages[lastIndex].text = combinedText
                         self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                        
-                        // Sends the finalized bubble text through Apple Intelligence for cleanup.
                         self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
                         
-                        // Appends a new placeholder bubble for continued speech input.
                         let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
                         self.messages.append(newMsg)
                         self.reloadDataAndScroll()
-                        
                     } else {
-                        // JUST APPEND
                         self.messages[lastIndex].text = combinedText
                         self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
                         self.scrollToBottom()
                     }
                     
-                    // SILENCE DETECTION
                     self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
-                        
-                        // Finalize bubble if silence detected
                         if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
                             let finalText = self.messages[finalIndex].text
                             if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
-                                // Trigger AI Cleanup
                                 self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
                             }
                         }
-                        
                         if self.isRecording {
                             self.restartRecordingCycle()
                         }
@@ -214,7 +207,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
-    // MARK: - Apple Intelligence Text Processing
+    // MARK: - Apple Intelligence Logic
     private func processTextWithAppleIntelligence(text: String, index: Int) {
         Task {
             do {
@@ -224,18 +217,14 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 let cleanedText = response.content
                 
                 await MainActor.run {
-                    // Update Local UI
                     if index < self.messages.count {
                         self.messages[index].text = cleanedText
                         self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-                        
-                        // Sends the AI-cleaned text to Firebase for other participants to receive.
                         self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
                     }
                 }
             } catch {
                 print("Apple Intelligence Error: \(error)")
-                // Fallback: Send raw text if AI fails
                 await MainActor.run {
                     self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
                 }
@@ -260,7 +249,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionTask?.cancel()
-        
         removeListeningBubble()
         startRecording()
     }
@@ -273,69 +261,80 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         reloadDataAndScroll()
     }
     
-    private func updateListeningBubble(with text: String) {
-        if let index = messages.lastIndex(where: { !$0.isIncoming }) {
-            messages[index].text = text
-            let indexPath = IndexPath(item: index, section: 0)
-            UIView.performWithoutAnimation {
-                self.GroupJoinCollectionView.reloadItems(at: [indexPath])
-            }
-            scrollToBottom()
-        }
-    }
-    
     private func removeListeningBubble() {
         messages.removeAll { ($0.text == "Listening..." || $0.text == "...") && !$0.isIncoming }
         reloadDataAndScroll()
     }
     
-    // MARK: - Firebase Logic
     private func startSession() {
-        // Initializes the Firebase session node and sets the initial active status.
-        firebase.setupSession(id: currentSessionID, isHost: isHost)
+        let targetUID = hostUserIDFromLink
         
-        // Observes the session status node so any participant can detect when the host ends the session.
+        if targetUID.isEmpty { return }
+
+        // 1. Point the Firebase reference to the HOST'S folder (The Source of Truth)
+        firebase.setupSession(hostUID: targetUID, conversationID: currentSessionID, isHost: isHost)
+        
+        // 2. Mirror the room info to the JOINER'S folder so it shows in their personal history
+        firebase.linkConversationToJoiner(hostUID: targetUID,
+                                         conversationID: currentSessionID,
+                                         conversationTitle: self.sessionTitle)
+        
+        // 3. Start observing (this will now pull all history from the host's folder)
+        setupFirebaseObservers()
+    }
+
+    private func setupFirebaseObservers() {
+        // Observe Session Status (Ended/Active)
         firebase.observeSessionStatus { [weak self] status in
             guard let self = self else { return }
             if status == "ended" {
-                print("DEBUG: Session ended by host. Transitioning to summary.")
+                print("DEBUG: Session ended signal received.")
                 self.handleGlobalSessionEnd()
             }
         }
         
-        // Observes incoming messages from other participants.
+        // Observe Incoming Messages
+        // Firebase Manager's .childAdded will now pull history + new messages
         firebase.observeMessages { [weak self] data in
             guard let self = self else { return }
             
-            if let text = data["text"] as? String,
-               let sender = data["sender"] as? String,
-               let senderID = data["senderID"] as? String {
+            guard let text = data["text"] as? String,
+                  let sender = data["sender"] as? String,
+                  let senderID = data["senderID"] as? String else { return }
                 
-                // Skips messages that were already added locally to prevent duplicate bubbles.
-                if senderID == self.currentUserID {
-                    let lastFinalized = self.messages.last(where: { $0.text != "Listening..." && $0.text != "..." && !$0.isIncoming })
-                    if let last = lastFinalized, last.text == text {
-                        return
-                    }
-                }
-                
-                // Preserves the listening indicator position when an incoming message arrives.
-                let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
-                
-                if isListeningPresent {
-                    self.removeListeningBubble()
-                }
-                
-                // Create and append the new message bubble
-                let msg = GroupJoinChatMessage(text: text, isIncoming: (senderID != self.currentUserID), sender: sender, senderID: senderID)
-                self.messages.append(msg)
-                self.reloadDataAndScroll()
-                
-                // Re-adds the listening bubble if recording was active when the incoming message arrived.
-                if isListeningPresent && self.isRecording {
-                    self.addListeningBubble()
+            // Deduplication: Don't add if we just sent this locally
+            if senderID == self.currentUserID {
+                let lastFinalized = self.messages.last(where: { !$0.isIncoming && $0.text != "..." && $0.text != "Listening..." })
+                if let last = lastFinalized, last.text == text {
+                    return
                 }
             }
+            
+            // Update UI on Main Thread
+            DispatchQueue.main.async {
+                self.processIncomingMessage(text: text, sender: sender, senderID: senderID)
+            }
+        }
+    }
+
+    private func processIncomingMessage(text: String, sender: String, senderID: String) {
+        let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
+        
+        if isListeningPresent {
+            self.removeListeningBubble()
+        }
+        
+        let msg = GroupJoinChatMessage(
+            text: text,
+            isIncoming: (senderID != self.currentUserID),
+            sender: sender,
+            senderID: senderID
+        )
+        self.messages.append(msg)
+        self.reloadDataAndScroll()
+        
+        if isListeningPresent && self.isRecording {
+            self.addListeningBubble()
         }
     }
     
@@ -352,55 +351,35 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     @IBAction func endButtonTapped(_ sender: UIButton) {
-        let alert = UIAlertController(
-            title: "End Session?",
-            message: "This will end the session for all participants and show the summary.",
-            preferredStyle: .alert
-        )
-        
+        let alert = UIAlertController(title: "End Session?", message: "This will end the session for all participants.", preferredStyle: .alert)
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            // Delegates session termination to Firebase so all connected participants are notified.
             self?.firebase.endSession()
         }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
-        
         alert.addAction(endAction)
-        alert.addAction(cancelAction)
-        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
     
     private func handleGlobalSessionEnd() {
-        // 1. Stop local audio engine & mic
         self.stopRecording()
-        
-        // 2. Remove any transient UI elements
         self.removeListeningBubble()
         
-        // 3. Navigate to Summary Screen
         let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
         if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
-            
-            // Passes the final transcript to the summary view controller.
             summaryVC.transcriptMessages = self.messages
             summaryVC.conversationTitle = self.sessionTitle
-            
             let nav = UINavigationController(rootViewController: summaryVC)
             nav.modalPresentationStyle = .pageSheet
             self.present(nav, animated: true)
         }
-        
-        // Removes all Firebase observers to free resources after the session ends.
         firebase.stop()
     }
     
     // MARK: - Helpers
     private func updateMicButtonVisuals(isActive: Bool) {
         let imageName = isActive ? "mic.fill" : "mic.slash.fill"
-        let tintColor = isActive ? UIColor.systemRed : UIColor.label
         GroupJoinMicButton.setImage(UIImage(systemName: imageName), for: .normal)
-        GroupJoinMicButton.tintColor = tintColor
+        GroupJoinMicButton.tintColor = isActive ? .systemRed : .label
     }
     
     private func reloadDataAndScroll() {
@@ -452,5 +431,4 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 50)
     }
-    
 }
