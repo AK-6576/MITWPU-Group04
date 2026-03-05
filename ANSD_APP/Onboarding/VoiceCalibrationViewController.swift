@@ -8,14 +8,17 @@
 
 import UIKit
 import AVFoundation
+import CoreML
+import Accelerate
 
 // MARK: - Calibration Phase
-// Mirrors Siri's "Hey Siri" setup: one tap starts all three sentences back-to-back.
 private enum CalibrationPhase {
     case ready                  // Waiting for the user to tap once
     case countdown(Int)         // 3-2-1 countdown before recording starts
     case recording(Int)         // Actively recording sentence at index
+    case verifying(Int)         // Processing & verifying voice after a sentence
     case betweenSentences(Int)  // Brief pause before the next sentence
+    case mismatch               // Voice mismatch detected — retry
     case finished               // All done — show Finish button
 }
 
@@ -42,6 +45,18 @@ class VoiceCalibrationViewController: UIViewController {
     private var audioBars: [UIView] = []
     private let barCount = 28
 
+    // MARK: - ML Model
+    private var model: VL1004?
+    private let requiredSamples = 96000  // 6 seconds × 16kHz
+    private let similarityThreshold: Float = 0.62
+
+    // MARK: - Voice Embeddings
+    private var sentenceEmbeddings: [[Float]] = []
+    
+    // MARK: - Sentence Status Indicators
+    private var statusLabels: [UILabel] = []
+    private var statusStack: UIStackView!
+
     // MARK: - Data
     private let sentences = [
         "What is the weather going to be like today?",
@@ -55,9 +70,24 @@ class VoiceCalibrationViewController: UIViewController {
         super.viewDidLoad()
         setupCard()
         setupVisualizer()
+        setupSentenceStatusIndicators()
+        setupMLModel()
         requestMicrophoneAccess()
         updatePromptText(index: 0)
         phase = .ready
+    }
+
+    // MARK: - ML Model Setup
+
+    private func setupMLModel() {
+        let config = MLModelConfiguration()
+        config.computeUnits = .all
+        do {
+            model = try VL1004(configuration: config)
+            print("VoiceCalibration: VL1004 model loaded successfully")
+        } catch {
+            print("VoiceCalibration: Failed to load VL1004 model — \(error)")
+        }
     }
 
     // MARK: - UI Setup
@@ -100,6 +130,61 @@ class VoiceCalibrationViewController: UIViewController {
             stack.addArrangedSubview(bar)
         }
     }
+    
+    private func setupSentenceStatusIndicators() {
+        statusStack = UIStackView()
+        statusStack.axis = .horizontal
+        statusStack.distribution = .fillEqually
+        statusStack.spacing = 12
+        statusStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusStack)
+        
+        NSLayoutConstraint.activate([
+            statusStack.topAnchor.constraint(equalTo: promptCardView.bottomAnchor, constant: 16),
+            statusStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 40),
+            statusStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -40),
+            statusStack.heightAnchor.constraint(equalToConstant: 30)
+        ])
+        
+        statusLabels.removeAll()
+        for i in 0..<sentences.count {
+            let label = UILabel()
+            label.text = "Sentence \(i + 1)"
+            label.textAlignment = .center
+            label.font = .systemFont(ofSize: 13, weight: .medium)
+            label.textColor = .systemGray
+            label.layer.cornerRadius = 8
+            label.layer.masksToBounds = true
+            label.backgroundColor = .systemGray6
+            statusLabels.append(label)
+            statusStack.addArrangedSubview(label)
+        }
+    }
+    
+    private func updateSentenceStatus(index: Int, verified: Bool) {
+        guard index < statusLabels.count else { return }
+        UIView.animate(withDuration: 0.3) {
+            if verified {
+                self.statusLabels[index].text = "✓ Verified"
+                self.statusLabels[index].textColor = .white
+                self.statusLabels[index].backgroundColor = .systemGreen
+            } else {
+                self.statusLabels[index].text = "✗ Mismatch"
+                self.statusLabels[index].textColor = .white
+                self.statusLabels[index].backgroundColor = .systemRed
+            }
+        }
+    }
+    
+    private func resetSentenceStatuses() {
+        for (i, label) in statusLabels.enumerated() {
+            UIView.animate(withDuration: 0.3) {
+                label.text = "Sentence \(i + 1)"
+                label.textColor = .systemGray
+                label.backgroundColor = .systemGray6
+            }
+        }
+    }
 
     // MARK: - State → UI
 
@@ -122,16 +207,25 @@ class VoiceCalibrationViewController: UIViewController {
             setButton(title: "Listening…  (\(idx + 1) of \(sentences.count))", image: "waveform", color: .systemRed, enabled: false)
             instructionLabel.text = "Read the sentence aloud (\(label) of three)"
 
+        case .verifying(let idx):
+            setButton(title: "Verifying voice…", image: "person.wave.2.fill", color: .systemPurple, enabled: false)
+            instructionLabel.text = "Checking voice identity for sentence \(idx + 1)…"
+
         case .betweenSentences(let nextIdx):
             let next = min(nextIdx, sentences.count - 1)
             setButton(title: "Next sentence in 2s…", image: "arrow.right.circle", color: .systemOrange, enabled: false)
-            instructionLabel.text = "Well done! Next coming up…"
+            instructionLabel.text = "Voice verified! Next coming up…"
             updatePromptText(index: next)
             animateBarsToResting()
 
+        case .mismatch:
+            setButton(title: "Try Again", image: "arrow.counterclockwise", color: .systemRed, enabled: true)
+            instructionLabel.text = "Voice mismatch detected.\nPlease ensure only one person speaks."
+            animateBarsToResting()
+
         case .finished:
-            setButton(title: "Go to Home", image: "checkmark.circle.fill", color: view.tintColor, enabled: true)
-            instructionLabel.text = "Voice profile saved! Tap to continue."
+            setButton(title: "Go to Home", image: "checkmark.circle.fill", color: .systemGreen, enabled: true)
+            instructionLabel.text = "Voice profile saved! ✓\nYour unique voice is now set up."
             animateBarsToResting()
         }
     }
@@ -170,7 +264,7 @@ class VoiceCalibrationViewController: UIViewController {
         }
     }
 
-    // MARK: - Audio Recorder
+    // MARK: - Audio Recorder (16kHz for VL1004 compatibility)
 
     private func setupAudioRecorder(for sentenceIndex: Int) {
         let session = AVAudioSession.sharedInstance()
@@ -181,7 +275,7 @@ class VoiceCalibrationViewController: UIViewController {
             let url = docs.appendingPathComponent("VoiceProfile_Sentence\(sentenceIndex).m4a")
             let settings: [String: Any] = [
                 AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 12000,
+                AVSampleRateKey: 16000,   // 16kHz to match VL1004 model
                 AVNumberOfChannelsKey: 1,
                 AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
             ]
@@ -193,16 +287,23 @@ class VoiceCalibrationViewController: UIViewController {
         }
     }
 
-    // MARK: - Main Flow (Siri-style: one tap, continuous)
+    // MARK: - Main Flow
 
     @IBAction func recordButtonTapped(_ sender: UIButton) {
         switch phase {
         case .ready:
+            sentenceEmbeddings.removeAll()
+            resetSentenceStatuses()
+            beginCountdown()
+        case .mismatch:
+            sentenceEmbeddings.removeAll()
+            resetSentenceStatuses()
+            updatePromptText(index: 0)
             beginCountdown()
         case .finished:
             navigateToHome()
         default:
-            break // All other phases are automatic
+            break
         }
     }
 
@@ -224,9 +325,11 @@ class VoiceCalibrationViewController: UIViewController {
         }
     }
 
-    /// Step 2 — Record one sentence, then chain to the next or finish
+    /// Step 2 — Record one sentence, then verify voice, then chain to next or finish
     private func recordSentence(index: Int) {
         guard index < sentences.count else {
+            // All sentences verified — save the profile
+            saveVoiceProfile()
             self.phase = .finished
             return
         }
@@ -243,19 +346,228 @@ class VoiceCalibrationViewController: UIViewController {
             guard let self else { return }
             self.audioRecorder?.stop()
             self.stopMeteringAnimation()
-
-            if index + 1 < self.sentences.count {
-                // Pause for 2 seconds then move to next sentence
-                self.phase = .betweenSentences(index + 1)
-                self.phaseTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                    self?.phaseTimer = nil
-                    self?.recordSentence(index: index + 1)
+            
+            // Enter verification phase
+            self.phase = .verifying(index)
+            self.verifySentence(index: index)
+        }
+    }
+    
+    // MARK: - Voice Verification
+    
+    /// Extract embedding from recorded audio and verify it matches previous sentences
+    private func verifySentence(index: Int) {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = docs.appendingPathComponent("VoiceProfile_Sentence\(index).m4a")
+        
+        // Extract audio samples from recorded file
+        extractAudioSamples(from: url) { [weak self] samples in
+            guard let self = self else { return }
+            
+            guard let samples = samples else {
+                print("VoiceCalibration: Failed to extract samples for sentence \(index)")
+                DispatchQueue.main.async {
+                    self.phase = .mismatch
                 }
-            } else {
-                // All sentences done
-                self.phase = .finished
+                return
+            }
+            
+            // Run ML inference to get voice embedding
+            guard let embedding = self.runVoiceInference(on: samples) else {
+                print("VoiceCalibration: ML inference failed for sentence \(index)")
+                DispatchQueue.main.async {
+                    self.phase = .mismatch
+                }
+                return
+            }
+            
+            let normalizedEmbedding = self.normalize(embedding)
+            
+            DispatchQueue.main.async {
+                // First sentence — always accept as baseline
+                if self.sentenceEmbeddings.isEmpty {
+                    self.sentenceEmbeddings.append(normalizedEmbedding)
+                    self.updateSentenceStatus(index: index, verified: true)
+                    self.proceedAfterVerification(index: index)
+                    return
+                }
+                
+                // Compare with the first sentence (baseline voice)
+                let baselineEmbedding = self.sentenceEmbeddings[0]
+                let similarity = self.cosineSim(normalizedEmbedding, baselineEmbedding)
+                
+                print("VoiceCalibration: Sentence \(index + 1) similarity = \(String(format: "%.3f", similarity)) (threshold: \(self.similarityThreshold))")
+                
+                if similarity >= self.similarityThreshold {
+                    // Voice matches — accept this sentence
+                    self.sentenceEmbeddings.append(normalizedEmbedding)
+                    self.updateSentenceStatus(index: index, verified: true)
+                    self.proceedAfterVerification(index: index)
+                } else {
+                    // Voice MISMATCH — reject and require restart
+                    self.updateSentenceStatus(index: index, verified: false)
+                    self.sentenceEmbeddings.removeAll()
+                    
+                    // Brief delay so user can see the mismatch indicator
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        self.phase = .mismatch
+                    }
+                }
             }
         }
+    }
+    
+    private func proceedAfterVerification(index: Int) {
+        if index + 1 < sentences.count {
+            // Pause for 2 seconds then move to next sentence
+            phase = .betweenSentences(index + 1)
+            phaseTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                self?.phaseTimer = nil
+                self?.recordSentence(index: index + 1)
+            }
+        } else {
+            // All sentences done and verified
+            saveVoiceProfile()
+            phase = .finished
+        }
+    }
+    
+    // MARK: - Audio Sample Extraction
+    
+    /// Read the recorded .m4a file and convert to 96,000 float samples at 16kHz
+    private func extractAudioSamples(from url: URL, completion: @escaping ([Float]?) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let audioFile = try AVAudioFile(forReading: url)
+                let processingFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
+                
+                let frameCount = AVAudioFrameCount(audioFile.length)
+                guard let fileBuffer = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat, frameCapacity: frameCount) else {
+                    completion(nil)
+                    return
+                }
+                try audioFile.read(into: fileBuffer)
+                
+                // Convert to 16kHz mono if needed
+                let converter = AVAudioConverter(from: audioFile.processingFormat, to: processingFormat)
+                let ratio = Float(processingFormat.sampleRate) / Float(audioFile.processingFormat.sampleRate)
+                let outputCapacity = AVAudioFrameCount(Float(frameCount) * ratio) + 100
+                
+                guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: processingFormat, frameCapacity: outputCapacity) else {
+                    completion(nil)
+                    return
+                }
+                
+                var error: NSError?
+                var inputConsumed = false
+                converter?.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
+                    if inputConsumed {
+                        outStatus.pointee = .endOfStream
+                        return nil
+                    }
+                    outStatus.pointee = .haveData
+                    inputConsumed = true
+                    return fileBuffer
+                }
+                
+                guard let channelData = outputBuffer.floatChannelData else {
+                    completion(nil)
+                    return
+                }
+                
+                var samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
+                
+                // Pad or truncate to exactly 96,000 samples (model requirement)
+                let required = 96000
+                if samples.count < required {
+                    samples.append(contentsOf: [Float](repeating: 0, count: required - samples.count))
+                } else if samples.count > required {
+                    samples = Array(samples.prefix(required))
+                }
+                
+                completion(samples)
+            } catch {
+                print("VoiceCalibration: Audio extraction error — \(error)")
+                completion(nil)
+            }
+        }
+    }
+    
+    // MARK: - ML Inference
+    
+    /// Run the VL1004 model on audio samples to extract a voice embedding vector
+    private func runVoiceInference(on samples: [Float]) -> [Float]? {
+        guard let model = model else {
+            print("VoiceCalibration: Model not loaded")
+            return nil
+        }
+        
+        guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else {
+            return nil
+        }
+        
+        for (i, sample) in samples.enumerated() {
+            inputMultiArray[i] = NSNumber(value: sample)
+        }
+        
+        do {
+            let prediction = try model.prediction(audio: inputMultiArray)
+            return extractVector(from: prediction.embedding)
+        } catch {
+            print("VoiceCalibration: Inference error — \(error)")
+            return nil
+        }
+    }
+    
+    // MARK: - Save Voice Profile
+    
+    private func saveVoiceProfile() {
+        guard !sentenceEmbeddings.isEmpty else { return }
+        
+        // Average all sentence embeddings into one representative vector
+        let dim = sentenceEmbeddings[0].count
+        var averaged = [Float](repeating: 0, count: dim)
+        
+        for embedding in sentenceEmbeddings {
+            for i in 0..<dim {
+                averaged[i] += embedding[i]
+            }
+        }
+        
+        let count = Float(sentenceEmbeddings.count)
+        for i in 0..<dim {
+            averaged[i] /= count
+        }
+        
+        let normalizedAvg = normalize(averaged)
+        
+        // Save to persistent storage via VoiceProfileManager
+        // Use "Me" as default name — user can change it later
+        VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: "Me", embedding: normalizedAvg)
+        print("VoiceCalibration: Voice profile saved successfully ✓")
+    }
+
+    // MARK: - Math Utilities (matching AudioDiarizer)
+
+    private func extractVector(from multiArray: MLMultiArray) -> [Float] {
+        let count = multiArray.count
+        let ptr = multiArray.dataPointer.bindMemory(to: Float.self, capacity: count)
+        return Array(UnsafeBufferPointer(start: ptr, count: count))
+    }
+
+    private func normalize(_ v: [Float]) -> [Float] {
+        var norm: Float = 0
+        vDSP_svesq(v, 1, &norm, vDSP_Length(v.count))
+        let mag = sqrt(norm) + 1e-9
+        var res = [Float](repeating: 0, count: v.count)
+        vDSP_vsdiv(v, 1, [mag], &res, 1, vDSP_Length(v.count))
+        return res
+    }
+
+    private func cosineSim(_ v1: [Float], _ v2: [Float]) -> Float {
+        var dot: Float = 0
+        vDSP_dotpr(v1, 1, v2, 1, &dot, vDSP_Length(v1.count))
+        return dot
     }
 
     // MARK: - Visualizer Animation

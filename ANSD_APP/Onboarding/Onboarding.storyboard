@@ -409,6 +409,7 @@
                         <outlet property="lastNameTextField" destination="ZV7-6R-0SE" id="QBp-c2-3cp"/>
                         <outlet property="passwordTextField" destination="s1F-q1-H3n" id="gS6-5P-4ZK"/>
                         <outlet property="phoneTextField" destination="3Pc-90-taJ" id="TSJ-hm-H2C"/>
+                        <outlet property="scrollView" destination="YQT-8V-Bny" id="scv-KB-01x"/>
                         <segue destination="9Sf-As-Ivm" kind="show" identifier="showCalibration" id="pDO-OP-atx"/>
                     </connections>
                 </viewController>
@@ -419,7 +420,7 @@
         <!--Voice Calibration View Controller-->
         <scene sceneID="J28-ad-L1g">
             <objects>
-                <viewController id="9Sf-As-Ivm" customClass="VoiceCalibrationViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="VoiceCalibrationViewController" id="9Sf-As-Ivm" customClass="VoiceCalibrationViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="cYV-5v-AYS">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
