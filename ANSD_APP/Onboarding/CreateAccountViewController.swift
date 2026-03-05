@@ -32,6 +32,11 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Navigation bar title
+        title = "Create Account"
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
+        
         orderedTextFields = [
             firstNameTextField,
             lastNameTextField,

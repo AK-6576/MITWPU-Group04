@@ -1,3 +1,5 @@
+
+
 //
 //  VoiceCalibrationViewController.swift
 //  ANSD_APP
@@ -59,15 +61,21 @@ class VoiceCalibrationViewController: UIViewController {
 
     // MARK: - Data
     private let sentences = [
-        "What is the weather going to be like today?",
-        "Set a timer for exactly five minutes.",
-        "Send a message to let them know I am on my way."
+        "The quick brown fox jumps over the lazy dog near the river bank.",
+        "Please verify my identity by recognizing my unique voice pattern.",
+        "Artificial intelligence is transforming the way we communicate daily."
     ]
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Navigation bar title
+        title = "Voice Setup"
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
+        
         setupCard()
         setupVisualizer()
         setupSentenceStatusIndicators()
