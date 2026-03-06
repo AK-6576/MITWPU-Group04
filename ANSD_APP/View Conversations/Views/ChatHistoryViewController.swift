@@ -68,9 +68,15 @@ class ViewSummaryCardCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        mainCardView.backgroundColor = .white
-        mainCardView.layer.cornerRadius = 20
-        contentView.layer.cornerRadius = 20
+        mainCardView.backgroundColor = .secondarySystemGroupedBackground
+        mainCardView.layer.cornerRadius = 12
+        
+        // Add shadow for "floating card" effect
+        mainCardView.layer.shadowColor = UIColor.black.cgColor
+        mainCardView.layer.shadowOpacity = 0.06
+        mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)
+        mainCardView.layer.shadowRadius = 6
+        mainCardView.layer.masksToBounds = false
     }
     
     @IBAction func titleChanged(_ sender: UITextField) {
@@ -80,21 +86,46 @@ class ViewSummaryCardCell: UITableViewCell {
 
 class ViewParticipantsCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var detailsLabel: UILabel!
+    @IBOutlet weak var avatarView: UIView!
+    @IBOutlet weak var initialsLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        avatarImageView.layer.cornerRadius = 4
-        avatarImageView.clipsToBounds = true
-        avatarImageView.tintColor = .systemGray
-        mainCardView.layer.cornerRadius = 16
-        mainCardView.backgroundColor = .white
+        contentView.backgroundColor = .clear
+        
+        // Standard Card Styling
+        mainCardView.layer.cornerRadius = 12
+        mainCardView.backgroundColor = .secondarySystemGroupedBackground
+        mainCardView.layer.shadowColor = UIColor.black.cgColor
+        mainCardView.layer.shadowOpacity = 0.06
+        mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)
+        mainCardView.layer.shadowRadius = 6
+        mainCardView.layer.masksToBounds = false
+        
+        // Avatar Square Styling
+        avatarView?.layer.cornerRadius = 8
+        avatarView?.clipsToBounds = true
     }
     
     func configure(with data: Participant) {
         detailsLabel.text = data.summary
+        
+        // 1. Logic to generate initials
+        let nameToParse = data.name
+        let components = nameToParse.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.map { String($0) }.joined()
+        initialsLabel?.text = String(initials.prefix(2)).uppercased()
+        
+        // 2. Logic to set colors based on identity
+        if nameToParse.lowercased().contains("steve") || nameToParse.lowercased() == "you" {
+            avatarView?.backgroundColor = .systemBlue
+            initialsLabel?.textColor = .white
+        } else {
+            avatarView?.backgroundColor = .systemGray4
+            initialsLabel?.textColor = .label
+        }
     }
 }
 
@@ -108,15 +139,20 @@ class ViewNotesCardCell: UITableViewCell, UITextViewDelegate {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
+        
         notesTextView.delegate = self
-        notesTextView.text = placeholderText
-        notesTextView.textColor = .lightGray
         notesTextView.font = UIFont.systemFont(ofSize: 15)
         notesTextView.isScrollEnabled = false
         notesTextView.textContainerInset = .zero
         notesTextView.textContainer.lineFragmentPadding = 0
-        mainCardView.backgroundColor = .white
-        mainCardView.layer.cornerRadius = 20
+        
+        mainCardView.backgroundColor = .secondarySystemGroupedBackground
+        mainCardView.layer.cornerRadius = 12
+        mainCardView.layer.shadowColor = UIColor.black.cgColor
+        mainCardView.layer.shadowOpacity = 0.06
+        mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)
+        mainCardView.layer.shadowRadius = 6
+        mainCardView.layer.masksToBounds = false
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -139,7 +175,7 @@ class ViewNotesCardCell: UITableViewCell, UITextViewDelegate {
 }
 
 // MARK: - Chat History View Controller
-// Displays the full message history for a specific conversation, using a collection view for alignment-aware messaging.
+
 class ChatHistoryViewController: UIViewController {
     
     @IBOutlet var segmentedControl: UISegmentedControl!
@@ -179,7 +215,6 @@ class ChatHistoryViewController: UIViewController {
         view.addGestureRecognizer(tap)
         
         let hasExistingParticipants = histconversationData?.participants?.isEmpty == false
-        _ = histconversationData?.notes?.isEmpty == false
         
         if hasExistingParticipants {
             self.participantsData = histconversationData!.participants!
@@ -277,12 +312,10 @@ class ChatHistoryViewController: UIViewController {
             }
         }
         
-        // Update Notes
         self.generatedNotesText = notesBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
         if self.generatedNotesText.isEmpty { self.generatedNotesText = text }
         self.histconversationData?.notes = self.generatedNotesText
         
-        // Update Participants Data
         for (name, summary) in participantSummaries {
             if let index = participantsData.firstIndex(where: { name.contains($0.name) || $0.name.contains(name) }) {
                 participantsData[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -323,18 +356,13 @@ class ChatHistoryViewController: UIViewController {
     }
     
     private func setupSummaryUI() {
-        view.backgroundColor = .systemGroupedBackground
         tableView.delegate = self
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 120
-        tableView.layer.cornerRadius = 20
-        summaryContainerView.layer.cornerRadius = 20
     }
-    
-    // MARK: - Share Button Logic
     
     private func setupShareButton() {
         if let shareBtn = menuButton {
@@ -349,11 +377,7 @@ class ChatHistoryViewController: UIViewController {
     
     private func notifyDataChanged() {
         if let updatedConvo = self.histconversationData {
-            
-            // Persist changes to the local storage.
             DataManager.shared.saveData()
-            
-            // Notify other components of the update.
             NotificationCenter.default.post(
                 name: NSNotification.Name("ConversationUpdated"),
                 object: nil,
@@ -362,8 +386,6 @@ class ChatHistoryViewController: UIViewController {
         }
     }
 
-    // MARK: - Actions
-    
     @IBAction func chatNsumSegmentedController(_ sender: UISegmentedControl) {
         view.endEditing(true)
         updateContainerViews()
@@ -412,13 +434,9 @@ class ChatHistoryViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newText = alert.textFields?.first?.text {
-                // Update the message content directly in the model.
                 self.histconversationData?.messages?[indexPath.row].text = newText
                 self.histconversationData?.messages?[indexPath.row].isEdited = true
-                
                 self.collectionView.reloadItems(at: [indexPath])
-                
-                // Save changes and broadcast completion.
                 self.notifyDataChanged()
             }
         })
@@ -453,17 +471,14 @@ extension ChatHistoryViewController {
         let pageWidth = 595.2
         let pageHeight = 841.8
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-        
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         
         let data = renderer.pdfData { context in
             context.beginPage()
-            
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 12),
                 .paragraphStyle: NSMutableParagraphStyle()
             ]
-            
             let textRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: pageHeight - 80)
             text.draw(in: textRect, withAttributes: attributes)
         }
@@ -477,7 +492,6 @@ extension ChatHistoryViewController {
             try data.write(to: fileURL)
             return fileURL
         } catch {
-            print("Error generating PDF: \(error)")
             return nil
         }
     }
@@ -496,32 +510,14 @@ extension ChatHistoryViewController: UICollectionViewDelegate, UICollectionViewD
         
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCIncomingCell", for: indexPath) as! ViewIncomingCell
-            if message.isHighlighted {
-                let textAttributes: [NSAttributedString.Key: Any] = [
-                    .underlineStyle: NSUnderlineStyle.single.rawValue,
-                    .underlineColor: UIColor.black
-                ]
-                cell.messageLabel.attributedText = NSAttributedString(string: message.text, attributes: textAttributes)
-            } else {
-                cell.messageLabel.attributedText = nil
-                cell.messageLabel.text = message.text
-            }
+            cell.messageLabel.text = message.text
             cell.nameLabel.text = message.senderName
             cell.editedLabel.isHidden = !message.isEdited
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCOutCell", for: indexPath) as! ViewOutgoingCell
-            if message.isHighlighted {
-                let textAttributes: [NSAttributedString.Key: Any] = [
-                    .underlineStyle: NSUnderlineStyle.single.rawValue,
-                    .underlineColor: UIColor.white
-                ]
-                cell.PCmessageLabel.attributedText = NSAttributedString(string: message.text, attributes: textAttributes)
-            } else {
-                cell.PCmessageLabel.attributedText = nil
-                cell.PCmessageLabel.text = message.text
-                cell.editedLabel.isHidden = !message.isEdited
-            }
+            cell.PCmessageLabel.text = message.text
+            cell.editedLabel.isHidden = !message.isEdited
             return cell
         }
     }
@@ -536,8 +532,6 @@ extension ChatHistoryViewController: UICollectionViewDelegate, UICollectionViewD
                 let currentStatus = self.histconversationData?.messages?[indexPath.row].isHighlighted ?? false
                 self.histconversationData?.messages?[indexPath.row].isHighlighted = !currentStatus
                 collectionView.reloadItems(at: [indexPath])
-                
-                // This will now trigger DataManager.shared.saveData() automatically!
                 self.notifyDataChanged()
             }
             let edit = UIAction(title: "Edit", image: UIImage(systemName: "pencil")) { _ in
@@ -556,11 +550,8 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
         if cell.notesTextView.text != cell.placeholderText {
             self.histconversationData?.notes = cell.notesTextView.text
             self.generatedNotesText = cell.notesTextView.text
-            
             tableView.beginUpdates()
             tableView.endUpdates()
-            
-            // This will now trigger DataManager.shared.saveData() automatically!
             self.notifyDataChanged()
         }
     }
@@ -569,8 +560,6 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
         self.conversationTitle = text
         self.histconversationData?.title = text
         self.navigationItem.title = text
-        
-        // This will now trigger DataManager.shared.saveData() automatically!
         self.notifyDataChanged()
     }
         
@@ -586,23 +575,21 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath) as! ViewSummarySectionHeaderCell
-            return cell
+            return tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath)
             
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummaryCardCell", for: indexPath) as! ViewSummaryCardCell
             cell.titleTextField.text = conversationTitle
-                    
             if let convo = histconversationData {
                 cell.dateLabel.text = convo.date
                 cell.locationLabel.text = convo.location.isEmpty ? "No Location" : convo.location
                 cell.timeLabel.text = convo.startTime
             }
-                    
-                cell.delegate = self
-                return cell
+            cell.delegate = self
+            return cell
+            
         case 2:
-            return tableView.dequeueReusableCell(withIdentifier: "PCParticipantsSummaryHeaderCell", for: indexPath) as! ViewParticipantsSummaryHeaderCell
+            return tableView.dequeueReusableCell(withIdentifier: "PCParticipantsSummaryHeaderCell", for: indexPath)
             
         case 3:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCParticipantsCardCell", for: indexPath) as! ViewParticipantsCardCell
@@ -617,7 +604,6 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
             
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCNotesCardCell", for: indexPath) as! ViewNotesCardCell
-            
             let displayNotes = histconversationData?.notes ?? generatedNotesText
             
             if !displayNotes.isEmpty && displayNotes != "Generating summary..." {
@@ -627,7 +613,6 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
                 cell.notesTextView.text = displayNotes
                 cell.notesTextView.textColor = .lightGray
             }
-            
             cell.delegate = self
             return cell
             

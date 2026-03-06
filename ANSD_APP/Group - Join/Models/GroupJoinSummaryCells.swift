@@ -37,25 +37,30 @@ class GroupJoinSummarySectionHeaderCell: UITableViewCell {
 class GroupJoinParticipantsCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var summaryLabel: UILabel!
-    @IBOutlet weak var avatarImageView: UIImageView!
+    
+    @IBOutlet weak var avatarView: UIView!
+    @IBOutlet weak var initialsLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
+        contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
-        
-        // Applies circular clipping mask and configures the avatar image view appearance.
-        if let avatar = avatarImageView {
-            avatar.layer.cornerRadius = avatar.frame.height / 2
-            avatar.clipsToBounds = true
-            avatar.backgroundColor = .systemGray5
-            avatar.tintColor = .systemGray
-            avatar.contentMode = .scaleAspectFill
-        }
     }
+
     func configure(with data: GroupJoinParticipants) {
         summaryLabel.text = data.summary
-        avatarImageView.image = UIImage(systemName: "person.circle.fill")
+        
+        let initials = data.avatarTitle.isEmpty ? String(data.name.prefix(2)) : data.avatarTitle
+        initialsLabel?.text = initials.uppercased()
+
+        if data.name.lowercased().contains("steve") || data.name.lowercased() == "you" {
+            avatarView?.backgroundColor = .systemBlue
+            initialsLabel?.textColor = .white
+        } else {
+            avatarView?.backgroundColor = .systemGray4
+            initialsLabel?.textColor = .label
+        }
     }
 }
 

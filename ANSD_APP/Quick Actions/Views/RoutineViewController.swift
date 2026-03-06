@@ -14,8 +14,8 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     
     // MARK: - Properties
     var category: ChatCategory = .other
-    var routineList: [RoutineItemProtocol] = []
-    var originalList: [RoutineItemProtocol] = []
+    var routineList: [RoutineConversation] = []
+    var originalList: [RoutineConversation] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,21 +32,28 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     }
     
     func loadData() {
-        // Fetch from Repository using the assigned category
-        let data = RoutineRepository.getRoutineData(for: category)
+        // Fetch routines for this category
+        let allSections = QuickActionsRepository.shared.getGroupedSections()
+        let categoryString = category.rawValue.capitalized
         
-        self.routineList = data
-        self.originalList = data
+        if let matchingSection = allSections.first(where: { $0.category.lowercased() == categoryString.lowercased() }) {
+            let activeItems = matchingSection.items.filter { $0.status != "Done" }
+            self.routineList = activeItems
+            self.originalList = activeItems
+        } else {
+            self.routineList = []
+            self.originalList = []
+        }
         
         // Update UI Title
-        self.title = "\(category.rawValue.capitalized) Routine"
+        self.title = "\(categoryString) Routine"
         tableView.reloadData()
     }
     
     // MARK: - Menu Setup
     func setupNavigationBarMenu() {
      let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
-            self?.routineList.sort { $0.title.lowercased() < $1.title.lowercased() }
+            self?.routineList.sort { $0.conversationTopic.lowercased() < $1.conversationTopic.lowercased() }
             self?.tableView.reloadData()
         }
         
@@ -93,13 +100,18 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     
     private func showRenameAlert(at indexPath: IndexPath) {
         let alert = UIAlertController(title: "Edit Title", message: nil, preferredStyle: .alert)
-        alert.addTextField { $0.text = self.routineList[indexPath.row].title }
+        alert.addTextField { $0.text = self.routineList[indexPath.row].conversationTopic }
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
-            if let newName = alert.textFields?.first?.text, !newName.isEmpty {
-                self?.routineList[indexPath.row].title = newName
-                self?.tableView.reloadRows(at: [indexPath], with: .automatic)
-            }
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            var updatedItem = self.routineList[indexPath.row]
+            updatedItem.conversationTopic = newName
+            
+            QuickActionsRepository.shared.updateAction(updatedItem)
+            
+            self.routineList[indexPath.row] = updatedItem
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
@@ -109,14 +121,12 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowInfo",
            let nav = segue.destination as? UINavigationController,
-           let destination = nav.topViewController as? InfoViewController,
+           let destination = nav.topViewController as? ParticipantsViewController,
            let indexPath = tableView.indexPathForSelectedRow {
             
-            destination.existingNote = routineList[indexPath.row].notes
-            destination.onSave = { [weak self] newNote in
-                self?.routineList[indexPath.row].notes = newNote
-                self?.tableView.reloadRows(at: [indexPath], with: .none)
-            }
+            destination.viewerMode = true
+            destination.viewerParticipantNames = routineList[indexPath.row].participantNames
+            destination.viewerRoomCode = routineList[indexPath.row].roomCode
         }
     }
 }

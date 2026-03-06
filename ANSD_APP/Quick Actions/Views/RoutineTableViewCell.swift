@@ -35,9 +35,9 @@ class RoutineTableViewCell: UITableViewCell {
     /// REDUNDANCY RESOLVED:
     /// Instead of passing multiple strings, we pass the protocol-conforming object.
     /// This works for FamilyRoutineItem, FriendRoutineItem, and RoutineItem.
-    func configure(with item: RoutineItemProtocol) {
-        titleLabel.text = item.title
-        subtitleLabel.text = item.time
+    func configure(with item: RoutineConversation) {
+        titleLabel.text = item.conversationTopic
+        subtitleLabel.text = item.startTime
     }
     
     /// Keep this for cases where you might want to manually set text (like headers)

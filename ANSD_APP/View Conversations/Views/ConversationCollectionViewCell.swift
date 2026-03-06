@@ -74,19 +74,19 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         let tintColor: UIColor
         
         switch categoryString {
-        case "family":
+        case "Family":
             iconName = "figure.2.and.child.holdinghands"
             tintColor = .systemRed
             categoryAccessibilityName = "Family"
-        case "friends":
+        case "Friends":
             iconName = "person.2.fill"
             tintColor = .systemOrange
             categoryAccessibilityName = "Friends"
-        case "office", "work":
+        case "Office", "Work":
             iconName = "briefcase.fill"
             tintColor = .systemBlue
             categoryAccessibilityName = "Office"
-        case "medical", "health":
+        case "Medical", "Health":
             iconName = "cross.case.fill"
             tintColor = .systemGreen
             categoryAccessibilityName = "Medical"
