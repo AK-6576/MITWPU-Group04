@@ -282,15 +282,46 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         }
     }
 
-    // MARK: - Queue Deletion (Swipe for Quick Actions)
+    // MARK: - Queue Deletion & Edit (Swipe for Quick Actions)
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard indexPath.section == 0 && !quickActions.isEmpty else { return nil }
-        let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
+        let item = quickActions[indexPath.row]
+        
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             self?.performQueueDeletion(for: 0, at: indexPath)
             completion(true)
         }
-        delete.image = UIImage(systemName: "trash")
-        return UISwipeActionsConfiguration(actions: [delete])
+        deleteAction.backgroundColor = .systemRed
+        deleteAction.image = UIImage(systemName: "trash")
+        
+        let renameAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
+            self?.showRenameAlert(for: item, row: indexPath.row)
+            completion(true)
+        }
+        renameAction.backgroundColor = .systemOrange
+        renameAction.image = UIImage(systemName: "pencil")
+        
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction])
+        config.performsFirstActionWithFullSwipe = false
+        return config
+    }
+    
+    private func showRenameAlert(for item: RoutineConversation, row: Int) {
+        let alert = UIAlertController(title: "Rename", message: nil, preferredStyle: .alert)
+        alert.addTextField { $0.text = item.conversationTopic }
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            var updatedItem = item
+            updatedItem.conversationTopic = newName
+            QuickActionsRepository.shared.updateAction(updatedItem)
+            
+            self.quickActions[row] = updatedItem
+            self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
+        }
+        alert.addAction(saveAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
     }
     
     // MARK: - Queue Deletion (Context Menu for History)

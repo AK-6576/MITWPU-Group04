@@ -10,6 +10,7 @@ import UIKit
 import PDFKit
 import FoundationModels // Apple Intelligence
 import CoreLocation
+import MapKit
 
 class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, GroupNewNotesCardCellDelegate, GroupNewSummaryCardDelegate, CLLocationManagerDelegate {
     
@@ -205,13 +206,15 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(location) { placemarks, error in
-            if let place = placemarks?.first {
-                self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
-                self.locationManager.stopUpdatingLocation()
-                DispatchQueue.main.async {
-                    self.GroupNewTableView.reloadSections(IndexSet(integer: 1), with: .none)
+        
+        if let request = MKReverseGeocodingRequest(location: location) {
+            request.getMapItems { mapItems, error in
+                if let place = mapItems?.first?.placemark {
+                    self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
+                    self.locationManager.stopUpdatingLocation()
+                    DispatchQueue.main.async {
+                        self.GroupNewTableView.reloadSections(IndexSet(integer: 1), with: .none)
+                    }
                 }
             }
         }

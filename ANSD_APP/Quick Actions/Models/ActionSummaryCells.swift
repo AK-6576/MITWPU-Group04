@@ -8,27 +8,28 @@
 
 import UIKit
 
-// MARK: - Summary Card Protocol
-// Protocol for handling updates from the notes card cell.
+// MARK: - Protocols
 protocol NotesCardCellDelegate: AnyObject {
     func didUpdateText(in cell: NotesCardCell)
 }
 
-
-
-// MARK: - Styling Helper
-
-func styleSummaryCard(view: UIView?) {
-    guard let card = view else { return }
-    card.layer.cornerRadius = 12
-    card.backgroundColor = .white
-    card.layer.shadowColor = UIColor.black.cgColor
-    card.layer.shadowOpacity = 0.05
-    card.layer.shadowOffset = CGSize(width: 0, height: 2)
-    card.layer.shadowRadius = 4
+protocol SummaryCardDelegate: AnyObject {
+    func didChangeTitle(text: String)
 }
 
-// MARK: - Headers
+// MARK: - Styling Helper
+private func styleCard(view: UIView?) {
+    guard let card = view else { return }
+    card.layer.cornerRadius = 12
+    card.backgroundColor = .secondarySystemGroupedBackground
+    card.layer.shadowColor = UIColor.black.cgColor
+    card.layer.shadowOpacity = 0.06
+    card.layer.shadowOffset = CGSize(width: 0, height: 3)
+    card.layer.shadowRadius = 6
+    card.layer.masksToBounds = false
+}
+
+// MARK: - Section Header Cell
 class SummarySectionHeaderCell: UITableViewCell {
     @IBOutlet weak var headerIcon: UIImageView!
     @IBOutlet weak var headerLabel: UILabel!
@@ -40,66 +41,73 @@ class SummarySectionHeaderCell: UITableViewCell {
     }
 }
 
-class ParticipantsSummaryHeaderCell: UITableViewCell {
-    @IBOutlet weak var participantIcon: UIImageView!
-    @IBOutlet weak var participantLabel: UILabel!
+// MARK: - Conversation Summary Card
+class SummaryCardCell: UITableViewCell, UITextFieldDelegate {
+    @IBOutlet weak var mainCardView: UIView!
+    @IBOutlet weak var titleTextField: UITextField!
+    @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var timeLabel: UILabel!
+    @IBOutlet weak var locationLabel: UILabel!
+    
+    weak var delegate: SummaryCardDelegate?
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
-    }
-}
-
-// MARK: - Conversation Summary Card
-class SummaryCardCell: UITableViewCell {
-    @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var titleLabel: UILabel!
-    @IBOutlet weak var dateLabel: UILabel!
-    @IBOutlet weak var locationLabel: UILabel!
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        backgroundColor = .clear
-        styleSummaryCard(view: mainCardView)
+        styleCard(view: mainCardView)
+        
+        titleTextField.delegate = self
+        titleTextField.borderStyle = .none
     }
     
-    func configure(title: String, date: String, location: String) {
-        titleLabel.text = title
+    func configure(title: String, date: String, time: String, location: String) {
+        titleTextField.text = title
         dateLabel.text = date
+        timeLabel.text = time
         locationLabel.text = location
+    }
+    
+    @IBAction func titleChanged(_ sender: UITextField) {
+        delegate?.didChangeTitle(text: sender.text ?? "")
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
     }
 }
 
 // MARK: - Participant Card
 class ParticipantCardCell: UITableViewCell {
     @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var avatarImageView: UIImageView!
-    @IBOutlet weak var detailsLabel: UILabel! // This should show "Name: Summary"
+    @IBOutlet weak var avatarView: UIView!
+    @IBOutlet weak var initialsLabel: UILabel!
+    @IBOutlet weak var summaryLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        styleSummaryCard(view: mainCardView)
+        contentView.backgroundColor = .clear
+        styleCard(view: mainCardView)
         
-        avatarImageView.layer.cornerRadius = avatarImageView.frame.height / 2
-        avatarImageView.clipsToBounds = true
-        avatarImageView.contentMode = .scaleAspectFill
-        avatarImageView.tintColor = .systemGray
+        avatarView?.layer.cornerRadius = 8
+        avatarView?.clipsToBounds = true
     }
     
-    /// Updated to accept the unified ParticipantData struct
     func configure(with data: ParticipantData) {
-        // Combining name and summary for a cleaner UI look in the card
-        let attributedText = NSMutableAttributedString(string: "\(data.name): ", attributes: [.font: UIFont.boldSystemFont(ofSize: 15)])
-        attributedText.append(NSAttributedString(string: data.summary, attributes: [.font: UIFont.systemFont(ofSize: 15)]))
+        summaryLabel.text = data.summary
         
-        detailsLabel.attributedText = attributedText
+        let components = data.name.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.map { String($0) }.joined()
+        initialsLabel?.text = String(initials.prefix(2)).uppercased()
         
-        if let image = UIImage(systemName: "person.circle.fill") {
-            avatarImageView.image = image
+        if data.name.lowercased().contains("steve") || data.name.lowercased() == "you" {
+            avatarView?.backgroundColor = .systemBlue
+            initialsLabel?.textColor = .white
         } else {
-            avatarImageView.image = UIImage(systemName: "person.circle.fill")
+            avatarView?.backgroundColor = .systemGray4
+            initialsLabel?.textColor = .label
         }
     }
 }
@@ -115,14 +123,15 @@ class NotesCardCell: UITableViewCell, UITextViewDelegate {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        styleSummaryCard(view: mainCardView)
+        contentView.backgroundColor = .clear
+        styleCard(view: mainCardView)
         
         notesTextView.delegate = self
-        notesTextView.text = placeholderText
-        notesTextView.textColor = .lightGray
-        notesTextView.font = UIFont.systemFont(ofSize: 15)
         notesTextView.isScrollEnabled = false
-        notesTextView.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+        notesTextView.textContainerInset = .zero
+        notesTextView.textContainer.lineFragmentPadding = 0
+        notesTextView.font = UIFont.systemFont(ofSize: 15)
+        notesTextView.backgroundColor = .clear
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -140,7 +149,6 @@ class NotesCardCell: UITableViewCell, UITextViewDelegate {
     }
     
     func textViewDidChange(_ textView: UITextView) {
-        // Trigger height resize in TableView
         delegate?.didUpdateText(in: self)
     }
 }

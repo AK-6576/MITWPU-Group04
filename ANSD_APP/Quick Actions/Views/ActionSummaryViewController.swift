@@ -8,7 +8,9 @@
 
 import UIKit
 import PDFKit
-import FoundationModels // Apple Intelligence
+import FoundationModels
+import CoreLocation
+import MapKit
 
 // MARK: - Required Structs for AI JSON Parsing
 struct AISummaryResponse: Codable {
@@ -23,7 +25,7 @@ struct AIParticipantSummary: Codable {
 
 
 // MARK: - Summary Base Class
-class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, NotesCardCellDelegate {
+class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, NotesCardCellDelegate, SummaryCardDelegate, CLLocationManagerDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var optionsButton: UIBarButtonItem!
@@ -37,29 +39,33 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     
     var conversationTitle = "Conversation Summary"
     var participants: [ParticipantData] = []
+    var dateString: String = ""
+    var timeString: String = ""
+    var locationString: String = "Location Unknown"
     
     // MARK: - AI & State Properties
-    var transcriptMessages: [ChatMessage] = [] // Pass this in before pushing the VC
+    var transcriptMessages: [ChatMessage] = []
     private let model = SystemLanguageModel.default
     private var isProcessing = false
     private(set) var notesText: String = "Generating summary..."
+    let locationManager = CLLocationManager()
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "\(category) Summary"
-        setupUI()
+        configureUI()
+        generateDateAndTime()
+        setupLocation()
         
-        // 1. Initial Data Prep
         if !transcriptMessages.isEmpty {
             prepareParticipantsFromMessages()
         }
         
-        // 2. Start AI Analysis
         generateAISummary()
     }
     
-    private func setupUI() {
+    private func configureUI() {
         view.backgroundColor = .systemGroupedBackground
         
         tableView.delegate = self
@@ -81,6 +87,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     @objc func shareTapped() { shareAsPDF() }
     
     @IBAction func backTapped(_ sender: Any) {
+        self.view.endEditing(true)
         self.saveSessionToHistory()
         
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
@@ -108,11 +115,46 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             }
         }
         
-        // Initialize with waiting state
         self.participants = ordering.map { name in
             ParticipantData(name: name, summary: "Waiting for analysis...")
         }
         tableView.reloadData()
+    }
+    
+    // MARK: - Location & Date
+    private func generateDateAndTime() {
+        let now = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .none
+        dateString = dateFormatter.string(from: now)
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateStyle = .none
+        timeFormatter.timeStyle = .short
+        timeString = timeFormatter.string(from: now)
+    }
+    
+    private func setupLocation() {
+        locationManager.delegate = self
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        
+        if let request = MKReverseGeocodingRequest(location: location) {
+            request.getMapItems { mapItems, error in
+                if let place = mapItems?.first?.placemark {
+                    self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
+                    self.locationManager.stopUpdatingLocation()
+                    DispatchQueue.main.async {
+                        self.tableView.reloadSections(IndexSet(integer: 1), with: .none)
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - AI Foundation Models Integration
@@ -128,7 +170,6 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         
         Task {
             do {
-                // Strict JSON Prompt
                 let prompt = """
                 Analyze the following transcript. You must respond ONLY with a raw, valid JSON object. Do not include markdown blocks, explanations, or code tags.
                 
@@ -162,7 +203,6 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     private func parseJSONResponse(_ text: String) {
-        // 1. Clean up the response in case the LLM wrapped it in markdown code blocks anyway
         var cleanJSONString = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if cleanJSONString.hasPrefix("```json") {
             cleanJSONString = cleanJSONString.replacingOccurrences(of: "```json", with: "")
@@ -176,14 +216,11 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             return
         }
         
-        // 2. Safely Decode
         do {
             let decodedSummary = try JSONDecoder().decode(AISummaryResponse.self, from: jsonData)
             
-            // Assign Notes
             self.notesText = decodedSummary.notes
             
-            // Assign Participant Summaries by matching names
             for aiParticipant in decodedSummary.participants {
                 if let index = self.participants.firstIndex(where: { aiParticipant.name.contains($0.name) || $0.name.contains(aiParticipant.name) }) {
                     self.participants[index].summary = aiParticipant.summary
@@ -202,33 +239,33 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     
     // MARK: - PDF Generation
     func shareAsPDF() {
-        var pdfContent = "EchoWave Summary\n"
-        pdfContent += "Category: \(category)\n"
-        pdfContent += "---------------------------\n\n"
+        let pdfMetaData = [kCGPDFContextCreator: "ANSD App", kCGPDFContextTitle: conversationTitle]
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = pdfMetaData as [String: Any]
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595.2, height: 841.8), format: format)
         
-        pdfContent += "NOTES:\n\(notesText)\n\n"
-        
-        for person in participants {
-            pdfContent += "\(person.name):\n\(person.summary)\n\n"
-        }
-
-        if let pdfURL = createPDF(from: pdfContent) {
-            let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
-            present(activityVC, animated: true)
-        }
-    }
-    
-    private func createPDF(from text: String) -> URL? {
-        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595.2, height: 841.8))
         let data = renderer.pdfData { (context) in
             context.beginPage()
-            let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12)]
-            text.draw(in: CGRect(x: 40, y: 40, width: 515.2, height: 761.8), withAttributes: attributes)
+            let titleAttr = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 24)]
+            let bodyAttr = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12)]
+            
+            conversationTitle.draw(at: CGPoint(x: 40, y: 40), withAttributes: titleAttr)
+            
+            var text = "Date: \(dateString) | \(timeString)\nLocation: \(locationString)\n\n"
+            text += "--- NOTES ---\n\(notesText)\n\n"
+            text += "--- PARTICIPANTS ---\n"
+            for p in participants {
+                text += "\(p.name):\n\(p.summary)\n\n"
+            }
+            
+            text.draw(in: CGRect(x: 40, y: 80, width: 515, height: 740), withAttributes: bodyAttr)
         }
         
-        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent("Summary.pdf")
-        try? data.write(to: fileURL)
-        return fileURL
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Session Summary.pdf")
+        try? data.write(to: url)
+        
+        let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        present(vc, animated: true)
     }
 
     // MARK: - TableView DataSource
@@ -242,49 +279,68 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         switch indexPath.section {
         case 0:
             let cell = tableView.dequeueReusableCell(withIdentifier: "HeaderCell", for: indexPath) as! SummarySectionHeaderCell
-            cell.headerLabel.text = "Analysis"
-            cell.headerIcon.image = UIImage(systemName: "sparkles")
+            cell.headerLabel.text = "Conversation Summary"
+            cell.headerIcon.image = UIImage(systemName: "list.clipboard")
+            cell.selectionStyle = .none
             return cell
+            
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! SummaryCardCell
-            cell.titleLabel.text = conversationTitle
+            cell.configure(title: conversationTitle, date: dateString, time: timeString, location: locationString)
+            cell.delegate = self
+            cell.selectionStyle = .none
             return cell
+            
         case 2:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsSummaryHeaderCell", for: indexPath) as! ParticipantsSummaryHeaderCell
-            cell.participantLabel.text = "Participants"
+            let cell = tableView.dequeueReusableCell(withIdentifier: "HeaderCell", for: indexPath) as! SummarySectionHeaderCell
+            cell.headerLabel.text = "Participant Summary"
+            cell.headerIcon.image = UIImage(systemName: "person.2.fill")
+            cell.selectionStyle = .none
             return cell
+            
         case 3:
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell", for: indexPath) as! ParticipantCardCell
             cell.configure(with: participants[indexPath.row])
+            cell.selectionStyle = .none
             return cell
+            
         case 4:
             let cell = tableView.dequeueReusableCell(withIdentifier: "HeaderCell", for: indexPath) as! SummarySectionHeaderCell
             cell.headerLabel.text = "Notes"
             cell.headerIcon.image = UIImage(systemName: "note.text")
+            cell.selectionStyle = .none
             return cell
+            
         case 5:
             let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! NotesCardCell
-            cell.notesTextView.text = self.notesText // Link the generated notes here
+            cell.notesTextView.text = self.notesText
             cell.delegate = self
+            cell.selectionStyle = .none
             return cell
+            
         default: return UITableViewCell()
         }
     }
     
+    // MARK: - Delegates
     func didUpdateText(in cell: NotesCardCell) {
         notesText = cell.notesTextView.text
-        tableView.beginUpdates()
-        tableView.endUpdates()
+        tableView.performBatchUpdates(nil)
+        if let indexPath = tableView.indexPath(for: cell) {
+            tableView.scrollToRow(at: indexPath, at: .bottom, animated: false)
+        }
+    }
+    
+    func didChangeTitle(text: String) {
+        self.conversationTitle = text
     }
     
     // MARK: - Save to History
     private func saveSessionToHistory() {
-        // 1. Map Participants to History Format
         let historyParticipants: [Participant] = participants.map { person in
             Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
         }
         
-        // 2. Map Transcript back into standard Message Bubbles
         let historyMessages: [Message] = transcriptMessages.map { msg in
             Message(
                 id: UUID(),
@@ -298,27 +354,22 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             )
         }
         
-        // 3. Grab the AI notes and format for the 1-2 liner description
         let finalNotes = self.notesText == "Generating summary..." ? "No notes generated." : self.notesText
         let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ")
         
-        // 4. Package everything into a Conversation Object
         let now = Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        let dateString = dateFormatter.string(from: now)
-        let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = .short
-        let timeString = timeFormatter.string(from: now)
+        let endTimeFormatter = DateFormatter()
+        endTimeFormatter.timeStyle = .short
+        let endTimeString = endTimeFormatter.string(from: now)
 
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
             details: cleanOneLiner,
-            date: dateString,
-            startTime: timeString,
-            endTime: timeString,
-            location: "Location Unknown",
+            date: self.dateString,
+            startTime: self.timeString,
+            endTime: endTimeString,
+            location: self.locationString,
             category: self.category,
             icon: "bolt.fill",
             info: nil,
@@ -329,9 +380,8 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             messages: historyMessages
         )
         
-        // 5. Send to DataManager
         DataManager.shared.addConversation(newConversation)
-        print("✅ Success: Saved Action session '\\(self.conversationTitle)' to History!")
+        print("✅ Success: Saved Action session '\(self.conversationTitle)' to History!")
     }
 }
 

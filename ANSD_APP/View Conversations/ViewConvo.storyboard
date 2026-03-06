@@ -112,7 +112,7 @@
                                                         <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="FSH-eS-622">
                                                             <rect key="frame" x="20" y="12" width="400" height="26"/>
                                                             <subviews>
-                                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="list.bullet.clipboard" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="vKd-dr-ao4">
+                                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="list.clipboard" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="vKd-dr-ao4">
                                                                     <rect key="frame" x="0.0" y="-1.3333333333333321" width="24" height="27"/>
                                                                     <color key="tintColor" systemColor="labelColor"/>
                                                                     <constraints>
@@ -166,8 +166,11 @@
                                                                                 </imageView>
                                                                                 <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Session Summary" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="vo4-wC-pph">
                                                                                     <rect key="frame" x="36" y="0.0" width="340" height="25"/>
-                                                                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="18"/>
+                                                                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <textInputTraits key="textInputTraits"/>
+                                                                                    <connections>
+                                                                                        <action selector="titleChanged:" destination="Inm-cF-v3b" eventType="editingDidEnd" id="dp8-SK-Ddg"/>
+                                                                                    </connections>
                                                                                 </textField>
                                                                             </subviews>
                                                                         </stackView>
@@ -175,17 +178,17 @@
                                                                             <rect key="frame" x="0.0" y="37" width="376" height="20.333333333333329"/>
                                                                             <subviews>
                                                                                 <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="calendar" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="Ere-qM-oUm">
-                                                                                    <rect key="frame" x="0.0" y="1.6666666666666643" width="290.66666666666669" height="17.333333333333336"/>
-                                                                                    <color key="tintColor" systemColor="secondaryLabelColor"/>
+                                                                                    <rect key="frame" x="0.0" y="1.6666666666666643" width="286.33333333333331" height="17.333333333333336"/>
+                                                                                    <color key="tintColor" systemColor="labelColor"/>
                                                                                     <constraints>
-                                                                                        <constraint firstAttribute="width" constant="24" id="blr-T4-gdU"/>
+                                                                                        <constraint firstAttribute="width" constant="16" id="blr-T4-gdU"/>
                                                                                     </constraints>
                                                                                 </imageView>
                                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Date Label" textAlignment="natural" lineBreakMode="tailTruncation" id="sbh-3R-V1l">
-                                                                                    <rect key="frame" x="302.66666666666669" y="0.0" width="73.333333333333314" height="20.333333333333332"/>
+                                                                                    <rect key="frame" x="298.33333333333331" y="0.0" width="77.666666666666686" height="20.333333333333332"/>
                                                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                                                                    <fontDescription key="fontDescription" type="system" pointSize="15"/>
-                                                                                    <color key="textColor" systemColor="secondaryLabelColor"/>
+                                                                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                                                                    <nil key="textColor"/>
                                                                                 </label>
                                                                             </subviews>
                                                                         </stackView>
@@ -193,35 +196,35 @@
                                                                             <rect key="frame" x="0.0" y="69.333333333333329" width="376" height="20.333333333333329"/>
                                                                             <subviews>
                                                                                 <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="clock" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="FN5-nj-xEE">
-                                                                                    <rect key="frame" x="0.0" y="0.66666666666666607" width="289" height="19"/>
-                                                                                    <color key="tintColor" systemColor="secondaryLabelColor"/>
+                                                                                    <rect key="frame" x="0.0" y="0.66666666666666607" width="284.66666666666669" height="19"/>
+                                                                                    <color key="tintColor" systemColor="labelColor"/>
                                                                                     <constraints>
-                                                                                        <constraint firstAttribute="width" constant="24" id="3Ty-8A-iWE"/>
+                                                                                        <constraint firstAttribute="width" constant="16" id="3Ty-8A-iWE"/>
                                                                                     </constraints>
                                                                                 </imageView>
                                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Time Label" textAlignment="natural" lineBreakMode="tailTruncation" id="l9Z-OH-mJg">
-                                                                                    <rect key="frame" x="301" y="0.0" width="75" height="20.333333333333332"/>
+                                                                                    <rect key="frame" x="296.66666666666669" y="0.0" width="79.333333333333314" height="20.333333333333332"/>
                                                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                                                                    <fontDescription key="fontDescription" type="system" pointSize="15"/>
-                                                                                    <color key="textColor" systemColor="secondaryLabelColor"/>
+                                                                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                                                                    <nil key="textColor"/>
                                                                                 </label>
                                                                             </subviews>
                                                                         </stackView>
                                                                         <stackView opaque="NO" contentMode="scaleToFill" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="r4">
                                                                             <rect key="frame" x="0.0" y="101.66666666666667" width="376" height="20.333333333333329"/>
                                                                             <subviews>
-                                                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="location.north.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="pwJ-v5-zcG">
-                                                                                    <rect key="frame" x="0.0" y="0.33333333333333393" width="264" height="19.333333333333329"/>
-                                                                                    <color key="tintColor" systemColor="secondaryLabelColor"/>
+                                                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="location" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="pwJ-v5-zcG">
+                                                                                    <rect key="frame" x="0.0" y="0.99999999999999822" width="258.33333333333331" height="18.666666666666664"/>
+                                                                                    <color key="tintColor" systemColor="labelColor"/>
                                                                                     <constraints>
-                                                                                        <constraint firstAttribute="width" constant="24" id="pdD-2g-Va2"/>
+                                                                                        <constraint firstAttribute="width" constant="16" id="pdD-2g-Va2"/>
                                                                                     </constraints>
                                                                                 </imageView>
                                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Location Label" textAlignment="natural" lineBreakMode="tailTruncation" id="AKH-lA-1pY">
-                                                                                    <rect key="frame" x="276" y="0.0" width="100" height="20.333333333333332"/>
+                                                                                    <rect key="frame" x="270.33333333333331" y="0.0" width="105.66666666666669" height="20.333333333333332"/>
                                                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                                                                    <fontDescription key="fontDescription" type="system" pointSize="15"/>
-                                                                                    <color key="textColor" systemColor="secondaryLabelColor"/>
+                                                                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                                                                    <nil key="textColor"/>
                                                                                 </label>
                                                                             </subviews>
                                                                         </stackView>
@@ -725,17 +728,14 @@
         <image name="bubble.left.and.bubble.right" catalog="system" width="128" height="96"/>
         <image name="calendar" catalog="system" width="128" height="107"/>
         <image name="clock" catalog="system" width="128" height="123"/>
-        <image name="list.bullet.clipboard" catalog="system" width="98" height="128"/>
-        <image name="location.north.fill" catalog="system" width="110" height="128"/>
+        <image name="list.clipboard" catalog="system" width="98" height="128"/>
+        <image name="location" catalog="system" width="128" height="119"/>
         <image name="person.2.fill" catalog="system" width="128" height="86"/>
         <image name="person.circle.fill" catalog="system" width="128" height="123"/>
         <image name="square.and.arrow.up" catalog="system" width="110" height="128"/>
         <image name="text.pad.header" catalog="system" width="128" height="107"/>
         <systemColor name="labelColor">
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
-        <systemColor name="secondaryLabelColor">
-            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondarySystemGroupedBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>

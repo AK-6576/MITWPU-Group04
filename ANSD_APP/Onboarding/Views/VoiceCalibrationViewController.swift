@@ -262,11 +262,22 @@ class VoiceCalibrationViewController: UIViewController {
     // MARK: - Microphone Permission
 
     private func requestMicrophoneAccess() {
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-            DispatchQueue.main.async {
-                if !allowed {
-                    self?.instructionLabel.text = "Microphone access is required in Settings."
-                    self?.recordButton.isEnabled = false
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { [weak self] allowed in
+                DispatchQueue.main.async {
+                    if !allowed {
+                        self?.instructionLabel.text = "Microphone access is required in Settings."
+                        self?.recordButton.isEnabled = false
+                    }
+                }
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
+                DispatchQueue.main.async {
+                    if !allowed {
+                        self?.instructionLabel.text = "Microphone access is required in Settings."
+                        self?.recordButton.isEnabled = false
+                    }
                 }
             }
         }

@@ -123,7 +123,7 @@ class FirebaseManager {
         let metadata: [String: Any] = [
             "id": conversation.id,
             "title": conversation.title,
-            "details": conversation.details ?? "",
+            "details": conversation.details,
             "category": conversation.category,
             "icon": conversation.icon,
             "date": conversation.date,

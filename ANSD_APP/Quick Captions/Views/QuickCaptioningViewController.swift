@@ -11,6 +11,7 @@ import AVFoundation
 import Speech
 import Combine
 import CoreLocation
+import MapKit
 import FoundationModels
 
 let MAX_BUBBLE_CHAR_LIMIT = 120
@@ -95,14 +96,16 @@ class QuickCaptioningViewController: UIViewController,
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
-        let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(loc) { [weak self] placemarks, error in
-            guard let self = self else { return }
-            if let place = placemarks?.first {
-                let city = place.locality ?? ""
-                let country = place.country ?? ""
-                if !city.isEmpty {
-                    self.currentLocationString = "\(city), \(country)"
+        
+        if let request = MKReverseGeocodingRequest(location: loc) {
+            request.getMapItems { [weak self] mapItems, error in
+                guard let self = self else { return }
+                if let place = mapItems?.first?.placemark {
+                    let city = place.locality ?? ""
+                    let country = place.country ?? ""
+                    if !city.isEmpty {
+                        self.currentLocationString = "\(city), \(country)"
+                    }
                 }
             }
         }
