@@ -27,8 +27,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     // MARK: - Outlets (Vocal Profile)
     @IBOutlet weak var voiceStatusLabel: UILabel!
-    @IBOutlet weak var updateProfileButton: UIButton!
-    @IBOutlet weak var deleteProfileButton: UIButton!
     
     var incomingName: String?
     var incomingImage: UIImage?
@@ -46,8 +44,8 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         super.viewDidLoad()
         setupHideKeyboardOnTap()
         setupTextFieldListeners()
+        setupGenderButton()
         loadPersistentData()
-        setupVoiceProfileButtons()
         
         // Initial Name Setup
         if firstNameTextField.text?.isEmpty ?? true {
@@ -85,83 +83,81 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         performAutoSave()
     }
     
-    // MARK: - Voice Profile Setup
-    
-    private func setupVoiceProfileButtons() {
-        // Update button — filled style, system tint colour, native iOS look
-        var updateConfig = UIButton.Configuration.filled()
-        updateConfig.cornerStyle = .medium
-        updateConfig.title = "Update Profile"
-        updateConfig.image = UIImage(systemName: "mic.badge.plus")
-        updateConfig.imagePadding = 8
-        updateConfig.imagePlacement = .leading
-        updateProfileButton.configuration = updateConfig
-
-        // Delete button — tinted red, native iOS destructive look
-        var deleteConfig = UIButton.Configuration.tinted()
-        deleteConfig.cornerStyle = .medium
-        deleteConfig.title = "Delete Profile"
-        deleteConfig.image = UIImage(systemName: "trash")
-        deleteConfig.imagePadding = 8
-        deleteConfig.imagePlacement = .leading
-        deleteConfig.baseForegroundColor = .systemRed
-        deleteConfig.baseBackgroundColor = .systemRed
-        deleteProfileButton.configuration = deleteConfig
+    // MARK: - Gender Menu Setup
+    private func setupGenderButton() {
+        let options = ["Male", "Female", "Prefer not to say"]
+        var actions = [UIAction]()
+        
+        for option in options {
+            let action = UIAction(title: option) { [weak self] _ in
+                self?.genderButton.setTitle(option, for: .normal)
+                self?.performAutoSave()
+            }
+            actions.append(action)
+        }
+        
+        genderButton.menu = UIMenu(children: actions)
+        genderButton.showsMenuAsPrimaryAction = true
     }
+    
+    // MARK: - Voice Profile Setup
     
     /// Check if a voice profile exists and update the status label accordingly
     private func refreshVoiceProfileStatus() {
         if let profile = VoiceProfileManager.shared.getVoiceProfile(byId: 0) {
             voiceStatusLabel.text = "Calibrated ✓"
             voiceStatusLabel.textColor = .systemGreen
-            updateProfileButton.isEnabled = true
-            deleteProfileButton.isEnabled = true
             print("ProfileScreen: Voice profile found — \(profile.name)")
         } else {
             voiceStatusLabel.text = "Not Calibrated"
             voiceStatusLabel.textColor = .systemGray
-            updateProfileButton.isEnabled = false
-            deleteProfileButton.isEnabled = false
         }
     }
     
     // MARK: - Voice Profile Actions
     
-    @IBAction func updateProfileTapped(_ sender: Any) {
-        let alert = UIAlertController(
-            title: "Update Voice Profile",
-            message: "This will re-record your voice profile. Your current profile will be replaced with the new recording.",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Update", style: .default) { [weak self] _ in
-            self?.navigateToVoiceCalibration()
-        })
-        present(alert, animated: true)
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // Vocal Profile is the 5th cell (index 4) in the single section
+        if indexPath.row == 4 {
+            tableView.deselectRow(at: indexPath, animated: true)
+            handleVocalProfileTap()
+        }
     }
     
-    @IBAction func deleteProfileTapped(_ sender: Any) {
-        let alert = UIAlertController(
-            title: "Delete Voice Profile",
-            message: "Are you sure you want to delete your voice profile? You will need to re-calibrate before using voice features.",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
-            VoiceProfileManager.shared.deleteVoiceProfile(byId: 0)
-            self?.refreshVoiceProfileStatus()
+    private func handleVocalProfileTap() {
+        if VoiceProfileManager.shared.getVoiceProfile(byId: 0) != nil {
+            let actionSheet = UIAlertController(title: "Voice Profile", message: "Manage your voice profile", preferredStyle: .actionSheet)
             
-            // Show confirmation
-            let confirmation = UIAlertController(
-                title: "Deleted",
-                message: "Your voice profile has been removed.",
-                preferredStyle: .alert
-            )
-            confirmation.addAction(UIAlertAction(title: "OK", style: .default))
-            self?.present(confirmation, animated: true)
-        })
-        present(alert, animated: true)
+            actionSheet.addAction(UIAlertAction(title: "Update Profile", style: .default) { [weak self] _ in
+                self?.navigateToVoiceCalibration()
+            })
+            
+            actionSheet.addAction(UIAlertAction(title: "Delete Profile", style: .destructive) { [weak self] _ in
+                VoiceProfileManager.shared.deleteVoiceProfile(byId: 0)
+                self?.refreshVoiceProfileStatus()
+                
+                let confirmation = UIAlertController(title: "Deleted", message: "Your voice profile has been removed.", preferredStyle: .alert)
+                confirmation.addAction(UIAlertAction(title: "OK", style: .default))
+                self?.present(confirmation, animated: true)
+            })
+            
+            actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            
+            // For iPad support
+            if let popoverController = actionSheet.popoverPresentationController {
+                if let cell = tableView.cellForRow(at: IndexPath(row: 4, section: 0)) {
+                    popoverController.sourceView = cell
+                    popoverController.sourceRect = cell.bounds
+                }
+            }
+            
+            present(actionSheet, animated: true)
+        } else {
+            navigateToVoiceCalibration()
+        }
     }
+    
+
     
     /// Navigate to Voice Calibration screen for re-recording
     private func navigateToVoiceCalibration() {
@@ -202,19 +198,29 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     func setupTextFieldListeners() {
         firstNameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+        lastNameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+        datePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
     }
     
     @objc func textFieldDidChange() {
+        performAutoSave()
+    }
+
+    @objc func datePickerChanged() {
         performAutoSave()
     }
     
     func performAutoSave() {
         let name = firstNameTextField.text ?? "Steve"
         let lastName = lastNameTextField.text ?? ""
+        let dob = datePicker.date
+        let gender = genderButton.title(for: .normal) ?? "Select"
         
-        // Persists the first name to UserDefaults.
+        // Persists the data to UserDefaults.
         UserDefaults.standard.set(name, forKey: firstNameKey)
         UserDefaults.standard.set(lastName, forKey: lastNameKey)
+        UserDefaults.standard.set(gender, forKey: genderKey)
+        UserDefaults.standard.set(dob, forKey: dobKey)
         
         // Broadcasts the updated name via NotificationCenter to refresh the Home Screen greeting.
         NotificationCenter.default.post(name: NSNotification.Name("ProfileNameUpdated"),
@@ -228,6 +234,12 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
         if let savedLastName = UserDefaults.standard.string(forKey: lastNameKey) {
             lastNameTextField.text = savedLastName
+        }
+        if let savedGender = UserDefaults.standard.string(forKey: genderKey), savedGender != "Select" {
+            genderButton.setTitle(savedGender, for: .normal)
+        }
+        if let savedDOB = UserDefaults.standard.object(forKey: dobKey) as? Date {
+            datePicker.date = savedDOB
         }
     }
     

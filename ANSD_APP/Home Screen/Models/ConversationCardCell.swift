@@ -135,21 +135,20 @@ class ConversationCardCell: UITableViewCell {
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
-        // 2. Fix the SF Symbols (using lowercase to perfectly match any input)
         let iconName: String
         let tintColor: UIColor
         
         switch categoryString {
-        case "family":
+        case "Family":
             iconName = "figure.2.and.child.holdinghands"
             tintColor = .systemPurple
-        case "friends":
+        case "Friends":
             iconName = "person.3.fill"
             tintColor = .systemGreen
-        case "office", "work":
+        case "Office", "work":
             iconName = "briefcase.fill"
             tintColor = .systemBlue
-        case "medical", "health":
+        case "Medical", "Health":
             iconName = "cross.case.fill"
             tintColor = .systemGreen
         case "Quick Captions":

@@ -516,67 +516,76 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="ParticipantsCardCell" rowHeight="200" id="0Cr-6r-epO" customClass="GroupJoinParticipantsCardCell" customModule="ANSD_APP" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="350" width="393" height="200"/>
-                                        <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="0Cr-6r-epO" id="DfR-Ks-yD2">
-                                            <rect key="frame" x="0.0" y="0.0" width="393" height="200"/>
-                                            <autoresizingMask key="autoresizingMask"/>
-                                            <subviews>
-                                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="v8u-t8-Yua">
-                                                    <rect key="frame" x="20" y="10" width="353" height="180"/>
-                                                    <subviews>
-                                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="person.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="g03-da-YyC">
-                                                            <rect key="frame" x="16" y="17.666666666666671" width="30" height="144.66666666666669"/>
-                                                            <color key="backgroundColor" systemColor="systemGray4Color"/>
-                                                            <color key="tintColor" systemColor="labelColor"/>
-                                                            <constraints>
-                                                                <constraint firstAttribute="width" constant="30" id="Gyn-e1-DJL"/>
-                                                                <constraint firstAttribute="height" constant="30" id="pT5-He-3v3"/>
-                                                            </constraints>
-                                                            <userDefinedRuntimeAttributes>
-                                                                <userDefinedRuntimeAttribute type="number" keyPath="keyPath.cornerRadius">
-                                                                    <integer key="value" value="20"/>
-                                                                </userDefinedRuntimeAttribute>
-                                                            </userDefinedRuntimeAttributes>
-                                                        </imageView>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Label" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TQh-jl-HP2">
-                                                            <rect key="frame" x="64" y="21" width="42" height="21"/>
-                                                            <fontDescription key="fontDescription" type="system" pointSize="15"/>
-                                                            <nil key="textColor"/>
-                                                            <nil key="highlightedColor"/>
-                                                        </label>
-                                                    </subviews>
-                                                    <color key="backgroundColor" red="0.97254901959999995" green="0.96862745100000003" blue="0.92549019610000005" alpha="0.28416593309999999" colorSpace="custom" customColorSpace="sRGB"/>
-                                                    <constraints>
-                                                        <constraint firstItem="g03-da-YyC" firstAttribute="top" secondItem="v8u-t8-Yua" secondAttribute="top" constant="16" id="BNd-tx-mMb"/>
-                                                        <constraint firstAttribute="trailing" secondItem="TQh-jl-HP2" secondAttribute="trailing" constant="16" id="Hw2-oc-iHj"/>
-                                                        <constraint firstItem="TQh-jl-HP2" firstAttribute="top" secondItem="v8u-t8-Yua" secondAttribute="top" constant="16" id="OHE-uq-aMo"/>
-                                                        <constraint firstAttribute="bottom" secondItem="g03-da-YyC" secondAttribute="bottom" constant="16" id="ZAq-G3-kmP"/>
-                                                        <constraint firstAttribute="bottom" secondItem="TQh-jl-HP2" secondAttribute="bottom" constant="16" id="d5C-ai-aWG"/>
-                                                        <constraint firstItem="TQh-jl-HP2" firstAttribute="leading" secondItem="g03-da-YyC" secondAttribute="trailing" constant="12" id="sp3-1L-zft"/>
-                                                        <constraint firstItem="g03-da-YyC" firstAttribute="leading" secondItem="v8u-t8-Yua" secondAttribute="leading" constant="16" id="w01-rB-OJK"/>
-                                                    </constraints>
-                                                    <userDefinedRuntimeAttributes>
-                                                        <userDefinedRuntimeAttribute type="number" keyPath="keyPath.cornerRadius">
-                                                            <integer key="value" value="12"/>
-                                                        </userDefinedRuntimeAttribute>
-                                                    </userDefinedRuntimeAttributes>
-                                                </view>
-                                            </subviews>
-                                            <constraints>
-                                                <constraint firstAttribute="bottom" secondItem="v8u-t8-Yua" secondAttribute="bottom" constant="10" id="1IL-HI-gGt"/>
-                                                <constraint firstItem="v8u-t8-Yua" firstAttribute="top" secondItem="DfR-Ks-yD2" secondAttribute="top" constant="10" id="U24-Vd-Fzu"/>
-                                                <constraint firstItem="v8u-t8-Yua" firstAttribute="leading" secondItem="DfR-Ks-yD2" secondAttribute="leading" constant="20" id="pkj-zb-6O5"/>
-                                                <constraint firstAttribute="trailing" secondItem="v8u-t8-Yua" secondAttribute="trailing" constant="20" id="yYN-6s-LLM"/>
-                                            </constraints>
-                                        </tableViewCellContentView>
-                                        <connections>
-                                            <outlet property="avatarImageView" destination="g03-da-YyC" id="9eb-H6-Sge"/>
-                                            <outlet property="mainCardView" destination="v8u-t8-Yua" id="k8K-zy-4eA"/>
-                                            <outlet property="summaryLabel" destination="TQh-jl-HP2" id="iKx-AG-Nui"/>
-                                        </connections>
-                                    </tableViewCell>
+<tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="none" reuseIdentifier="GroupJoinParticipantsCardCell" rowHeight="100" id="gjp-card" customClass="GroupJoinParticipantsCardCell" customModule="ANSD_APP" customModuleProvider="target">
+    <rect key="frame" x="0.0" y="0.0" width="393" height="100"/>
+    <autoresizingMask key="autoresizingMask"/>
+    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+    <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="gjp-card" id="gjp-content">
+        <rect key="frame" x="0.0" y="0.0" width="393" height="100"/>
+        <autoresizingMask key="autoresizingMask"/>
+        <subviews>
+            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gjp-mainView">
+                <rect key="frame" x="20" y="6" width="353" height="88"/>
+                <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gjp-avatar">
+                        <rect key="frame" x="16" y="16" width="40" height="40"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="SP" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="gjp-initials">
+                                <rect key="frame" x="9.6666666666666679" y="10.333333333333332" width="20.666666666666668" height="19.333333333333332"/>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="16"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" systemColor="systemBlueColor"/>
+                        <constraints>
+                            <constraint firstItem="gjp-initials" firstAttribute="centerY" secondItem="gjp-avatar" secondAttribute="centerY" id="x31"/>
+                            <constraint firstItem="gjp-initials" firstAttribute="centerX" secondItem="gjp-avatar" secondAttribute="centerX" id="x32"/>
+                            <constraint firstAttribute="width" constant="40" id="x33"/>
+                            <constraint firstAttribute="height" constant="40" id="x34"/>
+                        </constraints>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                <integer key="value" value="8"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </view>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Participant summary text goes here..." textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" translatesAutoresizingMaskIntoConstraints="NO" id="gjp-summary">
+                        <rect key="frame" x="68" y="16" width="269" height="56"/>
+                        <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                    </label>
+                </subviews>
+                <color key="backgroundColor" systemColor="secondarySystemGroupedBackgroundColor"/>
+                <constraints>
+                    <constraint firstItem="gjp-avatar" firstAttribute="leading" secondItem="gjp-mainView" secondAttribute="leading" constant="16" id="y31"/>
+                    <constraint firstItem="gjp-avatar" firstAttribute="top" secondItem="gjp-mainView" secondAttribute="top" constant="16" id="y32"/>
+                    <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="gjp-avatar" secondAttribute="bottom" constant="16" id="y33"/>
+                    <constraint firstItem="gjp-summary" firstAttribute="leading" secondItem="gjp-avatar" secondAttribute="trailing" constant="12" id="y34"/>
+                    <constraint firstItem="gjp-summary" firstAttribute="top" secondItem="gjp-mainView" secondAttribute="top" constant="16" id="y35"/>
+                    <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="gjp-summary" secondAttribute="bottom" constant="16" id="y36"/>
+                    <constraint firstAttribute="trailing" secondItem="gjp-summary" secondAttribute="trailing" constant="16" id="y37"/>
+                </constraints>
+                <userDefinedRuntimeAttributes>
+                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                        <integer key="value" value="12"/>
+                    </userDefinedRuntimeAttribute>
+                </userDefinedRuntimeAttributes>
+            </view>
+        </subviews>
+        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        <constraints>
+            <constraint firstAttribute="bottom" secondItem="gjp-mainView" secondAttribute="bottom" constant="6" id="z31"/>
+            <constraint firstItem="gjp-mainView" firstAttribute="top" secondItem="gjp-content" secondAttribute="top" constant="6" id="z32"/>
+            <constraint firstItem="gjp-mainView" firstAttribute="leading" secondItem="gjp-content" secondAttribute="leading" constant="20" id="z33"/>
+            <constraint firstAttribute="trailing" secondItem="gjp-mainView" secondAttribute="trailing" constant="20" id="z34"/>
+        </constraints>
+    </tableViewCellContentView>
+    <connections>
+        <outlet property="mainCardView" destination="gjp-mainView" id="out31"/>
+        <outlet property="avatarView" destination="gjp-avatar" id="out32"/>
+        <outlet property="initialsLabel" destination="gjp-initials" id="out33"/>
+        <outlet property="summaryLabel" destination="gjp-summary" id="out34"/>
+    </connections>
+</tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="NotesSectionHeaderCell" rowHeight="50" id="gmb-4T-zHM" customClass="NotesHeaderCell" customModule="ANSD_APP" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="550" width="393" height="50"/>
                                         <autoresizingMask key="autoresizingMask"/>
@@ -619,45 +628,52 @@
                                             <outlet property="notesLabel" destination="Wed-am-O77" id="SgO-vV-lMP"/>
                                         </connections>
                                     </tableViewCell>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="NotesCardCell" rowHeight="200" id="pF9-8k-WOy" customClass="GroupJoinNotesCardCell" customModule="ANSD_APP" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="600" width="393" height="200"/>
-                                        <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="pF9-8k-WOy" id="bqF-hF-0bc">
-                                            <rect key="frame" x="0.0" y="0.0" width="393" height="200"/>
-                                            <autoresizingMask key="autoresizingMask"/>
-                                            <subviews>
-                                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oWe-NR-1od">
-                                                    <rect key="frame" x="20" y="10" width="353" height="180"/>
-                                                    <subviews>
-                                                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" text="Add notes about the conversation here..." textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Z9l-Xj-OKi">
-                                                            <rect key="frame" x="16" y="16" width="321" height="148"/>
-                                                            <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                                                            <color key="textColor" systemColor="labelColor"/>
-                                                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                            <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
-                                                        </textView>
-                                                    </subviews>
-                                                    <color key="backgroundColor" red="0.97254901959999995" green="0.96862745100000003" blue="0.92549019610000005" alpha="0.28416593309999999" colorSpace="custom" customColorSpace="sRGB"/>
-                                                    <constraints>
-                                                        <constraint firstItem="Z9l-Xj-OKi" firstAttribute="leading" secondItem="oWe-NR-1od" secondAttribute="leading" constant="16" id="9Ds-a5-o33"/>
-                                                        <constraint firstAttribute="trailing" secondItem="Z9l-Xj-OKi" secondAttribute="trailing" constant="16" id="Kor-5q-vSl"/>
-                                                        <constraint firstItem="Z9l-Xj-OKi" firstAttribute="top" secondItem="oWe-NR-1od" secondAttribute="top" constant="16" id="g9E-F9-6L0"/>
-                                                        <constraint firstAttribute="bottom" secondItem="Z9l-Xj-OKi" secondAttribute="bottom" constant="16" id="sLn-7N-OzO"/>
-                                                    </constraints>
-                                                </view>
-                                            </subviews>
-                                            <constraints>
-                                                <constraint firstItem="oWe-NR-1od" firstAttribute="leading" secondItem="bqF-hF-0bc" secondAttribute="leading" constant="20" id="7XI-3j-SxU"/>
-                                                <constraint firstAttribute="trailing" secondItem="oWe-NR-1od" secondAttribute="trailing" constant="20" id="JpK-R9-Cp2"/>
-                                                <constraint firstAttribute="bottom" secondItem="oWe-NR-1od" secondAttribute="bottom" constant="10" id="cwQ-mz-fZT"/>
-                                                <constraint firstItem="oWe-NR-1od" firstAttribute="top" secondItem="bqF-hF-0bc" secondAttribute="top" constant="10" id="jeK-IO-y2m"/>
-                                            </constraints>
-                                        </tableViewCellContentView>
-                                        <connections>
-                                            <outlet property="mainCardView" destination="oWe-NR-1od" id="smg-Qp-oA1"/>
-                                            <outlet property="notesTextView" destination="Z9l-Xj-OKi" id="zeK-5b-sQf"/>
-                                        </connections>
-                                    </tableViewCell>
+<tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="GroupJoinNotesCardCell" rowHeight="100" id="gjn-card" customClass="GroupJoinNotesCardCell" customModule="ANSD_APP" customModuleProvider="target">
+    <rect key="frame" x="0.0" y="0.0" width="393" height="100"/>
+    <autoresizingMask key="autoresizingMask"/>
+    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+    <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="gjn-card" id="gjn-content">
+        <rect key="frame" x="0.0" y="0.0" width="393" height="100"/>
+        <autoresizingMask key="autoresizingMask"/>
+        <subviews>
+            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gjn-mainView" userLabel="MainCardView">
+                <rect key="frame" x="20" y="6" width="353" height="88"/>
+                <subviews>
+                    <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" scrollEnabled="NO" text="Add notes about the conversation here..." textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="gjn-textView">
+                        <rect key="frame" x="16" y="16" width="321" height="56"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="textColor" systemColor="labelColor"/>
+                        <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                        <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                    </textView>
+                </subviews>
+                <color key="backgroundColor" systemColor="secondarySystemGroupedBackgroundColor"/>
+                <constraints>
+                    <constraint firstItem="gjn-textView" firstAttribute="leading" secondItem="gjn-mainView" secondAttribute="leading" constant="16" id="c41"/>
+                    <constraint firstAttribute="trailing" secondItem="gjn-textView" secondAttribute="trailing" constant="16" id="c42"/>
+                    <constraint firstItem="gjn-textView" firstAttribute="top" secondItem="gjn-mainView" secondAttribute="top" constant="16" id="c43"/>
+                    <constraint firstAttribute="bottom" secondItem="gjn-textView" secondAttribute="bottom" constant="16" id="c44"/>
+                </constraints>
+                <userDefinedRuntimeAttributes>
+                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                        <integer key="value" value="12"/>
+                    </userDefinedRuntimeAttribute>
+                </userDefinedRuntimeAttributes>
+            </view>
+        </subviews>
+        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        <constraints>
+            <constraint firstItem="gjn-mainView" firstAttribute="leading" secondItem="gjn-content" secondAttribute="leading" constant="20" id="v41"/>
+            <constraint firstAttribute="trailing" secondItem="gjn-mainView" secondAttribute="trailing" constant="20" id="v42"/>
+            <constraint firstAttribute="bottom" secondItem="gjn-mainView" secondAttribute="bottom" constant="6" id="v43"/>
+            <constraint firstItem="gjn-mainView" firstAttribute="top" secondItem="gjn-content" secondAttribute="top" constant="6" id="v44"/>
+        </constraints>
+    </tableViewCellContentView>
+    <connections>
+        <outlet property="mainCardView" destination="gjn-mainView" id="out41"/>
+        <outlet property="notesTextView" destination="gjn-textView" id="out42"/>
+    </connections>
+</tableViewCell>
                                 </prototypes>
                             </tableView>
                         </subviews>

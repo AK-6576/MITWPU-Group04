@@ -22,10 +22,12 @@ private func styleCard(view: UIView?) {
     guard let card = view else { return }
     card.layer.cornerRadius = 12
     card.backgroundColor = .secondarySystemGroupedBackground
+
     card.layer.shadowColor = UIColor.black.cgColor
-    card.layer.shadowOpacity = 0.05
-    card.layer.shadowOffset = CGSize(width: 0, height: 2)
-    card.layer.shadowRadius = 4
+    card.layer.shadowOpacity = 0.06
+    card.layer.shadowOffset = CGSize(width: 0, height: 3)
+    card.layer.shadowRadius = 6
+    card.layer.masksToBounds = false
 }
 
 // MARK: - 1. Section Header Cell
@@ -40,38 +42,7 @@ class GroupNewSummarySectionHeaderCell: UITableViewCell {
     }
 }
 
-// MARK: - 2. Participants Card Cell (NEW)
-class GroupNewParticipantsCardCell: UITableViewCell {
-    @IBOutlet weak var mainCardView: UIView!
-    @IBOutlet weak var summaryLabel: UILabel!
-    @IBOutlet weak var avatarImageView: UIImageView!
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        backgroundColor = .clear
-        styleCard(view: mainCardView)
-        
-        // Avatar Styling
-        if let avatar = avatarImageView {
-            avatar.layer.cornerRadius = avatar.frame.height / 2
-            avatar.clipsToBounds = true
-            avatar.backgroundColor = .systemGray5
-            avatar.tintColor = .systemGray
-            avatar.contentMode = .scaleAspectFill
-        }
-    }
-    
-    func configure(with data: GroupNewParticipantData) {
-        summaryLabel.text = data.summary
-        
-        // Default Icon
-        if avatarImageView.image == nil {
-            avatarImageView.image = UIImage(systemName: "person.circle.fill")
-        }
-    }
-}
-
-// MARK: - 3. Main Summary Card (Title, Date, Location)
+// MARK: - 2. Main Summary Card Cell
 class GroupNewSummaryCardCell: UITableViewCell, UITextFieldDelegate {
     @IBOutlet weak var mainCardView: UIView!
     @IBOutlet weak var titleTextField: UITextField!
@@ -84,8 +55,11 @@ class GroupNewSummaryCardCell: UITableViewCell, UITextFieldDelegate {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
+        contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
+        
         titleTextField.delegate = self
+        titleTextField.borderStyle = .none
     }
     
     func configure(title: String, date: String, time: String, location: String) {
@@ -105,6 +79,43 @@ class GroupNewSummaryCardCell: UITableViewCell, UITextFieldDelegate {
     }
 }
 
+// MARK: - 3. Participants Card Cell (Rounded Square Avatar)
+class GroupNewParticipantsCardCell: UITableViewCell {
+    @IBOutlet weak var mainCardView: UIView!
+    @IBOutlet weak var summaryLabel: UILabel!
+    
+    // Updated to match the Figma rounded square UI
+    @IBOutlet weak var avatarView: UIView!
+    @IBOutlet weak var initialsLabel: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        styleCard(view: mainCardView)
+
+        avatarView?.layer.cornerRadius = 8
+        avatarView?.clipsToBounds = true
+    }
+    
+    func configure(with data: GroupNewParticipantData) {
+        summaryLabel.text = data.summary
+        
+        let components = data.name.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.map { String($0) }.joined()
+        initialsLabel?.text = String(initials.prefix(2)).uppercased()
+        
+        // Dynamic colors: Blue for User, Gray for others
+        if data.name.lowercased().contains("steve") || data.name.lowercased() == "you" {
+            avatarView?.backgroundColor = .systemBlue
+            initialsLabel?.textColor = .white
+        } else {
+            avatarView?.backgroundColor = .systemGray4
+            initialsLabel?.textColor = .label
+        }
+    }
+}
+
 // MARK: - 4. Notes Card Cell (AI Output)
 class GroupNewNotesCardCell: UITableViewCell, UITextViewDelegate {
     @IBOutlet weak var mainCardView: UIView!
@@ -116,6 +127,7 @@ class GroupNewNotesCardCell: UITableViewCell, UITextViewDelegate {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
+        contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
         
         notesTextView.delegate = self
@@ -123,6 +135,7 @@ class GroupNewNotesCardCell: UITableViewCell, UITextViewDelegate {
         notesTextView.textContainerInset = .zero
         notesTextView.textContainer.lineFragmentPadding = 0
         notesTextView.font = UIFont.systemFont(ofSize: 15)
+        notesTextView.backgroundColor = .clear
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
