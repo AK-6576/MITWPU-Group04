@@ -9,6 +9,10 @@
 import UIKit
 import Speech
 import AVFoundation
+import Combine
+import FoundationModels
+import FirebaseAuth
+import FirebaseDatabase
 
 class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, SFSpeechRecognizerDelegate {
 
@@ -18,13 +22,32 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     // MARK: - Properties
     var category: String = "Family"
-    var chatHistory: [(sender: String, message: String)] = []
+    var roomCode: String?
     var sessionTitle: String = "Session" {
         didSet {
             self.title = sessionTitle
         }
     }
+    var participantNames: [String] = []
     
+    // Core Managers
+    private let firebase = FirebaseManager.shared
+    private let cleanupManager = TextCleanupManager()
+    private let model = SystemLanguageModel.default
+    
+    // State
+    var messages: [GroupJoinChatMessage] = [] // Reusing model from Group Join for standard bubble tracking
+    var isRecording = false
+    var isRestarting = false
+    var consumedTranscriptOffset = 0
+    let myName = UIDevice.current.name
+    let MAX_BUBBLE_CHAR_LIMIT = 150
+    
+    var currentUserID: String {
+        let rawID = Auth.auth().currentUser?.uid ?? UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
+        return rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
+    }
+
     // Speech Engine Properties
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -38,9 +61,66 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         collectionView.delegate = self
         collectionView.dataSource = self
+        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
+            layout.minimumLineSpacing = 12
+        }
         
         setupSpeech()
-        addMessage(sender: "System", text: "Tap the mic to start speaking.")
+        setupAudioSession()
+        setupParticipantsButton()
+        
+        startFirebaseSession()
+    }
+    
+    private func setupParticipantsButton() {
+        let participantsButton = UIBarButtonItem(
+            image: UIImage(systemName: "person.2.fill"),
+            style: .plain,
+            target: self,
+            action: #selector(showParticipantsViewer)
+        )
+        navigationItem.rightBarButtonItem = participantsButton
+    }
+    
+    @objc private func showParticipantsViewer() {
+        let viewerVC = ParticipantsViewController()
+        viewerVC.viewerMode = true
+        viewerVC.viewerParticipantNames = self.participantNames
+        viewerVC.viewerRoomCode = self.roomCode
+        let nav = UINavigationController(rootViewController: viewerVC)
+        if let sheet = nav.sheetPresentationController { sheet.detents = [.medium(), .large()] }
+        present(nav, animated: true)
+    }
+    
+    private func setupAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setActive(true)
+        } catch {
+            print("Audio Session Error: \(error)")
+        }
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if !isRecording {
+            startRecording()
+        }
+        // Set presence online
+        if let code = roomCode {
+            firebase.setPresence(roomCode: code, userName: myName)
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        stopRecording()
+        // Remove presence
+        if let code = roomCode {
+            firebase.removePresence(roomCode: code, userName: myName)
+        }
     }
     
     func setupSpeech() {
@@ -53,9 +133,78 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
+    // MARK: - Firebase Integration
+    private func startFirebaseSession() {
+        guard let code = roomCode else {
+            print("DEBUG: No Room Code passed to ActionJoinViewController")
+            return
+        }
+        
+        // Try to find if a host exists for this code
+        firebase.findHostID(for: code) { [weak self] hostUID in
+            guard let self = self else { return }
+            
+            if let targetUID = hostUID {
+                // Room exists -> JOIN IT
+                print("DEBUG: Action Room found. Joining as Guest.")
+                self.firebase.setupSession(hostUID: targetUID, conversationID: code, isHost: false)
+                self.firebase.linkConversationToJoiner(hostUID: targetUID, conversationID: code, conversationTitle: self.sessionTitle)
+            } else {
+                // Doesn't exist -> CREATE IT
+                let hostID = self.currentUserID
+                print("DEBUG: Action Room not found. Creating as Host. UID: \(hostID)")
+                self.firebase.registerRoom(code: code, hostUID: hostID)
+                self.firebase.setupSession(hostUID: hostID, conversationID: code, isHost: true)
+                self.firebase.linkConversationToJoiner(hostUID: hostID, conversationID: code, conversationTitle: self.sessionTitle)
+            }
+            
+            self.setupFirebaseObservers()
+        }
+    }
+    
+    private func setupFirebaseObservers() {
+        firebase.observeSessionStatus { [weak self] status in
+            guard let self = self else { return }
+            if status == "ended" {
+                self.handleGlobalSessionEnd()
+            }
+        }
+        
+        firebase.observeMessages { [weak self] data in
+            guard let self = self else { return }
+            guard let text = data["text"] as? String,
+                  let sender = data["sender"] as? String,
+                  let senderID = data["senderID"] as? String else { return }
+            
+            // Deduplication
+            if senderID == self.currentUserID {
+                let lastFinalized = self.messages.last(where: { !$0.isIncoming && $0.text != "..." && $0.text != "Listening..." })
+                if let last = lastFinalized, last.text == text {
+                    return
+                }
+            }
+            
+            DispatchQueue.main.async {
+                self.processIncomingMessage(text: text, sender: sender, senderID: senderID)
+            }
+        }
+    }
+    
+    private func processIncomingMessage(text: String, sender: String, senderID: String) {
+        let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
+        
+        if isListeningPresent { self.removeListeningBubble() }
+        
+        let msg = GroupJoinChatMessage(text: text, isIncoming: (senderID != self.currentUserID), sender: sender, senderID: senderID)
+        self.messages.append(msg)
+        self.reloadDataAndScroll()
+        
+        if isListeningPresent && self.isRecording { self.addListeningBubble() }
+    }
+    
     // MARK: - Actions
     @IBAction func micButtonTapped(_ sender: UIButton) {
-        if audioEngine.isRunning {
+        if isRecording {
             stopRecording()
         } else {
             startRecording()
@@ -74,13 +223,12 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             
-            // Block 1: Safety Cleanup (Stopping Audio)
-            if self.audioEngine.isRunning {
+            // Block 1: Safety Cleanup
+            if self.isRecording {
                 self.stopRecording()
             }
-            
-            // 3. Trigger Navigation (Modal)
-            self.navigateToSummary()
+            // Block 2: End session globally in Firebase
+            self.firebase.endSession()
         }
         
         // 4. Define the Cancel Action
@@ -92,6 +240,13 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         present(alert, animated: true)
     }
 
+    private func handleGlobalSessionEnd() {
+        self.stopRecording()
+        self.removeListeningBubble()
+        self.navigateToSummary()
+        firebase.stop()
+    }
+
     func navigateToSummary() {
         let storyboard = UIStoryboard(name: "Action", bundle: nil)
         
@@ -101,6 +256,10 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         }
 
         summaryVC.category = self.category
+        summaryVC.conversationTitle = self.sessionTitle
+        summaryVC.transcriptMessages = self.messages.map { msg in
+            ChatMessage(text: msg.text, isIncoming: msg.isIncoming, sender: msg.sender)
+        }
         
         // 1. Wrap your summaryVC in a new Navigation Controller
         let navController = UINavigationController(rootViewController: summaryVC)
@@ -114,80 +273,186 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     // MARK: - Speech Implementation
     func startRecording() {
-        if recognitionTask != nil { recognitionTask?.cancel(); recognitionTask = nil }
-        
-        micButton.setTitle("Stop", for: .normal)
-        micButton.backgroundColor = .systemRed
-        
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try? audioSession.setActive(true)
-        
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        let inputNode = audioEngine.inputNode
-        recognitionRequest?.shouldReportPartialResults = true
-        
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { result, error in
-            if let result = result {
-                if result.isFinal {
-                    self.addMessage(sender: "You", text: result.bestTranscription.formattedString)
-                    self.stopRecording()
-                }
-            }
-            if error != nil { self.stopRecording() }
+        if recognitionTask != nil {
+            recognitionTask?.cancel()
+            recognitionTask = nil
         }
         
+        consumedTranscriptOffset = 0
+        addListeningBubble()
+        
+        micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
+        micButton.tintColor = .systemRed
+        
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        if #available(iOS 13, *) { request.requiresOnDeviceRecognition = true }
+        recognitionRequest = request
+        
+        let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, _) in
             self.recognitionRequest?.append(buffer)
         }
         
         audioEngine.prepare()
-        try? audioEngine.start()
+        do {
+            try audioEngine.start()
+            isRecording = true
+        } catch {
+            print("Audio Engine Error: \(error)")
+        }
+        
+        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+            guard let self = self else { return }
+            
+            if let result = result {
+                let fullString = result.bestTranscription.formattedString
+                if self.consumedTranscriptOffset > fullString.count { self.consumedTranscriptOffset = 0 }
+                
+                let index = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
+                let newContent = String(fullString[index...])
+                self.consumedTranscriptOffset = fullString.count
+                
+                guard !newContent.isEmpty else { return }
+                
+                if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                    let currentText = self.messages[lastIndex].text
+                    let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
+                    let combinedText = baseText + newContent
+                    
+                    if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
+                        self.messages[lastIndex].text = combinedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                        self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                        
+                        let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                        self.messages.append(newMsg)
+                        self.reloadDataAndScroll()
+                    } else {
+                        self.messages[lastIndex].text = combinedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                        self.scrollToBottom()
+                    }
+                    
+                    self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
+                        if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                            let finalText = self.messages[finalIndex].text
+                            if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
+                                self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
+                            }
+                        }
+                        if self.isRecording { self.restartRecordingCycle() }
+                    }
+                }
+            }
+            
+            if let error = error {
+                if !self.isRestarting {
+                    print("Speech Error: \(error)")
+                    self.stopRecording()
+                } else {
+                    self.isRestarting = false
+                }
+            }
+        }
     }
     
+    // MARK: - Apple Intelligence Logic
+    private func processTextWithAppleIntelligence(text: String, index: Int) {
+        Task {
+            do {
+                let prompt = "Fix grammar and make concise: \(text)"
+                let session = LanguageModelSession(model: model)
+                let response = try await session.respond(to: prompt)
+                let cleanedText = response.content
+                
+                await MainActor.run {
+                    if index < self.messages.count {
+                        self.messages[index].text = cleanedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+                        self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Handlers
     func stopRecording() {
         audioEngine.stop()
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
+        isRecording = false
         
-        micButton.setTitle("Record", for: .normal)
-        micButton.backgroundColor = .systemBlue
+        removeListeningBubble()
+        
+        micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
+        micButton.tintColor = .label
     }
     
-    func addMessage(sender: String, text: String) {
-        chatHistory.append((sender: sender, message: text))
+    private func restartRecordingCycle() {
+        isRestarting = true
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionTask?.cancel()
+        removeListeningBubble()
+        startRecording()
+    }
+    
+    private func addListeningBubble() {
+        if let last = messages.last, last.text == "Listening..." && !last.isIncoming { return }
+        let listeningMsg = GroupJoinChatMessage(text: "Listening...", isIncoming: false, sender: myName, senderID: currentUserID)
+        messages.append(listeningMsg)
+        reloadDataAndScroll()
+    }
+    
+    private func removeListeningBubble() {
+        messages.removeAll { ($0.text == "Listening..." || $0.text == "...") && !$0.isIncoming }
+        reloadDataAndScroll()
+    }
+    
+    private func reloadDataAndScroll() {
         collectionView.reloadData()
-        
-        if chatHistory.count > 0 {
-            let lastItem = chatHistory.count - 1
-            collectionView.scrollToItem(at: IndexPath(item: lastItem, section: 0), at: .bottom, animated: true)
-        }
+        scrollToBottom()
+    }
+    
+    private func scrollToBottom() {
+        guard !messages.isEmpty else { return }
+        let lastItem = IndexPath(item: messages.count - 1, section: 0)
+        collectionView.scrollToItem(at: lastItem, at: .bottom, animated: true)
     }
 
     // MARK: - CollectionView DataSource
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return chatHistory.count
+        return messages.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let chat = chatHistory[indexPath.row]
+        let message = messages[indexPath.row]
         
-        if chat.sender == "You" {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! OutgoingCell
-            cell.messageLabel.text = chat.message
+        if message.isIncoming {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell
+            cell.messageLabel.text = message.text
+            cell.nameLabel.text = message.sender
             return cell
         } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "IncomingCell", for: indexPath) as! IncomingCell
-            cell.messageLabel.text = chat.message
-            cell.nameLabel.text = chat.sender
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OutgoingCell", for: indexPath) as! OutgoingCell
+            cell.messageLabel.text = message.text
             return cell
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width, height: 80)
+        return CGSize(width: collectionView.bounds.width - 32, height: 80)
     }
 }

@@ -81,6 +81,8 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     @objc func shareTapped() { shareAsPDF() }
     
     @IBAction func backTapped(_ sender: Any) {
+        self.saveSessionToHistory()
+        
         let storyboard = UIStoryboard(name: "Home", bundle: nil)
         let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
         let navController = UINavigationController(rootViewController: homeVC)
@@ -273,6 +275,63 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         notesText = cell.notesTextView.text
         tableView.beginUpdates()
         tableView.endUpdates()
+    }
+    
+    // MARK: - Save to History
+    private func saveSessionToHistory() {
+        // 1. Map Participants to History Format
+        let historyParticipants: [Participant] = participants.map { person in
+            Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
+        }
+        
+        // 2. Map Transcript back into standard Message Bubbles
+        let historyMessages: [Message] = transcriptMessages.map { msg in
+            Message(
+                id: UUID(),
+                text: msg.text,
+                senderId: msg.sender,
+                senderName: msg.sender,
+                isIncoming: msg.isIncoming,
+                timestamp: Date(),
+                isHighlighted: false,
+                isEdited: false
+            )
+        }
+        
+        // 3. Grab the AI notes and format for the 1-2 liner description
+        let finalNotes = self.notesText == "Generating summary..." ? "No notes generated." : self.notesText
+        let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ")
+        
+        // 4. Package everything into a Conversation Object
+        let now = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        let dateString = dateFormatter.string(from: now)
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        let timeString = timeFormatter.string(from: now)
+
+        let newConversation = Conversation(
+            id: UUID().uuidString,
+            title: self.conversationTitle,
+            details: cleanOneLiner,
+            date: dateString,
+            startTime: timeString,
+            endTime: timeString,
+            location: "Location Unknown",
+            category: self.category,
+            icon: "bolt.fill",
+            info: nil,
+            calendarDate: now,
+            notes: finalNotes,
+            isPinned: false,
+            participants: historyParticipants,
+            messages: historyMessages
+        )
+        
+        // 5. Send to DataManager
+        DataManager.shared.addConversation(newConversation)
+        print("✅ Success: Saved Action session '\\(self.conversationTitle)' to History!")
     }
 }
 

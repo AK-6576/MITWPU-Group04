@@ -208,6 +208,11 @@ class HomeViewController: UIViewController {
             guard let destVC = segue.destination as? ChatHistoryViewController,
                   let selectedConvo = sender as? Conversation else { return }
             destVC.histconversationData = selectedConvo
+        } else if let destVC = segue.destination as? ActionJoinViewController, let item = sender as? RoutineConversation {
+            destVC.category = item.categoryTitle
+            destVC.sessionTitle = item.conversationTopic
+            destVC.roomCode = item.roomCode
+            destVC.participantNames = item.participantNames
         }
     }
     
