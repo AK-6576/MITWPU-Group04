@@ -830,7 +830,7 @@
                                                 </label>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" text="Not Calibrated" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vPr-Lb-05e">
                                                     <rect key="frame" x="250" y="12" width="123" height="20"/>
-                                                    <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                     <color key="textColor" systemColor="systemGrayColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
@@ -857,10 +857,7 @@
                                                         <constraint firstAttribute="height" constant="40" id="vPr-H1-14n"/>
                                                     </constraints>
                                                     <state key="normal" title="Update Profile"/>
-                                                    <buttonConfiguration key="configuration" style="filled" title="Update Profile">
-                                                        <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                        <color key="baseBackgroundColor" systemColor="systemBlueColor"/>
-                                                    </buttonConfiguration>
+                                                    <buttonConfiguration key="configuration" style="tinted" title="Update Profile" cornerStyle="medium"/>
                                                     <connections>
                                                         <action selector="updateProfileTapped:" destination="IRY-tW-tVq" eventType="touchUpInside" id="vPr-A1-15o"/>
                                                     </connections>
@@ -871,8 +868,8 @@
                                                         <constraint firstAttribute="height" constant="40" id="vPr-H2-17q"/>
                                                     </constraints>
                                                     <state key="normal" title="Delete &amp; Redo"/>
-                                                    <buttonConfiguration key="configuration" style="filled" title="Delete &amp; Redo">
-                                                        <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                    <buttonConfiguration key="configuration" style="tinted" title="Delete &amp; Redo" cornerStyle="medium">
+                                                        <color key="baseForegroundColor" systemColor="systemRedColor"/>
                                                         <color key="baseBackgroundColor" systemColor="systemRedColor"/>
                                                     </buttonConfiguration>
                                                     <connections>

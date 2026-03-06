@@ -27,16 +27,31 @@ class HomeViewController: UIViewController {
         setupProfileButton()
         loadSavedProfileImage()
         
+        // Explicitly disable large titles — Login screen sets this to true.
+        // Without this reset: (a) the table gets an extra top inset creating a gap,
+        // and (b) every child VC pushed from Home inherits the large title.
+        navigationController?.navigationBar.prefersLargeTitles = false
+        navigationItem.largeTitleDisplayMode = .never
+        
+        // Show greeting in the tableHeaderView labels (32pt bold, looks like a native large title)
+        // This avoids any nav bar large-title bleed to child screens.
+        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+        if let headerView = tableView.tableHeaderView as? GreetingViewCell {
+            headerView.helloLabel.isHidden = false
+            headerView.nameLabel.isHidden = false
+            headerView.configure(name: name)
+        }
+        // Keep nav bar title empty on Home (greeting is in the header view above)
+        navigationItem.title = ""
+        
         navigationItem.hidesBackButton = true
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileImageUpdate(_:)), name: NSNotification.Name("ProfileImageUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileNameUpdate(_:)), name: NSNotification.Name("ProfileNameUpdated"), object: nil)
-        
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
     }
     
-    // Handler for the notification
     @objc func handleDataUpdate() {
         loadData()
     }
@@ -45,32 +60,33 @@ class HomeViewController: UIViewController {
         super.viewWillAppear(animated)
         loadData()
         loadSavedProfileImage()
-        updateGreetingHeader()
+        
+        // Force reset large titles every time Home appears.
+        // This is critical because Login/CreateAccount set it to true globally.
+        navigationController?.navigationBar.prefersLargeTitles = false
+        navigationItem.largeTitleDisplayMode = .never
+        
+        // Refresh greeting name in the header view
+        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+        if let headerView = tableView.tableHeaderView as? GreetingViewCell {
+            headerView.configure(name: name)
+        }
     }
-    
     deinit {
         NotificationCenter.default.removeObserver(self)
-    }
-    
-    // MARK: - Header Update Logic
-    
-    func updateGreetingHeader(forceName: String? = nil) {
-        let nameToShow = forceName ?? UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            if let headerView = self.tableView.tableHeaderView as? GreetingViewCell {
-                headerView.configure(name: nameToShow)
-                headerView.setNeedsLayout()
-                headerView.layoutIfNeeded()
-            }
-        }
     }
     
     // MARK: - Notification Handlers
     
     @objc func handleProfileNameUpdate(_ notification: Notification) {
         if let userInfo = notification.userInfo, let newName = userInfo["name"] as? String {
-            updateGreetingHeader(forceName: newName)
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if let headerView = self.tableView.tableHeaderView as? GreetingViewCell {
+                    headerView.configure(name: newName)
+                }
+                UserDefaults.standard.set(newName, forKey: "user_first_name")
+            }
         }
     }
     

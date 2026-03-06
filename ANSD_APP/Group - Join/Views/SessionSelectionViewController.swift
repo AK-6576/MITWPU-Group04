@@ -22,6 +22,14 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
+        // Hide the table — we skip straight to the popup
+        GroupJoinTableView.isHidden = true
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Immediately present the "Join Session" popup
+        showJoinSessionAlert(title: "Join via Code")
     }
     
     func setupTableView() {
@@ -98,7 +106,10 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
             textField.keyboardType = .numberPad
         }
         
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
+            // Pop back to Home instead of showing the empty table
+            self?.navigationController?.popViewController(animated: true)
+        }
         
         let joinAction = UIAlertAction(title: "Join", style: .default) { [weak self] _ in
             guard let self = self else { return }

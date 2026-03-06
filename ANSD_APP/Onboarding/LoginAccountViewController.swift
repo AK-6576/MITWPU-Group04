@@ -20,7 +20,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Navigation bar title
         title = "Sign In"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
@@ -57,7 +56,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         emailTextField.autocorrectionType = .no
         emailTextField.returnKeyType = .next
         emailTextField.textContentType = .emailAddress
-        emailTextField.placeholder = "john@example.com or +91 00000 00000"
+        emailTextField.placeholder = "john@example.com"
         
         // Configure password field
         passwordTextField.isSecureTextEntry = true
@@ -92,7 +91,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         // Validation
         guard let email = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
               !email.isEmpty else {
-            showAlert(title: "Missing Field", message: "Please enter your email address or phone number.")
+            showAlert(title: "Missing Field", message: "Please enter your email address.")
             return
         }
         
@@ -116,6 +115,18 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                 switch result {
                 case .success(let user):
                     print("Successfully logged in: \(user.uid)")
+                    // Persist first name from displayName (e.g. "John Doe" → "John") so Home screen shows it
+                    if let displayName = user.displayName, !displayName.isEmpty {
+                        let firstName = displayName.components(separatedBy: " ").first ?? displayName
+                        UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                    } else {
+                        // Fallback: derive a name from the email prefix
+                        let emailPrefix = email.components(separatedBy: "@").first ?? ""
+                        let firstName = emailPrefix.components(separatedBy: ".").first?.capitalized ?? emailPrefix
+                        if !firstName.isEmpty {
+                            UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                        }
+                    }
                     self?.performSegue(withIdentifier: "loginToHome", sender: self)
                     
                 case .failure(let error):

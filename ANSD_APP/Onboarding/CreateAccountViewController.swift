@@ -19,7 +19,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var confirmPasswordTextField: UITextField!
-    @IBOutlet weak var phoneTextField: UITextField!
+
     
     @IBOutlet weak var continueButton: UIButton!
 
@@ -32,7 +32,6 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Navigation bar title
         title = "Create Account"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
@@ -42,8 +41,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
             lastNameTextField,
             emailTextField,
             passwordTextField,
-            confirmPasswordTextField,
-            phoneTextField
+            confirmPasswordTextField
         ]
         
         setupUI()
@@ -52,6 +50,9 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
         registerKeyboardNotifications()
     }
     
+
+
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -74,6 +75,13 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
             field.leftView = paddingView
             field.leftViewMode = .always
         }
+        
+        // Capitalize first letter of each word for name fields
+        firstNameTextField.autocapitalizationType = .words
+        lastNameTextField.autocapitalizationType = .words
+        // Never auto-capitalize passwords
+        passwordTextField.autocapitalizationType = .none
+        confirmPasswordTextField.autocapitalizationType = .none
         
         // Set return key types: Next for all except last field which gets Done
         for (index, field) in orderedTextFields.enumerated() {
@@ -178,39 +186,24 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
-        // 2. Package the data (Ready for when Firebase is fixed)
+        // 2. Package the data
+        let firstName = firstNameTextField.text ?? ""
+        let lastName = lastNameTextField.text ?? ""
         let userDetails = [
-            "firstName": firstNameTextField.text ?? "",
-            "lastName": lastNameTextField.text ?? "",
+            "firstName": firstName,
+            "lastName": lastName,
             "email": emailTextField.text ?? "",
-            "password": password,
-            "phone": phoneTextField.text ?? ""
+            "password": password
         ]
 
         // 3. UI REVIEW BYPASS: Pretend Firebase succeeded so we can show the next screen!
         print("Mock Registration Successful with details: \(userDetails)")
+        // Save the user's name so the Home screen large title can display it
+        UserDefaults.standard.set(firstName, forKey: "user_first_name")
+        UserDefaults.standard.set(lastName, forKey: "user_last_name")
         DispatchQueue.main.async {
             self.performSegue(withIdentifier: "showCalibration", sender: self)
         }
-        
-        FirebaseManager.shared.createAccount(details: userDetails) { result in
-            switch result {
-            case .success(let user):
-                print("Successfully registered: \(user.uid)")
-                DispatchQueue.main.async {
-                    self.performSegue(withIdentifier: "showCalibration", sender: self)
-                }
-                
-            case .failure(let error):
-                print("Registration failed: \(error.localizedDescription)")
-                let alert = UIAlertController(title: "Registration Error",
-                                              message: error.localizedDescription,
-                                              preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                self.present(alert, animated: true)
-            }
-        }
-        
     }
 }
 
