@@ -53,6 +53,8 @@ class QuickActionsViewController: UITableViewController {
                 if let chatVC = segue.destination as? ActionJoinViewController {
                     chatVC.sessionTitle = "\(selectedItem.categoryTitle) Session"
                     chatVC.category = selectedItem.categoryTitle
+                    chatVC.roomCode = selectedItem.roomCode
+                    chatVC.participantNames = selectedItem.participantNames
                 }
             }
         }

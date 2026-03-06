@@ -170,41 +170,41 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "GroupJoinSummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
             cell.headerLabel.text = "Conversation Summary"
             cell.headerIcon.image = UIImage(systemName: "list.clipboard")
             cell.selectionStyle = .none
             return cell
             
         case 1: // Main Card
-            let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! GroupJoinSummaryCardCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "GroupJoinSummaryCardCell", for: indexPath) as! GroupJoinSummaryCardCell
             cell.configure(title: conversationTitle, date: dateString, time: timeString, location: locationString)
             cell.selectionStyle = .none
             return cell
             
         case 2: // Header Participants
-            let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "GroupJoinSummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
             cell.headerLabel.text = "Participant Summary"
             cell.headerIcon.image = UIImage(systemName: "person.2.fill")
             cell.selectionStyle = .none
             return cell
             
         case 3: // LIST OF PARTICIPANTS (Using Card Cell)
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantsCardCell", for: indexPath) as! GroupJoinParticipantsCardCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "GroupJoinParticipantsCardCell", for: indexPath) as! GroupJoinParticipantsCardCell
             let data = participantsData[indexPath.row]
             cell.configure(with: data)
             cell.selectionStyle = .none
             return cell
             
         case 4:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "GroupJoinSummarySectionHeaderCell", for: indexPath) as! GroupJoinSummarySectionHeaderCell
             cell.headerLabel.text = "Notes"
             cell.headerIcon.image = UIImage(systemName: "note.text")
             cell.selectionStyle = .none
             return cell
             
         case 5: // Notes Card
-            let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! GroupJoinNotesCardCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "GroupJoinNotesCardCell", for: indexPath) as! GroupJoinNotesCardCell
             cell.notesTextView.text = self.notesText
             cell.delegate = self
             cell.selectionStyle = .none

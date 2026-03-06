@@ -140,13 +140,15 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             return
         }
         
+        print("DEBUG: ActionJoin - Starting Firebase session for code: \(code), myID: \(currentUserID)")
+        
         // Try to find if a host exists for this code
         firebase.findHostID(for: code) { [weak self] hostUID in
             guard let self = self else { return }
             
             if let targetUID = hostUID {
                 // Room exists -> JOIN IT
-                print("DEBUG: Action Room found. Joining as Guest.")
+                print("DEBUG: Action Room found. Joining as Guest. HostUID: \(targetUID)")
                 self.firebase.setupSession(hostUID: targetUID, conversationID: code, isHost: false)
                 self.firebase.linkConversationToJoiner(hostUID: targetUID, conversationID: code, conversationTitle: self.sessionTitle)
             } else {
@@ -163,8 +165,11 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     private func setupFirebaseObservers() {
+        print("DEBUG: ActionJoin - Setting up Firebase observers")
+        
         firebase.observeSessionStatus { [weak self] status in
             guard let self = self else { return }
+            print("DEBUG: ActionJoin - Session status: \(status)")
             if status == "ended" {
                 self.handleGlobalSessionEnd()
             }
@@ -174,12 +179,18 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             guard let self = self else { return }
             guard let text = data["text"] as? String,
                   let sender = data["sender"] as? String,
-                  let senderID = data["senderID"] as? String else { return }
+                  let senderID = data["senderID"] as? String else {
+                print("DEBUG: ActionJoin - Received malformed message data: \(data)")
+                return
+            }
+            
+            print("DEBUG: ActionJoin - Received message from \(sender) (\(senderID)): \(text.prefix(30))...")
             
             // Deduplication
             if senderID == self.currentUserID {
                 let lastFinalized = self.messages.last(where: { !$0.isIncoming && $0.text != "..." && $0.text != "Listening..." })
                 if let last = lastFinalized, last.text == text {
+                    print("DEBUG: ActionJoin - Skipping duplicate self-message")
                     return
                 }
             }

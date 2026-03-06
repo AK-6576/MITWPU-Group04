@@ -42,8 +42,10 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     var hostUserIDFromLink: String = ""
     
     // Fixed: Using a computed property to safely fetch the Firebase UID
+    // CRITICAL: Must sanitize to match GroupNewViewController & ActionJoinViewController
     var currentUserID: String {
-        return Auth.auth().currentUser?.uid ?? UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
+        let rawID = Auth.auth().currentUser?.uid ?? UIDevice.current.identifierForVendor?.uuidString ?? "GuestUser"
+        return rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
     }
     
     let myName = UIDevice.current.name

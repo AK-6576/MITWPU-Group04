@@ -123,7 +123,7 @@
         <!--Description-->
         <scene sceneID="jz5-ab-MEC">
             <objects>
-                <viewController storyboardIdentifier="ActionAbout" title="Description" useStoryboardIdentifierAsRestorationIdentifier="YES" id="BLI-vU-eQC" customClass="InfoViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="ActionAbout" title="Description" useStoryboardIdentifierAsRestorationIdentifier="YES" id="BLI-vU-eQC" customClass="ParticipantsViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="AGc-M4-7Xz">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="793"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
