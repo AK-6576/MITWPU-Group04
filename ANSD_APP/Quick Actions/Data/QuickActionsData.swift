@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import FirebaseAuth
 
 // MARK: - Quick Actions Repository
 // Singleton class responsible for managing persistent storage and retrieval of quick action items.
@@ -42,6 +43,7 @@ class QuickActionsRepository {
         quickActionBubbles.append(action)
         saveToDisk()
         notifyObservers()
+        syncToFirebase(action)
     }
 
     func deleteAction(_ action: RoutineConversation) {
@@ -55,6 +57,15 @@ class QuickActionsRepository {
             self.quickActionBubbles[index] = action
             saveToDisk()
             notifyObservers()
+            syncToFirebase(action)
+        }
+    }
+    
+    private func syncToFirebase(_ action: RoutineConversation) {
+        let rawID = Auth.auth().currentUser?.uid ?? "UnknownUser"
+        let hostID = rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
+        if action.roomCode != nil {
+            FirebaseManager.shared.saveQuickActionMetadata(action, hostUID: hostID)
         }
     }
     

@@ -56,6 +56,9 @@ class DataManager {
         guard let context = context else { return }
         context.insert(conversation)
         saveData()
+        
+        // Push the metadata to the user's Firebase history
+        FirebaseManager.shared.saveConversationMetadata(conversation)
     }
     
     // 4. DELETE: Removes a conversation from the database

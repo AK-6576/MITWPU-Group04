@@ -139,6 +139,66 @@ class FirebaseManager {
         ref?.removeAllObservers()
         ref = nil
     }
+
+    // MARK: - Quick Action Sync Integration
+    func saveQuickActionMetadata(_ action: RoutineConversation, hostUID: String) {
+        let safeHost = sanitizeKey(hostUID)
+        guard let code = action.roomCode else { return }
+        let safeCode = sanitizeKey(code)
+
+        let metadata: [String: Any] = [
+            "id": action.id,
+            "categoryTitle": action.categoryTitle,
+            "conversationTopic": action.conversationTopic,
+            "startTime": action.startTime,
+            "status": action.status,
+            "roomCode": code,
+            "hostUID": safeHost,
+            "lastUpdated": ServerValue.timestamp()
+        ]
+        
+        // 1. Save to global Quick Actions registry so Joiners can look it up by code
+        databaseRef.child("quick_actions").child(safeCode).setValue(metadata)
+        
+        // 2. Save to User's Personal Folder
+        databaseRef.child("users").child(safeHost).child("quick_actions").child(safeCode).setValue(metadata)
+    }
+    
+    // MARK: - Quick Action Presence Tracking
+    
+    /// Mark a user as "online" in a Quick Action room
+    func setPresence(roomCode: String, userName: String) {
+        let safeCode = sanitizeKey(roomCode)
+        let safeName = sanitizeKey(userName)
+        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeName).setValue(true)
+    }
+    
+    /// Remove a user's presence when they leave the session
+    func removePresence(roomCode: String, userName: String) {
+        let safeCode = sanitizeKey(roomCode)
+        let safeName = sanitizeKey(userName)
+        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeName).removeValue()
+    }
+    
+    /// Observe presence in real time — returns a Set of online sanitized user names
+    func observePresence(roomCode: String, completion: @escaping (Set<String>) -> Void) {
+        let safeCode = sanitizeKey(roomCode)
+        databaseRef.child("quick_actions").child(safeCode).child("presence").observe(.value) { snapshot in
+            var onlineNames = Set<String>()
+            if let dict = snapshot.value as? [String: Any] {
+                for key in dict.keys {
+                    onlineNames.insert(key)
+                }
+            }
+            completion(onlineNames)
+        }
+    }
+    
+    /// Stop observing presence for a room
+    func stopObservingPresence(roomCode: String) {
+        let safeCode = sanitizeKey(roomCode)
+        databaseRef.child("quick_actions").child(safeCode).child("presence").removeAllObservers()
+    }
     
     // MARK: - Authentication
     func registerRoom(code: String, hostUID: String) {

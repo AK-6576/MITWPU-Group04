@@ -21,6 +21,8 @@ struct RoutineConversation: Codable, Identifiable {
     let description: String?
     let date: String?
     let timeImage: String
+    var roomCode: String?
+    var participantNames: [String]
 }
 
 // MARK: - Section Model
