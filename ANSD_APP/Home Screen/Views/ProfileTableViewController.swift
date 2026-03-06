@@ -88,13 +88,25 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     // MARK: - Voice Profile Setup
     
     private func setupVoiceProfileButtons() {
-        // Style the Update button — rounded corners, iOS native look
-        updateProfileButton.layer.cornerRadius = 10
-        updateProfileButton.clipsToBounds = true
-        
-        // Style the Delete button — rounded corners, iOS native look
-        deleteProfileButton.layer.cornerRadius = 10
-        deleteProfileButton.clipsToBounds = true
+        // Update button — filled style, system tint colour, native iOS look
+        var updateConfig = UIButton.Configuration.filled()
+        updateConfig.cornerStyle = .medium
+        updateConfig.title = "Update Profile"
+        updateConfig.image = UIImage(systemName: "mic.badge.plus")
+        updateConfig.imagePadding = 8
+        updateConfig.imagePlacement = .leading
+        updateProfileButton.configuration = updateConfig
+
+        // Delete button — tinted red, native iOS destructive look
+        var deleteConfig = UIButton.Configuration.tinted()
+        deleteConfig.cornerStyle = .medium
+        deleteConfig.title = "Delete Profile"
+        deleteConfig.image = UIImage(systemName: "trash")
+        deleteConfig.imagePadding = 8
+        deleteConfig.imagePlacement = .leading
+        deleteConfig.baseForegroundColor = .systemRed
+        deleteConfig.baseBackgroundColor = .systemRed
+        deleteProfileButton.configuration = deleteConfig
     }
     
     /// Check if a voice profile exists and update the status label accordingly
