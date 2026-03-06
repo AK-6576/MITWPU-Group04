@@ -18,13 +18,17 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     // MARK: - Properties
     weak var delegate: ProfileUpdateDelegate?
     
-    // MARK: - Outlets
-    // Verifies outlet connections before use.
+    // MARK: - Outlets (Personal Information)
     @IBOutlet weak var genderButton: UIButton!
     @IBOutlet weak var datePicker: UIDatePicker!
     @IBOutlet weak var profileImageView: UIImageView!
     @IBOutlet weak var firstNameTextField: UITextField!
     @IBOutlet weak var lastNameTextField: UITextField!
+    
+    // MARK: - Outlets (Vocal Profile)
+    @IBOutlet weak var voiceStatusLabel: UILabel!
+    @IBOutlet weak var updateProfileButton: UIButton!
+    @IBOutlet weak var deleteProfileButton: UIButton!
     
     var incomingName: String?
     var incomingImage: UIImage?
@@ -35,7 +39,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     private let genderKey = "user_gender"
     private let dobKey = "user_dob"
     private let imageKey = "profileImage"
-    private let impairmentKey = "user_impairment_level"
     
     // MARK: - Lifecycle
     
@@ -44,6 +47,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         setupHideKeyboardOnTap()
         setupTextFieldListeners()
         loadPersistentData()
+        setupVoiceProfileButtons()
         
         // Initial Name Setup
         if firstNameTextField.text?.isEmpty ?? true {
@@ -57,7 +61,12 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
     }
     
-        // Applies circular styling and a border to the profile image view.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        refreshVoiceProfileStatus()
+    }
+    
+    // Applies circular styling and a border to the profile image view.
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
@@ -76,11 +85,88 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         performAutoSave()
     }
     
-    // MARK: - Actions
+    // MARK: - Voice Profile Setup
     
-    // Dismisses the profile screen by popping or dimissing the view controller depending on presentation context.
+    private func setupVoiceProfileButtons() {
+        // Style the Update button — rounded corners, iOS native look
+        updateProfileButton.layer.cornerRadius = 10
+        updateProfileButton.clipsToBounds = true
+        
+        // Style the Delete button — rounded corners, iOS native look
+        deleteProfileButton.layer.cornerRadius = 10
+        deleteProfileButton.clipsToBounds = true
+    }
+    
+    /// Check if a voice profile exists and update the status label accordingly
+    private func refreshVoiceProfileStatus() {
+        if let profile = VoiceProfileManager.shared.getVoiceProfile(byId: 0) {
+            voiceStatusLabel.text = "Calibrated ✓"
+            voiceStatusLabel.textColor = .systemGreen
+            updateProfileButton.isEnabled = true
+            deleteProfileButton.isEnabled = true
+            print("ProfileScreen: Voice profile found — \(profile.name)")
+        } else {
+            voiceStatusLabel.text = "Not Calibrated"
+            voiceStatusLabel.textColor = .systemGray
+            updateProfileButton.isEnabled = false
+            deleteProfileButton.isEnabled = false
+        }
+    }
+    
+    // MARK: - Voice Profile Actions
+    
+    @IBAction func updateProfileTapped(_ sender: Any) {
+        let alert = UIAlertController(
+            title: "Update Voice Profile",
+            message: "This will re-record your voice profile. Your current profile will be replaced with the new recording.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Update", style: .default) { [weak self] _ in
+            self?.navigateToVoiceCalibration()
+        })
+        present(alert, animated: true)
+    }
+    
+    @IBAction func deleteProfileTapped(_ sender: Any) {
+        let alert = UIAlertController(
+            title: "Delete Voice Profile",
+            message: "Are you sure you want to delete your voice profile? You will need to re-calibrate before using voice features.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            VoiceProfileManager.shared.deleteVoiceProfile(byId: 0)
+            self?.refreshVoiceProfileStatus()
+            
+            // Show confirmation
+            let confirmation = UIAlertController(
+                title: "Deleted",
+                message: "Your voice profile has been removed.",
+                preferredStyle: .alert
+            )
+            confirmation.addAction(UIAlertAction(title: "OK", style: .default))
+            self?.present(confirmation, animated: true)
+        })
+        present(alert, animated: true)
+    }
+    
+    /// Navigate to Voice Calibration screen for re-recording
+    private func navigateToVoiceCalibration() {
+        // Try to find the VoiceCalibration storyboard or use the Onboarding storyboard
+        let storyboard = UIStoryboard(name: "Onboarding", bundle: nil)
+        if let calibrationVC = storyboard.instantiateViewController(withIdentifier: "VoiceCalibrationViewController") as? VoiceCalibrationViewController {
+            let navController = UINavigationController(rootViewController: calibrationVC)
+            navController.modalPresentationStyle = .fullScreen
+            present(navController, animated: true)
+        }
+    }
+    
+    // MARK: - Personal Info Actions
+    
+    // Dismisses the profile screen by popping or dismissing the view controller depending on presentation context.
     @IBAction func closeButtonTapped(_ sender: Any) {
-        print("DEBUG: Close button tapped") // Look for this in Console
+        print("DEBUG: Close button tapped")
         
         // Try to pop (if came from right)
         if let nav = navigationController, nav.viewControllers.count > 1 {

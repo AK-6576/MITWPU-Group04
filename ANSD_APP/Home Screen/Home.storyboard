@@ -813,6 +813,85 @@
                                     </tableViewCell>
                                 </cells>
                             </tableViewSection>
+                            <tableViewSection headerTitle="VOCAL PROFILE" id="vPr-Sc-01a">
+                                <cells>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" id="vPr-Ce-02b">
+                                        <rect key="frame" x="0.0" y="510" width="393" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="vPr-Ce-02b" id="vPr-Cv-03c">
+                                            <rect key="frame" x="0.0" y="0.0" width="393" height="44"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Status" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vPr-Lb-04d">
+                                                    <rect key="frame" x="20" y="12" width="50" height="20"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" text="Not Calibrated" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vPr-Lb-05e">
+                                                    <rect key="frame" x="250" y="12" width="123" height="20"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                                    <color key="textColor" systemColor="systemGrayColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="vPr-Lb-04d" firstAttribute="leading" secondItem="vPr-Cv-03c" secondAttribute="leadingMargin" id="vPr-C1-06f"/>
+                                                <constraint firstItem="vPr-Lb-04d" firstAttribute="centerY" secondItem="vPr-Cv-03c" secondAttribute="centerY" id="vPr-C2-07g"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="vPr-Lb-05e" secondAttribute="trailing" id="vPr-C3-08h"/>
+                                                <constraint firstItem="vPr-Lb-05e" firstAttribute="centerY" secondItem="vPr-Cv-03c" secondAttribute="centerY" id="vPr-C4-09i"/>
+                                                <constraint firstItem="vPr-Lb-05e" firstAttribute="leading" secondItem="vPr-Lb-04d" secondAttribute="trailing" constant="20" id="vPr-C5-10j"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" rowHeight="60" id="vPr-Ce-11k">
+                                        <rect key="frame" x="0.0" y="554" width="393" height="60"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="vPr-Ce-11k" id="vPr-Cv-12l">
+                                            <rect key="frame" x="0.0" y="0.0" width="393" height="60"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vPr-Bt-13m">
+                                                    <rect key="frame" x="20" y="10" width="170" height="40"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="height" constant="40" id="vPr-H1-14n"/>
+                                                    </constraints>
+                                                    <state key="normal" title="Update Profile"/>
+                                                    <buttonConfiguration key="configuration" style="filled" title="Update Profile">
+                                                        <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <color key="baseBackgroundColor" systemColor="systemBlueColor"/>
+                                                    </buttonConfiguration>
+                                                    <connections>
+                                                        <action selector="updateProfileTapped:" destination="IRY-tW-tVq" eventType="touchUpInside" id="vPr-A1-15o"/>
+                                                    </connections>
+                                                </button>
+                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vPr-Bt-16p">
+                                                    <rect key="frame" x="203" y="10" width="170" height="40"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="height" constant="40" id="vPr-H2-17q"/>
+                                                    </constraints>
+                                                    <state key="normal" title="Delete &amp; Redo"/>
+                                                    <buttonConfiguration key="configuration" style="filled" title="Delete &amp; Redo">
+                                                        <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <color key="baseBackgroundColor" systemColor="systemRedColor"/>
+                                                    </buttonConfiguration>
+                                                    <connections>
+                                                        <action selector="deleteProfileTapped:" destination="IRY-tW-tVq" eventType="touchUpInside" id="vPr-A2-18r"/>
+                                                    </connections>
+                                                </button>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="vPr-Bt-13m" firstAttribute="leading" secondItem="vPr-Cv-12l" secondAttribute="leadingMargin" id="vPr-C6-19s"/>
+                                                <constraint firstItem="vPr-Bt-13m" firstAttribute="centerY" secondItem="vPr-Cv-12l" secondAttribute="centerY" id="vPr-C7-20t"/>
+                                                <constraint firstItem="vPr-Bt-16p" firstAttribute="leading" secondItem="vPr-Bt-13m" secondAttribute="trailing" constant="13" id="vPr-C8-21u"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="vPr-Bt-16p" secondAttribute="trailing" id="vPr-C9-22v"/>
+                                                <constraint firstItem="vPr-Bt-16p" firstAttribute="centerY" secondItem="vPr-Cv-12l" secondAttribute="centerY" id="vPr-CA-23w"/>
+                                                <constraint firstItem="vPr-Bt-16p" firstAttribute="width" secondItem="vPr-Bt-13m" secondAttribute="width" id="vPr-CB-24x"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                </cells>
+                            </tableViewSection>
                         </sections>
                         <connections>
                             <outlet property="dataSource" destination="IRY-tW-tVq" id="h0L-9f-PY8"/>
@@ -833,6 +912,9 @@
                         <outlet property="genderButton" destination="MgB-5a-BKk" id="6Qe-m7-nez"/>
                         <outlet property="lastNameTextField" destination="4tL-tO-6nT" id="8Ad-Uf-aut"/>
                         <outlet property="profileImageView" destination="Fx9-5H-8Y1" id="VLO-pE-eYu"/>
+                        <outlet property="voiceStatusLabel" destination="vPr-Lb-05e" id="vPr-OL-25y"/>
+                        <outlet property="updateProfileButton" destination="vPr-Bt-13m" id="vPr-OL-26z"/>
+                        <outlet property="deleteProfileButton" destination="vPr-Bt-16p" id="vPr-OL-27a"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Lny-UR-tZD" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

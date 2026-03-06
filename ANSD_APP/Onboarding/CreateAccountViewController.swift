@@ -9,9 +9,11 @@
 import UIKit
 import FirebaseAuth
 
-class CreateAccountViewController: UIViewController {
+class CreateAccountViewController: UIViewController, UITextFieldDelegate {
 
     // MARK: - Outlets
+    @IBOutlet weak var scrollView: UIScrollView!
+    
     @IBOutlet weak var firstNameTextField: UITextField!
     @IBOutlet weak var lastNameTextField: UITextField!
     @IBOutlet weak var emailTextField: UITextField!
@@ -21,23 +23,48 @@ class CreateAccountViewController: UIViewController {
     
     @IBOutlet weak var continueButton: UIButton!
 
+    /// Ordered list of text fields for Return-key navigation
+    private var orderedTextFields: [UITextField] = []
+    
+    /// Track the currently active text field for keyboard scroll
+    private weak var activeTextField: UITextField?
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Navigation bar title
+        title = "Create Account"
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
+        
+        orderedTextFields = [
+            firstNameTextField,
+            lastNameTextField,
+            emailTextField,
+            passwordTextField,
+            confirmPasswordTextField,
+            phoneTextField
+        ]
+        
         setupUI()
+        setupTextFieldDelegates()
         setupKeyboardDismiss()
+        registerKeyboardNotifications()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
+    // MARK: - UI Setup
+    
     private func setupUI() {
         // Round the continue button for that sleek SyncWave look
         continueButton.layer.cornerRadius = 28
         continueButton.clipsToBounds = true
         
         // Upgrade the text fields to look modern and soft
-        let textFields = [firstNameTextField, lastNameTextField, emailTextField, passwordTextField, confirmPasswordTextField, phoneTextField]
-        
-        for field in textFields {
-            guard let field = field else { continue }
-            
+        for field in orderedTextFields {
             field.layer.cornerRadius = 12
             field.backgroundColor = .systemGray6
             field.borderStyle = .none
@@ -47,9 +74,100 @@ class CreateAccountViewController: UIViewController {
             field.leftView = paddingView
             field.leftViewMode = .always
         }
+        
+        // Set return key types: Next for all except last field which gets Done
+        for (index, field) in orderedTextFields.enumerated() {
+            field.returnKeyType = (index < orderedTextFields.count - 1) ? .next : .done
+        }
     }
     
+    private func setupTextFieldDelegates() {
+        for field in orderedTextFields {
+            field.delegate = self
+        }
+    }
+    
+    // MARK: - UITextFieldDelegate
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        activeTextField = textField
+    }
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        activeTextField = nil
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        // Find the current field's index and move to the next one
+        if let currentIndex = orderedTextFields.firstIndex(of: textField) {
+            let nextIndex = currentIndex + 1
+            if nextIndex < orderedTextFields.count {
+                // Move focus to next field
+                orderedTextFields[nextIndex].becomeFirstResponder()
+            } else {
+                // Last field — dismiss keyboard
+                textField.resignFirstResponder()
+            }
+        }
+        return true
+    }
+    
+    // MARK: - Keyboard Avoidance
+    
+    private func registerKeyboardNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double
+        else { return }
+        
+        let keyboardHeight = keyboardFrame.height
+        let contentInset = UIEdgeInsets(top: 0, left: 0, bottom: keyboardHeight + 20, right: 0)
+        
+        UIView.animate(withDuration: duration) {
+            self.scrollView.contentInset = contentInset
+            self.scrollView.scrollIndicatorInsets = contentInset
+        }
+        
+        // Scroll the active text field into view
+        if let activeField = activeTextField {
+            let fieldFrame = activeField.convert(activeField.bounds, to: scrollView)
+            let visibleRect = fieldFrame.insetBy(dx: 0, dy: -20)
+            scrollView.scrollRectToVisible(visibleRect, animated: true)
+        }
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double
+        else { return }
+        
+        UIView.animate(withDuration: duration) {
+            self.scrollView.contentInset = .zero
+            self.scrollView.scrollIndicatorInsets = .zero
+        }
+    }
+    
+    // MARK: - Actions
+    
     @IBAction func continueTapped(_ sender: UIButton) {
+        // Dismiss keyboard first
+        view.endEditing(true)
+        
         // 1. Validate Password Match
         guard let password = passwordTextField.text,
               let confirmPassword = confirmPasswordTextField.text,
@@ -100,6 +218,7 @@ class CreateAccountViewController: UIViewController {
 extension CreateAccountViewController {
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false  // Allow buttons/fields to still receive taps
         view.addGestureRecognizer(tap)
     }
     
