@@ -156,6 +156,19 @@ class HomeViewController: UIViewController {
             guard let destVC = segue.destination as? ChatHistoryViewController,
                   let selectedConvo = sender as? Conversation else { return }
             destVC.histconversationData = selectedConvo
+        } else {
+            // Dashboard Quick Actions -> Chat
+            let dashboardSegueIDs = ["office", "family", "friends"]
+            if let segueID = segue.identifier, dashboardSegueIDs.contains(segueID) {
+                if let selectedItem = sender as? RoutineConversation {
+                    if let chatVC = segue.destination as? ActionJoinViewController {
+                        chatVC.sessionTitle = "\(selectedItem.categoryTitle) Session"
+                        chatVC.category = selectedItem.categoryTitle
+                        chatVC.roomCode = selectedItem.roomCode
+                        chatVC.participantNames = selectedItem.participantNames
+                    }
+                }
+            }
         }
     }
 

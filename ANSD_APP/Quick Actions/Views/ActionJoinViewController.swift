@@ -19,6 +19,8 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     // MARK: - Outlets
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var micButton: UIButton!
+    @IBOutlet weak var pauseButton: UIButton!
+    @IBOutlet weak var endButton: UIButton!
     
     // MARK: - Properties
     var category: String = "Family"
@@ -464,6 +466,6 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width - 32, height: 80)
+        return CGSize(width: collectionView.bounds.width, height: 80)
     }
 }

@@ -74,7 +74,7 @@ class FirebaseManager {
         }
 
         // .childAdded pulls all previous history immediately AND stays active for new messages.
-        sessionRef.observe(.childAdded) { snapshot in
+        sessionRef.observe(.childAdded) { snapshot, _ in
             if let value = snapshot.value as? [String: Any] {
                 completion(value)
             }

@@ -1,3 +1,11 @@
+//
+//  GroupJoinViewController.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 import AVFoundation
 import Speech
@@ -149,61 +157,65 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             print("Audio Engine Start Error: \(error)")
         }
         
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] (result, error) in
             guard let self = self else { return }
             
-            if let result = result {
-                let fullString = result.bestTranscription.formattedString
-                
-                if self.consumedTranscriptOffset > fullString.count {
-                    self.consumedTranscriptOffset = 0
-                }
-                
-                let index = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
-                let newContent = String(fullString[index...])
-                self.consumedTranscriptOffset = fullString.count
-                
-                guard !newContent.isEmpty else { return }
-                
-                if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
-                    let currentText = self.messages[lastIndex].text
-                    let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
-                    let combinedText = baseText + newContent
+            Task { @MainActor in
+                if let result = result {
+                    let fullString = result.bestTranscription.formattedString
                     
-                    if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
-                        self.messages[lastIndex].text = combinedText
-                        self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                        self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
-                        
-                        let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                        self.messages.append(newMsg)
-                        self.reloadDataAndScroll()
-                    } else {
-                        self.messages[lastIndex].text = combinedText
-                        self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                        self.scrollToBottom()
+                    if self.consumedTranscriptOffset > fullString.count {
+                        self.consumedTranscriptOffset = 0
                     }
                     
-                    self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
-                        if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
-                            let finalText = self.messages[finalIndex].text
-                            if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
-                                self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
+                    let startIndex = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
+                    let newContent = String(fullString[startIndex...])
+                    self.consumedTranscriptOffset = fullString.count
+                    
+                    guard !newContent.isEmpty else { return }
+                    
+                    if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                        let currentText = self.messages[lastIndex].text
+                        let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
+                        let combinedText = baseText + newContent
+                        
+                        if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
+                            self.messages[lastIndex].text = combinedText
+                            self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                            
+                            let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                            self.messages.append(newMsg)
+                            self.reloadDataAndScroll()
+                        } else {
+                            self.messages[lastIndex].text = combinedText
+                            self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            self.scrollToBottom()
+                        }
+                        
+                        self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
+                            Task { @MainActor in
+                                if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                                    let finalText = self.messages[finalIndex].text
+                                    if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
+                                        self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
+                                    }
+                                }
+                                if self.isRecording {
+                                    self.restartRecordingCycle()
+                                }
                             }
                         }
-                        if self.isRecording {
-                            self.restartRecordingCycle()
-                        }
                     }
                 }
-            }
-            
-            if let error = error {
-                if !self.isRestarting {
-                    print("Speech Error: \(error)")
-                    self.stopRecording()
-                } else {
-                    self.isRestarting = false
+                
+                if let error = error {
+                    if !self.isRestarting {
+                        print("Speech Error: \(error)")
+                        self.stopRecording()
+                    } else {
+                        self.isRestarting = false
+                    }
                 }
             }
         }
@@ -381,7 +393,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     private func updateMicButtonVisuals(isActive: Bool) {
         let imageName = isActive ? "mic.fill" : "mic.slash.fill"
         GroupJoinMicButton.setImage(UIImage(systemName: imageName), for: .normal)
-        GroupJoinMicButton.tintColor = isActive ? .systemRed : .label
     }
     
     private func reloadDataAndScroll() {
@@ -405,31 +416,13 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinIncomingCell", for: indexPath) as! GroupJoinIncomingCell
             cell.configure(with: message)
-            cell.onLabelTapped = { [weak self] in self?.showRenameAlert() }
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GroupJoinOutgoingCell", for: indexPath) as! GroupJoinOutgoingCell
             cell.configure(with: message)
             return cell
         }
-    }
-    
-    func showRenameAlert() {
-        let alert = UIAlertController(title: "Rename Speaker", message: "Enter name:", preferredStyle: .alert)
-        alert.addTextField { $0.text = self.otherPersonName }
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
-            if let name = alert.textFields?.first?.text, !name.isEmpty {
-                self.otherPersonName = name
-                for i in 0..<self.messages.count where self.messages[i].isIncoming {
-                    self.messages[i].sender = name
-                }
-                self.GroupJoinCollectionView.reloadData()
-            }
-        })
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        present(alert, animated: true)
-    }
-    
+    }    
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 50)
     }

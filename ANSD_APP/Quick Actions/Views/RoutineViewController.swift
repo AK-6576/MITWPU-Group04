@@ -82,6 +82,12 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
         return cell
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let item = routineList[indexPath.row]
+        performSegue(withIdentifier: "ShowChat", sender: item)
+    }
+    
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             self?.routineList.remove(at: indexPath.row)
@@ -127,6 +133,14 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
             destination.viewerMode = true
             destination.viewerParticipantNames = routineList[indexPath.row].participantNames
             destination.viewerRoomCode = routineList[indexPath.row].roomCode
+        } else if segue.identifier == "ShowChat" {
+            if let selectedItem = sender as? RoutineConversation,
+               let chatVC = segue.destination as? ActionJoinViewController {
+                chatVC.sessionTitle = "\(selectedItem.categoryTitle) Session"
+                chatVC.category = selectedItem.categoryTitle
+                chatVC.roomCode = selectedItem.roomCode
+                chatVC.participantNames = selectedItem.participantNames
+            }
         }
     }
 }

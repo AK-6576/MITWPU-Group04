@@ -17,13 +17,19 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     var realContacts: [CNContact] = []
     var unavailableContacts: Set<String> = []
     var selectedIndices: Set<Int> = []
-    var onPeopleAdded: (([String]) -> Void)?
+    var onParticipantsSelected: (([String]) -> Void)?
     
     // The code you want to send
-    let roomCode = "4492"
+    var roomCode = "4492"
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Randomize Room ID if it's the static default
+        if roomCode == "4492" {
+            roomCode = String(format: "%04d", Int.random(in: 1000...9999))
+        }
+        
         tableView.delegate = self
         tableView.dataSource = self
         tableView.tableFooterView = UIView()
@@ -38,7 +44,6 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
             guard let self = self else { return }
             
             if granted {
-                // 2. Add 'CNContactPhoneNumbersKey' to the fetch request
                 let keys = [
                     CNContactGivenNameKey,
                     CNContactFamilyNameKey,
@@ -52,7 +57,6 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
                 do {
                     var newContacts: [CNContact] = []
                     try store.enumerateContacts(with: request) { (contact, stop) in
-                        // Only add contacts that actually have a phone number
                         if !contact.phoneNumbers.isEmpty {
                             newContacts.append(contact)
                         }
@@ -71,8 +75,8 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     
     // MARK: - Navigation
     func setupNavigationBar() {
-        if onPeopleAdded != nil {
-            self.title = "Invite Participants"
+        if onParticipantsSelected != nil {
+            self.title = "Invite Participants (\(roomCode))"
             navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(closeTapped))
         } else {
             self.title = "Connect"
@@ -86,7 +90,6 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     // MARK: - Done Action (Trigger SMS)
     @IBAction func doneTapped(_ sender: Any) {
         
-        // 1. Collect Phone Numbers from selected indices
         var recipients: [String] = []
         var selectedNames: [String] = []
         
@@ -95,13 +98,17 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
             let fullName = "\(contact.givenName) \(contact.familyName)"
             selectedNames.append(fullName)
             
-            // Get the first phone number available
             if let firstNumber = contact.phoneNumbers.first?.value.stringValue {
                 recipients.append(firstNumber)
             }
         }
         
-        // 2. Check if we can send texts
+        if recipients.isEmpty {
+            // If no recipients, just proceed
+            finishSelection(names: selectedNames)
+            return
+        }
+        
         if MFMessageComposeViewController.canSendText() {
             let messageVC = MFMessageComposeViewController()
             messageVC.messageComposeDelegate = self
@@ -110,11 +117,12 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
             
             self.present(messageVC, animated: true, completion: nil)
         } else {
-            // Fallback for Simulator or devices without SIM
-            print("SMS services are not available on this device.")
-            
-            // If on Simulator, just proceed with the callback logic
-            finishSelection(names: selectedNames)
+            // Show alert fallback for simulator/no SIM
+            let alert = UIAlertController(title: "SMS Unavailable", message: "Your device cannot send SMS. Please share the Room Code: \(roomCode) manually with your participants.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
+                self?.finishSelection(names: selectedNames)
+            }))
+            self.present(alert, animated: true)
         }
     }
     
@@ -148,11 +156,19 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     }
     
     func finishSelection(names: [String]) {
-        if let callback = onPeopleAdded {
+        if let callback = onParticipantsSelected {
             callback(names)
             self.dismiss(animated: true, completion: nil)
         } else {
             performSegue(withIdentifier: "goToChat", sender: self)
+        }
+    }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goToChat" {
+            if let destVC = segue.destination as? GroupNewViewController {
+                destVC.currentSessionID = self.roomCode
+            }
         }
     }
 

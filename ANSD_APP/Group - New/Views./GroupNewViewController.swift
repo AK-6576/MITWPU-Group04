@@ -1,3 +1,11 @@
+//
+//  GroupNewViewController.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import UIKit
 import AVFoundation
 import Speech
@@ -133,82 +141,89 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         do {
             try audioEngine.start()
             isRecording = true
-            updateMicButtonVisuals(isActive: true)
         } catch {
             print("Audio Engine Start Error: \(error)")
         }
         
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] (result, error) in
             guard let self = self else { return }
             
-            if let result = result {
-                let fullString = result.bestTranscription.formattedString
-                
-                // Safety check for backspacing/correction
-                if self.consumedTranscriptOffset > fullString.count {
-                    self.consumedTranscriptOffset = 0
-                }
-                
-                // Calculate Delta
-                let index = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
-                let newContent = String(fullString[index...])
-                self.consumedTranscriptOffset = fullString.count
-                
-                guard !newContent.isEmpty else { return }
-                
-                // Update Bubble Logic
-                if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
-                    let currentText = self.messages[lastIndex].text
-                    let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
-                    let combinedText = baseText + newContent
+            Task { @MainActor in
+                if let result = result {
+                    let fullString = result.bestTranscription.formattedString
                     
-                    // CHECK LIMIT (3-4 Lines Logic)
-                    if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                        // 1. Finalize Current Bubble
-                        self.messages[lastIndex].text = combinedText
-                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                        
-                        // 2. Trigger AI Cleanup for this bubble
-                        self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
-                        
-                        // 3. Start NEW Bubble
-                        let newMsg = GroupNewChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                        self.messages.append(newMsg)
-                        self.reloadDataAndScroll()
-                        
-                    } else {
-                        // JUST APPEND
-                        self.messages[lastIndex].text = combinedText
-                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                        self.scrollToBottom()
+                    if result.isFinal {
+                        print("Final transcript: \(fullString)")
                     }
                     
-                    // SILENCE DETECTION
-                    self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
+                    // Safety check for backspacing/correction
+                    if self.consumedTranscriptOffset > fullString.count {
+                        self.consumedTranscriptOffset = 0
+                    }
+                    
+                    // Calculate Delta
+                    let startIndex = fullString.index(fullString.startIndex, offsetBy: self.consumedTranscriptOffset)
+                    let newContent = String(fullString[startIndex...])
+                    self.consumedTranscriptOffset = fullString.count
+                    
+                    guard !newContent.isEmpty else { return }
+                    
+                    // Update Bubble Logic
+                    if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                        let currentText = self.messages[lastIndex].text
+                        let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
+                        let combinedText = baseText + newContent
                         
-                        // Finalize whatever is in the last bubble
-                        if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
-                            let finalText = self.messages[finalIndex].text
-                            if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
-                                // Trigger AI Cleanup for the silenced bubble
-                                self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
+                        // CHECK LIMIT (3-4 Lines Logic)
+                        let MAX_BUBBLE_CHAR_LIMIT = 200 // Threshold for a new bubble
+                        if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
+                            // 1. Update and Finalize current bubble
+                            self.messages[lastIndex].text = combinedText
+                            self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            
+                            // 2. Trigger AI Cleanup for this bubble
+                            self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                            
+                            // 3. Start NEW Bubble
+                            let newMsg = GroupNewChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                            self.messages.append(newMsg)
+                            self.reloadDataAndScroll()
+                            
+                        } else {
+                            // JUST APPEND
+                            self.messages[lastIndex].text = combinedText
+                            self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            self.scrollToBottom()
+                        }
+                        
+                        // SILENCE DETECTION
+                        self.cleanupManager.scheduleCleanup(text: "keepalive", at: 0) { _, _ in
+                            Task { @MainActor in
+                                // Finalize whatever is in the last bubble
+                                if let finalIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
+                                    let finalText = self.messages[finalIndex].text
+                                    if finalText != "Listening..." && finalText != "..." && !finalText.isEmpty {
+                                        // Trigger AI Cleanup for the silenced bubble
+                                        self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
+                                    }
+                                }
+                                
+                                // Restart Cycle (Resets engine)
+                                if self.isRecording {
+                                    self.restartRecordingCycle()
+                                }
                             }
                         }
-                        
-                        // Restart Cycle (Resets engine)
-                        if self.isRecording {
-                            self.restartRecordingCycle()
-                        }
                     }
                 }
-            }
-            
-            if let error = error {
-                if !self.isRestarting {
-                    print("Speech Error: \(error)")
-                    self.stopRecording()
-                } else {
-                    self.isRestarting = false
+                
+                if let error = error {
+                    if !self.isRestarting {
+                        print("Speech Error: \(error)")
+                        self.stopRecording()
+                    } else {
+                        self.isRestarting = false
+                    }
                 }
             }
         }
@@ -251,7 +266,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         recognitionTask = nil
         isRecording = false
         removeListeningBubble()
-        updateMicButtonVisuals(isActive: false)
     }
     
     private func restartRecordingCycle() {
@@ -365,6 +379,11 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         isRecording ? stopRecording() : startRecording()
     }
     
+    private func updateMicButtonVisuals(isActive: Bool) {
+        let imageName = isActive ? "mic.fill" : "mic.slash.fill"
+        micButton.setImage(UIImage(systemName: imageName), for: .normal)
+    }
+    
     @IBAction func pauseButtonTapped(_ sender: UIButton) {
         isPaused.toggle()
         let iconName = isPaused ? "play.fill" : "pause.fill"
@@ -414,12 +433,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     // MARK: - Helpers
-    private func updateMicButtonVisuals(isActive: Bool) {
-        let imageName = isActive ? "mic.fill" : "mic.slash.fill"
-        let tintColor = isActive ? UIColor.systemRed : UIColor.label
-        micButton.setImage(UIImage(systemName: imageName), for: .normal)
-        micButton.tintColor = tintColor
-    }
     
     private func reloadDataAndScroll() {
         collectionView.reloadData()
@@ -450,8 +463,22 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         }
     }
     
+    
+    // MARK: - Navigation
+    @IBAction func addPersonTapped(_ sender: UIBarButtonItem) {
+        let storyboard = UIStoryboard(name: "Group-New", bundle: nil)
+        if let selectionVC = storyboard.instantiateViewController(withIdentifier: "ParticipantSelectionViewController") as? ParticipantSelectionViewController {
+            selectionVC.roomCode = self.currentSessionID
+            selectionVC.onParticipantsSelected = { [weak self] (names: [String]) in
+                self?.otherPersonName = names.first ?? "Guest"
+                self?.collectionView.reloadData()
+            }
+            let nav = UINavigationController(rootViewController: selectionVC)
+            self.present(nav, animated: true)
+        }
+    }
+
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 50)
     }
-    
 }
