@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="ANSD_APP/Assets.xcassets/AppIcon.appiconset/EchoWave.png" alt="EchoWave Logo" width="120" height="120" style="border-radius: 24px;" />
+  <img src="ANSD_APP/Assets.xcassets/AppIcon.appiconset/AppLogo.png" alt="SyncWave Logo" width="120" height="120" style="border-radius: 24px;" />
 </p>
 
-<h1 align="center">EchoWave</h1>
+<h1 align="center">SyncWave</h1>
 
 <p align="center">
-  <b>AI-Powered Real-Time Speech Captioning & Speaker Identification for iOS</b>
+  <b>Real-Time Speech Captioning & Speaker Identification for iOS</b>
 </p>
 
 <p align="center">
@@ -21,9 +21,9 @@
 
 ## 📖 About
 
-**EchoWave** is a native iOS application designed to provide real-time speech-to-text captioning with **on-device AI speaker diarization**. It identifies *who* is speaking in real time using a CoreML voice embedding model (**VL1004**), displays color-coded captions per speaker, and leverages **Apple Intelligence (FoundationModels)** to generate post-session summaries, notes, and per-participant analyses — all processed on-device.
+**SyncWave** is a native iOS application designed to provide real-time speech-to-text captioning with **on-device AI speaker diarization**. It identifies *who* is speaking in real time using a CoreML voice embedding model (**VL1004**), displays color-coded captions per speaker, and leverages **Apple Intelligence (FoundationModels)** to generate post-session summaries, notes, and per-participant analyses — all processed on-device.
 
-Built as a capstone project by **MIT-WPU Group 4**, EchoWave is aimed at improving accessibility for individuals with hearing impairments (ANSD — Auditory Neuropathy Spectrum Disorder) and anyone who benefits from live captioning in conversations.
+Built as a capstone project by **MIT-WPU Group 4**, SyncWave is aimed at improving accessibility for individuals with hearing impairments (ANSD — Auditory Neuropathy Spectrum Disorder) and anyone who benefits from live captioning in conversations.
 
 ---
 
@@ -188,8 +188,8 @@ VL1004.mlpackage/                  # CoreML voice embedding model
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/EchoWave-ANSD.git
-cd EchoWave-ANSD
+git clone https://github.com/your-username/SyncWave-ANSD.git
+cd SyncWave-ANSD
 ```
 
 ### 2. Open in Xcode
@@ -284,5 +284,5 @@ This project is developed for academic purposes at **MIT-WPU**. All rights reser
 ---
 
 <p align="center">
-  <i>EchoWave — Hear every voice, see every word.</i>
+  <i>SyncWave — Hear every voice, see every word.</i>
 </p>
