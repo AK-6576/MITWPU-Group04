@@ -270,10 +270,10 @@ The diarization pipeline:
 
 | Contributor | Role |
 |---|---|
-| Anshul Kumaria | Lead Developer — Speech Engine, Diarization, UI/UX Design |
-| Omkar Varpe | Lead Developer - App Architecture, Model Implementation, UI/UX Design |
-| Daiwiik Harihar | Lead Developer - Home Screen, Database Implementation, UI/UX Design |
-| Dhiraj Bodake | Lead Developer - Voice Calibration, Onboarding Flow, UI/UX Design |
+| Anshul Kumaria | Developer — Speech Engine, Diarization, UI/UX Design |
+| Omkar Varpe | Developer - App Architecture, Model Implementation, UI/UX Design |
+| Daiwiik Harihar | Developer - Home Screen, Database Implementation, UI/UX Design |
+| Dhiraj Bodake | Developer - Voice Calibration, Onboarding Flow, UI/UX Design |
 
 ---
 
