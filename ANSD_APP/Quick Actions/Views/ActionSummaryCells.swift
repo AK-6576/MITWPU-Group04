@@ -118,7 +118,10 @@ class ParticipantCardCell: UITableViewCell {
         initialsLabel?.font = .systemFont(ofSize: 16, weight: .bold) // Slightly larger for 40x40
         
         // Color Logic
-        if data.name.lowercased().contains("steve") || data.name.lowercased() == "you" {
+        let currentUserName = (UserDefaults.standard.string(forKey: "user_first_name") ?? "").lowercased()
+        let speakerName = data.name.lowercased()
+
+        if (!currentUserName.isEmpty && speakerName.contains(currentUserName)) || speakerName == "you" {
             avatarView?.backgroundColor = .systemBlue
             initialsLabel?.textColor = .white
         } else {

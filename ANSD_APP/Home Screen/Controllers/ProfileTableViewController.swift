@@ -49,7 +49,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         
         // Initial Name Setup
         if firstNameTextField.text?.isEmpty ?? true {
-            firstNameTextField.text = incomingName ?? "Steve"
+            firstNameTextField.text = incomingName ?? "User"
         }
         
         // Load Image
@@ -211,7 +211,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     }
     
     func performAutoSave() {
-        let name = firstNameTextField.text ?? "Steve"
+        let name = firstNameTextField.text ?? "User"
         let lastName = lastNameTextField.text ?? ""
         let dob = datePicker.date
         let gender = genderButton.title(for: .normal) ?? "Select"

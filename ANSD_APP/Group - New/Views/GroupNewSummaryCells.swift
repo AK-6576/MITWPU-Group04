@@ -105,8 +105,11 @@ class GroupNewParticipantsCardCell: UITableViewCell {
         let initials = components.compactMap { $0.first }.map { String($0) }.joined()
         initialsLabel?.text = String(initials.prefix(2)).uppercased()
         
+        let currentUserName = (UserDefaults.standard.string(forKey: "user_first_name") ?? "").lowercased()
+        let speakerName = data.name.lowercased()
+        
         // Dynamic colors: Blue for User, Gray for others
-        if data.name.lowercased().contains("steve") || data.name.lowercased() == "you" {
+        if (!currentUserName.isEmpty && speakerName.contains(currentUserName)) || speakerName == "you" {
             avatarView?.backgroundColor = .systemBlue
             initialsLabel?.textColor = .white
         } else {

@@ -67,11 +67,43 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
         setupHideKeyboardOnTap()
     }
 
+    // MARK: - Validation Helpers
+    private func isValidEmail(_ email: String) -> Bool {
+        let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+        return emailPred.evaluate(with: email)
+    }
+
+    private func showAlert(message: String) {
+        let alert = UIAlertController(title: "Sign Up Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
     // MARK: - Sign Up Action
     @IBAction func didTapSignUp(_ sender: Any) {
         view.endEditing(true)
         
-        // Save the dictionary to UserDefaults
+        // 1. Validation Guards
+        guard let firstName = userAnswers[UserKeys.firstName] as? String, !firstName.isEmpty,
+              let email = userAnswers[UserKeys.email] as? String, !email.isEmpty,
+              let password = userAnswers[UserKeys.password] as? String, !password.isEmpty else {
+            showAlert(message: "First Name, Email, and Password are required.")
+            return
+        }
+        
+        // 2. Format Validation
+        if !isValidEmail(email) {
+            showAlert(message: "Please enter a valid email address.")
+            return
+        }
+        
+        if password.count < 6 {
+            showAlert(message: "Password must be at least 6 characters long.")
+            return
+        }
+        
+        // 3. Save and Proceed
         UserDefaults.standard.set(userAnswers, forKey: UserKeys.profile)
         
         print("✅ SAVED PROFILE →", userAnswers)

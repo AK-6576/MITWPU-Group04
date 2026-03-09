@@ -171,13 +171,13 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         Task {
             do {
                 let prompt = """
-                Analyze the following transcript. You must respond ONLY with a raw, valid JSON object. Do not include markdown blocks, explanations, or code tags.
+                Analyze the following transcript. Summarize the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point as a standalone sentence. 
                 
                 The JSON must perfectly match this structure:
                 {
-                  "notes": "A bulleted string of action items and key takeaways.",
+                  "notes": "The bulleted-style string of clean standalone sentences.",
                   "participants": [
-                    { "name": "Participant Name", "summary": "A short third-person summary of what they said." }
+                    { "name": "Participant Name", "summary": "A short 1-2 sentence third-person summary of what they said." }
                   ]
                 }
                 

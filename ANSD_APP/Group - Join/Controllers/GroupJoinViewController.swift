@@ -225,10 +225,20 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     private func processTextWithAppleIntelligence(text: String, index: Int) {
         Task {
             do {
-                let prompt = "Fix grammar and make concise: \(text)"
+                let prompt = """
+                Clean up the following conversational text by fixing grammar and punctuation. Keep the tone natural. Return ONLY the cleaned text. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+                
+                Text: "\(text)"
+                """
                 let session = LanguageModelSession(model: model)
                 let response = try await session.respond(to: prompt)
-                let cleanedText = response.content
+                var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Safety filter: If AI returns a commentary/apology, discard cleanup and use original text
+                let lowercaseResponse = cleanedText.lowercased()
+                if lowercaseResponse.contains("i'm sorry") || lowercaseResponse.contains("as an ai") || lowercaseResponse.contains("can't process") {
+                    cleanedText = text
+                }
                 
                 await MainActor.run {
                     if index < self.messages.count {

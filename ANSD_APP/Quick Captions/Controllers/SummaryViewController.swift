@@ -88,7 +88,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                 let prompt = """
                 Analyze the following transcript.
                 
-                Step 1: Write a section strictly labeled "NOTES:" containing bullet points of action items, key takeaways, and dates mentioned.
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways, action items, and dates mentioned in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point on a new line as a standalone sentence.
                 
                 \(participantPrompts)
                 

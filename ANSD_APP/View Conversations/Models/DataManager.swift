@@ -74,8 +74,8 @@ class DataManager {
         do {
             try context.save()
             print("DataManager: Successfully saved changes.")
-            // Trigger UI refresh across the app (Home Screen, etc.)
-            NotificationCenter.default.post(name: NSNotification.Name("ActionsUpdated"), object: nil)
+            // Trigger UI refresh for conversation-related views (Home Screen, View Conversations, etc.)
+            NotificationCenter.default.post(name: NSNotification.Name("ConversationHistoryUpdated"), object: nil)
         } catch {
             print("DataManager: Failed to save context. Error: \(error.localizedDescription)")
         }

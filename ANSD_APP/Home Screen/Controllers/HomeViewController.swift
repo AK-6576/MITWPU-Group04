@@ -31,7 +31,7 @@ class HomeViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
         
-        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.helloLabel.isHidden = false
             headerView.nameLabel.isHidden = false
@@ -46,6 +46,7 @@ class HomeViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileImageUpdate(_:)), name: NSNotification.Name("ProfileImageUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileNameUpdate(_:)), name: NSNotification.Name("ProfileNameUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ConversationHistoryUpdated"), object: nil)
     }
     
     @objc func handleDataUpdate() {
@@ -60,7 +61,7 @@ class HomeViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
         
-        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.configure(name: name)
         }
@@ -150,7 +151,7 @@ class HomeViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showProfile" {
             if let destVC = segue.destination as? ProfileTableViewController {
-                destVC.incomingName = UserDefaults.standard.string(forKey: "user_first_name") ?? "Steve"
+                destVC.incomingName = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
             }
         } else if segue.identifier == "viewConvoCell" {
             guard let destVC = segue.destination as? ChatHistoryViewController,

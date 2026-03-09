@@ -17,9 +17,6 @@ class QuickActionsRepository {
 
     private var quickActionBubbles: [RoutineConversation] = []
 
-    private var viewOnlyItems: [RoutineConversation] = []
-    
-    // Initializer loads existing data from disk to ensure persistence.
     private init() {
         loadFromDisk()
     }
@@ -35,8 +32,7 @@ class QuickActionsRepository {
     }
 
     func getAllActions() -> [RoutineConversation] {
-        let combined = quickActionBubbles + viewOnlyItems
-        return combined.sorted { compareTimes(time1: $0.startTime, time2: $1.startTime) }
+        return quickActionBubbles.sorted { compareTimes(time1: $0.startTime, time2: $1.startTime) }
     }
     
     func addAction(_ action: RoutineConversation) {

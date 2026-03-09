@@ -196,13 +196,30 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
             "password": password
         ]
 
-        // 3. UI REVIEW BYPASS: Pretend Firebase succeeded so we can show the next screen!
-        print("Mock Registration Successful with details: \(userDetails)")
-        // Save the user's name so the Home screen large title can display it
-        UserDefaults.standard.set(firstName, forKey: "user_first_name")
-        UserDefaults.standard.set(lastName, forKey: "user_last_name")
-        DispatchQueue.main.async {
-            self.performSegue(withIdentifier: "showCalibration", sender: self)
+        // 3. Register with Firebase Auth
+        continueButton.isEnabled = false
+        FirebaseManager.shared.createAccount(details: userDetails) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.continueButton.isEnabled = true
+
+                switch result {
+                case .success:
+                    // Save the user's name so the Home screen large title can display it
+                    UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                    UserDefaults.standard.set(lastName, forKey: "user_last_name")
+                    self.performSegue(withIdentifier: "showCalibration", sender: self)
+
+                case .failure(let error):
+                    let alert = UIAlertController(
+                        title: "Registration Failed",
+                        message: error.localizedDescription,
+                        preferredStyle: .alert
+                    )
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(alert, animated: true)
+                }
+            }
         }
     }
 }

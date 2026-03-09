@@ -278,9 +278,20 @@ class QuickCaptioningViewController: UIViewController,
             let lastIndex = self.messages.count - 1
             
             let currentText = self.messages[lastIndex].text
-            let newText = currentText + text
+            let combinedText = currentText + text
             
-            self.updateBubbleUI(at: lastIndex, text: newText)
+            if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
+                // Seal the current bubble with the full text, then finalize it
+                self.updateBubbleUI(at: lastIndex, text: combinedText)
+                self.finalizeBubble(at: lastIndex)
+                
+                // Start a fresh bubble for the same speaker
+                if let speakerID = self.messages[lastIndex].speakerID {
+                    self.flushBufferToNewBubble(text: "...", speakerID: speakerID)
+                }
+            } else {
+                self.updateBubbleUI(at: lastIndex, text: combinedText)
+            }
         }
     }
     

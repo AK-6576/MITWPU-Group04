@@ -58,7 +58,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         loadConversationData()
         originalBottomConstant = searchBarBottomConstraint.constant
         
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ConversationHistoryUpdated"), object: nil)
     }
     
     @objc func handleDataUpdate() {
