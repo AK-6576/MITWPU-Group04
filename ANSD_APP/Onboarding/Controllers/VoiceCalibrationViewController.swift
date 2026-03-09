@@ -563,6 +563,10 @@ class VoiceCalibrationViewController: UIViewController {
         // Save to persistent storage via VoiceProfileManager
         // Use "Me" as default name — user can change it later
         VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: "Me", embedding: normalizedAvg)
+        
+        // Push the profile to Firebase so it syncs across logins
+        FirebaseManager.shared.saveVoiceProfileMetadata(name: "Me", embedding: normalizedAvg)
+        
         print("VoiceCalibration: Voice profile saved successfully ✓")
     }
 

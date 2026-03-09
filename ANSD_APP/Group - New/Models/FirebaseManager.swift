@@ -23,7 +23,6 @@ class FirebaseManager {
         return key.components(separatedBy: CharacterSet(charactersIn: ".#$[]"))
                   .joined(separator: "_")
     }
-
     // MARK: - Session Management
     
     /// Sets up the database reference for a specific room.
@@ -154,14 +153,60 @@ class FirebaseManager {
             "status": action.status,
             "roomCode": code,
             "hostUID": safeHost,
+            "iconName": action.iconName,
+            "topicImage": action.topicImage,
+            "timeImage": action.timeImage,
+            "date": action.date ?? "",
+            "description": action.description ?? "",
+            "participantNames": action.participantNames,
             "lastUpdated": ServerValue.timestamp()
         ]
         
         // 1. Save to global Quick Actions registry so Joiners can look it up by code
         databaseRef.child("quick_actions").child(safeCode).setValue(metadata)
         
-        // 2. Save to User's Personal Folder
+        // 2. Save to Host's Personal Folder
         databaseRef.child("users").child(safeHost).child("quick_actions").child(safeCode).setValue(metadata)
+        
+        // 3. Save to Participants' nodes so they can observe it (by name)
+        for participant in action.participantNames {
+            let safeParticipant = sanitizeKey(participant.trimmingCharacters(in: .whitespacesAndNewlines))
+            if !safeParticipant.isEmpty {
+                databaseRef.child("shared_quick_actions").child(safeParticipant).child(safeCode).setValue(metadata)
+            }
+        }
+        
+        // 4. Also save to each participant's own quick_actions node (by UID lookup)
+        for participant in action.participantNames {
+            let trimmed = participant.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                lookupUID(byFirstName: trimmed) { [weak self] participantUID in
+                    guard let self = self, let uid = participantUID else { return }
+                    self.databaseRef.child("users").child(uid).child("quick_actions").child(safeCode).setValue(metadata)
+                    print("DEBUG: Firebase - Shared Quick Action to participant UID: \(uid)")
+                }
+            }
+        }
+    }
+    
+    // MARK: - Generic Observers
+    
+    // Observes Quick Actions assigned specifically to the user (by checking their name against the shared node).
+    func observeSharedQuickActions(forUserName userName: String, completion: @escaping ([String: Any]) -> Void) {
+        let safeName = sanitizeKey(userName.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !safeName.isEmpty else { return }
+        
+        databaseRef.child("shared_quick_actions").child(safeName).observe(.childAdded) { snapshot in
+            if let value = snapshot.value as? [String: Any] {
+                completion(value)
+            }
+        }
+        
+        databaseRef.child("shared_quick_actions").child(safeName).observe(.childChanged) { snapshot in
+            if let value = snapshot.value as? [String: Any] {
+                completion(value)
+            }
+        }
     }
     
     // MARK: - Quick Action Presence Tracking
@@ -260,6 +305,122 @@ class FirebaseManager {
             if let user = authResult?.user {
                 completion(.success(user))
             }
+        }
+    }
+    
+    // MARK: - User Profile Fetching
+    func fetchUserProfile(uid: String, completion: @escaping ([String: Any]?) -> Void) {
+        let safeUID = sanitizeKey(uid)
+        databaseRef.child("users").child(safeUID).child("profile").observeSingleEvent(of: .value) { snapshot in
+            if let profileData = snapshot.value as? [String: Any] {
+                completion(profileData)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+    
+    // MARK: - Voice Profile Syncing
+    func saveVoiceProfileMetadata(name: String, embedding: [Float]) {
+        guard let uid = currentUID else { return }
+        let safeUID = sanitizeKey(uid)
+        
+        let metadata: [String: Any] = [
+            "name": name,
+            "embedding": embedding,
+            "lastUpdated": ServerValue.timestamp()
+        ]
+        
+        databaseRef.child("users").child(safeUID).child("voice_profile").setValue(metadata) { error, _ in
+            if let error = error {
+                print("DEBUG: Firebase - Failed to save voice profile: \(error.localizedDescription)")
+            } else {
+                print("DEBUG: Firebase - Successfully saved voice profile for \(safeUID)")
+            }
+        }
+    }
+    
+    func fetchVoiceProfileMetadata(uid: String, completion: @escaping ([String: Any]?) -> Void) {
+        let safeUID = sanitizeKey(uid)
+        databaseRef.child("users").child(safeUID).child("voice_profile").observeSingleEvent(of: .value) { snapshot in
+            if let profileData = snapshot.value as? [String: Any] {
+                completion(profileData)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+    
+    // MARK: - Conversation History Fetch (Login Restore)
+    func fetchConversationHistory(uid: String, completion: @escaping ([[String: Any]]) -> Void) {
+        let safeUID = sanitizeKey(uid)
+        databaseRef.child("users").child(safeUID).child("conversations").observeSingleEvent(of: .value) { snapshot in
+            var conversations: [[String: Any]] = []
+            if let dict = snapshot.value as? [String: Any] {
+                for (_, value) in dict {
+                    if let convo = value as? [String: Any] {
+                        conversations.append(convo)
+                    }
+                }
+            }
+            completion(conversations)
+        }
+    }
+    
+    // MARK: - Quick Actions Fetch (Login Restore)
+    func fetchQuickActions(uid: String, completion: @escaping ([[String: Any]]) -> Void) {
+        let safeUID = sanitizeKey(uid)
+        databaseRef.child("users").child(safeUID).child("quick_actions").observeSingleEvent(of: .value) { snapshot in
+            var actions: [[String: Any]] = []
+            if let dict = snapshot.value as? [String: Any] {
+                for (_, value) in dict {
+                    if let action = value as? [String: Any] {
+                        actions.append(action)
+                    }
+                }
+            }
+            completion(actions)
+        }
+    }
+    
+    // MARK: - UID Lookup by Name
+    func lookupUID(byFirstName name: String, completion: @escaping (String?) -> Void) {
+        databaseRef.child("users").observeSingleEvent(of: .value) { snapshot in
+            if let users = snapshot.value as? [String: Any] {
+                for (uid, userData) in users {
+                    if let userDict = userData as? [String: Any],
+                       let profile = userDict["profile"] as? [String: Any],
+                       let firstName = profile["firstName"] as? String,
+                       firstName.lowercased() == name.lowercased() {
+                        completion(uid)
+                        return
+                    }
+                }
+            }
+            completion(nil)
+        }
+    }
+    
+    // MARK: - Sign Out & Data Purge
+    func signOut(completion: @escaping (Result<Void, Error>) -> Void) {
+        do {
+            try Auth.auth().signOut()
+            
+            // No need to wipe SwiftData — data is now scoped per UID.
+            // Just clear the in-memory Quick Actions array and user-preference keys.
+            QuickActionsRepository.shared.clearAllActions()
+            
+            // Wipe generic user preferences to ensure no lingering UI state
+            let defs = UserDefaults.standard
+            let keysToRemove = ["user_first_name", "user_last_name", "user_gender", "user_dob", "profileImage"]
+            for key in keysToRemove {
+                defs.removeObject(forKey: key)
+            }
+            defs.synchronize()
+            
+            completion(.success(()))
+        } catch let error {
+            completion(.failure(error))
         }
     }
 }
