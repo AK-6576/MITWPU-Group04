@@ -1,0 +1,173 @@
+//
+//  ConversationCardCell.swift
+//  ANSD_APP
+//
+//  Created by Daiwiik Harihar on 15/01/26.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+import UIKit
+
+// MARK: - Routine Cell (Quick Actions - Top List)
+class QuickActionTableViewCell: UITableViewCell {
+    @IBOutlet weak var iconImageView: UIImageView!
+    @IBOutlet weak var titleLabel: UILabel!
+    @IBOutlet weak var timeLabel: UILabel!
+    
+    var onInfoTapped: (() -> Void)?
+    
+    private let bottomBorder = UIView()
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupDesign()
+    }
+
+    func setupDesign() {
+        iconImageView.layer.cornerRadius = 10
+        iconImageView.backgroundColor = .systemGray6
+        iconImageView.contentMode = .center
+        iconImageView.clipsToBounds = true
+        
+        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = .label
+        
+        timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        timeLabel.textColor = .secondaryLabel
+        
+        self.selectionStyle = .default
+
+        self.backgroundColor = .secondarySystemGroupedBackground
+    }
+
+    func configure(with item: RoutineConversation, isLast: Bool) {
+        titleLabel.text = item.conversationTopic
+        timeLabel.text = item.startTime
+        
+        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
+        if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
+            iconImageView.image = image.withRenderingMode(.alwaysTemplate)
+        }
+        
+        switch item.categoryTitle {
+        case "Office":
+            iconImageView.tintColor = .systemBlue
+        case "Family":
+            iconImageView.tintColor = .systemPink
+        case "Friends":
+            iconImageView.tintColor = .systemGreen
+        default:
+            iconImageView.tintColor = .systemGray
+        }
+    }
+    
+    @objc private func infoButtonTapped() {
+        onInfoTapped?()
+    }
+}
+
+// MARK: - Conversation Card Cell (Detailed List - Bottom Cards)
+class ConversationCardCell: UITableViewCell {
+    
+    // MARK: - Outlets
+    @IBOutlet weak var cardContainer: UIView!
+    @IBOutlet weak var topicLabel: UILabel!
+    @IBOutlet weak var descriptionLabel: UILabel!
+    
+    @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var timeLabel: UILabel!
+    @IBOutlet weak var categoryLabel: UILabel!
+    
+    @IBOutlet weak var calendarIcon: UIImageView!
+    @IBOutlet weak var clockIcon: UIImageView!
+    @IBOutlet weak var categoryIcon: UIImageView!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupDesign()
+    }
+    
+    func setupDesign() {
+        
+        self.backgroundColor = .clear
+        self.contentView.backgroundColor = .clear
+        self.selectionStyle = .none
+        
+        
+        cardContainer.backgroundColor = .secondarySystemGroupedBackground
+        cardContainer.layer.cornerRadius = 20
+        cardContainer.layer.cornerCurve = .continuous
+        cardContainer.layer.masksToBounds = false
+        
+        cardContainer.layer.borderWidth = 1
+        cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
+    }
+    
+    func configure(with conversation: Conversation) {
+        topicLabel.text = conversation.title
+        descriptionLabel.text = conversation.details
+        
+        if let date = conversation.calendarDate {
+            let calendar = Calendar.current
+            let day = calendar.component(.day, from: date)
+            
+            let monthFormatter = DateFormatter()
+            monthFormatter.dateFormat = "MMMM"
+            let month = monthFormatter.string(from: date)
+            
+            let numberFormatter = NumberFormatter()
+            numberFormatter.numberStyle = .ordinal
+            let dayString = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
+            
+            dateLabel.text = "\(month) \(dayString)"
+        } else {
+            dateLabel.text = conversation.date
+        }
+        
+        timeLabel.text = "\(conversation.startTime)"
+        
+        calendarIcon.image = UIImage(systemName: "calendar")
+        calendarIcon.tintColor = .systemGray2
+        
+        clockIcon.image = UIImage(systemName: "clock")
+        clockIcon.tintColor = .systemGray2
+        
+        let categoryString = conversation.category
+        let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
+        categoryLabel.text = capitalizedCategory
+        
+        let iconName: String
+        let tintColor: UIColor
+        
+        switch categoryString {
+        case "Family":
+            iconName = "figure.2.and.child.holdinghands"
+            tintColor = .systemPurple
+        case "Friends":
+            iconName = "person.3.fill"
+            tintColor = .systemGreen
+        case "Office", "work":
+            iconName = "briefcase.fill"
+            tintColor = .systemBlue
+        case "Medical", "Health":
+            iconName = "cross.case.fill"
+            tintColor = .systemGreen
+        case "Quick Captions":
+            iconName = "waveform"
+            tintColor = .systemBlue
+        case "Group-Join":
+            iconName = "person.bubble"
+            tintColor = .systemBlue
+        case "Group-New":
+            iconName = "square.and.pencil"
+            tintColor = .systemBlue
+        default:
+            iconName = "folder.fill"
+            tintColor = .systemGray
+        }
+        
+        categoryIcon.image = UIImage(systemName: iconName)
+        categoryIcon.tintColor = tintColor
+        
+        categoryLabel.textColor = .secondaryLabel
+    }
+}
