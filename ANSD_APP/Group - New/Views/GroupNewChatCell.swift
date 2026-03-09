@@ -1,15 +1,17 @@
 //
-//  ActionChatCell.swift
+//  GroupNewChatCell.swift
 //  ANSD_APP
 //
-//  Created by Anshul Kumaria on 05/02/26.
+//  Created by Anshul Kumaria on 25/11/25.
 //  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 
-class BaseChatCell: UICollectionViewCell {
+// MARK: - Base Class (Logic from ActionChatCell)
+class GroupNewBaseChatCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
+    
     override func awakeFromNib() {
         super.awakeFromNib()
     }
@@ -19,7 +21,8 @@ class BaseChatCell: UICollectionViewCell {
         view.clipsToBounds = true
     }
 
-            override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+    // Dynamic sizing logic copied from ActionChatCell
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         if widthConstraint == nil {
             widthConstraint = contentView.widthAnchor.constraint(equalToConstant: layoutAttributes.frame.width)
             widthConstraint?.isActive = true
@@ -37,20 +40,30 @@ class BaseChatCell: UICollectionViewCell {
     }
 }
 
-class OutgoingCell: BaseChatCell {
+// MARK: - Outgoing Cell (Right Side - Blue)
+class GroupNewOutgoingCell: GroupNewBaseChatCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: bubbleView)
+        
         bubbleView.backgroundColor = .systemBlue
         messageLabel.textColor = .white
+        messageLabel.numberOfLines = 0
+        
+        // Masked Corners: Top-Left, Top-Right, Bottom-Left rounded. Bottom-Right sharp.
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+    }
+    
+    func configure(with message: GroupNewChatMessage) {
+        messageLabel.text = message.text
     }
 }
 
-class IncomingCell: BaseChatCell {
+// MARK: - Incoming Cell (Left Side - Gray)
+class GroupNewIncomingCell: GroupNewBaseChatCell {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
@@ -61,16 +74,23 @@ class IncomingCell: BaseChatCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: bubbleView)
+        
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
+        messageLabel.numberOfLines = 0
+        
+        // Masked Corners: Top-Left, Top-Right, Bottom-Right rounded. Bottom-Left sharp.
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        
         setupUI()
     }
     
     private func setupUI() {
+        // Tap Setup
         nameLabel.isUserInteractionEnabled = true
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
         
+        // Profile Image Setup
         if let profileImg = profileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
             profileImg.clipsToBounds = true
@@ -82,7 +102,10 @@ class IncomingCell: BaseChatCell {
     @objc private func handleTap() {
         onLabelTapped?()
     }
+    
+    // MARK: - Configuration
+    func configure(with message: GroupNewChatMessage) {
+        messageLabel.text = message.text
+        nameLabel.text = message.sender
+    }
 }
-
-typealias OutgoingCell2 = OutgoingCell
-typealias IncomingCell2 = IncomingCell

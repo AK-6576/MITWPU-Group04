@@ -1,25 +1,24 @@
 //
-//  CollectionViewCell.swift
+//  QuickCaptionsChatCell.swift
 //  ANSD_APP
 //
-//  Created by Omkar Varpe on 15/12/25.
+//  Created by Anshul Kumaria on 25/11/25.
 //  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
 import UIKit
 
-class ViewIncomingCell: UICollectionViewCell {
+class QuickCaptionsOutgoingCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
-    @IBOutlet var bubbleView: UIView!
-    @IBOutlet var nameLabel: UILabel!
-    @IBOutlet var messageLabel: UILabel!
-    @IBOutlet var editedLabel: UILabel!
+    @IBOutlet weak var QCbubbleView: UIView!
+    @IBOutlet weak var QCmessageLabel: UILabel!
     
 override func awakeFromNib() {
         super.awakeFromNib()
-        bubbleView.layer.cornerRadius = 16
-        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
-        bubbleView.backgroundColor = .systemGray5
+        QCbubbleView.backgroundColor = .systemBlue
+        QCmessageLabel.textColor = .white
+        QCbubbleView.layer.cornerRadius = 16
+        QCbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
     }
 
     
@@ -39,21 +38,30 @@ override func awakeFromNib() {
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
         return layoutAttributes
+    }
+    
+    func configure(with msg: QuickCaptionsChat) {
+        QCmessageLabel.text = msg.text
     }
 }
 
-class ViewOutgoingCell: UICollectionViewCell {
+class QuickCaptionsIncomingCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
-    @IBOutlet weak var PCmessageLabel: UILabel!
-    @IBOutlet var pcBubbleView: UIView!
-    @IBOutlet var editedLabel: UILabel!
+    @IBOutlet weak var nameLabel: UILabel!
+    @IBOutlet weak var bubbleView: UIView!
+    @IBOutlet weak var messageLabel: UILabel!
     
-override func awakeFromNib() {
+var onLabelTapped: (() -> Void)?
+    
+    override func awakeFromNib() {
         super.awakeFromNib()
-        pcBubbleView.layer.cornerRadius = 16
-        pcBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-        pcBubbleView.backgroundColor = .systemBlue
-        PCmessageLabel.textColor = .white
+        bubbleView.backgroundColor = .systemGray5
+        messageLabel.textColor = .black
+        bubbleView.layer.cornerRadius = 16
+        bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        
+        nameLabel.isUserInteractionEnabled = true
+        nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
     }
 
     
@@ -73,5 +81,14 @@ override func awakeFromNib() {
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
         return layoutAttributes
+    }
+    
+    func configure(with msg: QuickCaptionsChat) {
+        nameLabel.text = msg.sender
+        messageLabel.text = msg.text
+    }
+    
+    @objc private func handleTap() {
+        onLabelTapped?()
     }
 }
