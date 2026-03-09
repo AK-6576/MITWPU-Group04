@@ -105,7 +105,10 @@ class QuickCaptionsParticipantCardCell: UITableViewCell {
         initialsLabel.text = String(initials.prefix(2)).uppercased()
         
         // Blue for User (Steve), Gray for others
-        if data.name.lowercased().contains("steve") {
+        let currentUserName = (UserDefaults.standard.string(forKey: "user_first_name") ?? "").lowercased()
+        let speakerName = data.name.lowercased()
+        
+        if (!currentUserName.isEmpty && speakerName.contains(currentUserName)) || speakerName == "you" {
             avatarView.backgroundColor = .systemBlue
             initialsLabel.textColor = .white
         } else {

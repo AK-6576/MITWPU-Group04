@@ -360,8 +360,8 @@ class VoiceCalibrationViewController: UIViewController {
         audioRecorder?.record()
         startMeteringAnimation()
 
-        // Each sentence gets 5 seconds of recording time
-        phaseTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
+        // Each sentence gets 7 seconds of recording time (model needs 6s = 96,000 samples @ 16kHz, plus 1s buffer)
+        phaseTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: false) { [weak self] _ in
             guard let self else { return }
             self.audioRecorder?.stop()
             self.stopMeteringAnimation()
@@ -563,6 +563,10 @@ class VoiceCalibrationViewController: UIViewController {
         // Save to persistent storage via VoiceProfileManager
         // Use "Me" as default name — user can change it later
         VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: "Me", embedding: normalizedAvg)
+        
+        // Push the profile to Firebase so it syncs across logins
+        FirebaseManager.shared.saveVoiceProfileMetadata(name: "Me", embedding: normalizedAvg)
+        
         print("VoiceCalibration: Voice profile saved successfully ✓")
     }
 

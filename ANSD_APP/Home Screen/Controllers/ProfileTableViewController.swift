@@ -49,7 +49,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         
         // Initial Name Setup
         if firstNameTextField.text?.isEmpty ?? true {
-            firstNameTextField.text = incomingName ?? "Steve"
+            firstNameTextField.text = incomingName ?? "User"
         }
         
         // Load Image
@@ -117,10 +117,18 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     // MARK: - Voice Profile Actions
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // Vocal Profile is the 5th cell (index 4) in the single section
-        if indexPath.row == 4 {
-            tableView.deselectRow(at: indexPath, animated: true)
-            handleVocalProfileTap()
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        if indexPath.section == 0 {
+            // Vocal Profile is the 5th cell (index 4) in the first section
+            if indexPath.row == 4 {
+                handleVocalProfileTap()
+            }
+        } else if indexPath.section == 1 {
+            // Logout is the only cell in the second section
+            if indexPath.row == 0 {
+                confirmSignOut()
+            }
         }
     }
     
@@ -211,7 +219,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     }
     
     func performAutoSave() {
-        let name = firstNameTextField.text ?? "Steve"
+        let name = firstNameTextField.text ?? "User"
         let lastName = lastNameTextField.text ?? ""
         let dob = datePicker.date
         let gender = genderButton.title(for: .normal) ?? "Select"
@@ -277,5 +285,35 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     @objc func dismissKeyboard() {
         view.endEditing(true)
+    }
+    
+    // MARK: - Sign Out
+    @objc private func confirmSignOut() {
+        let alert = UIAlertController(title: "Log Out", message: "Are you sure you want to log out? This will clear all local data.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Log Out", style: .destructive) { [weak self] _ in
+            self?.performSignOut()
+        })
+        present(alert, animated: true)
+    }
+    
+    private func performSignOut() {
+        FirebaseManager.shared.signOut { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    // Route to Login Screen
+                    let storyboard = UIStoryboard(name: "Onboarding", bundle: nil)
+                    if let loginNav = storyboard.instantiateInitialViewController() {
+                        loginNav.modalPresentationStyle = .fullScreen
+                        self?.present(loginNav, animated: true, completion: nil)
+                    }
+                case .failure(let error):
+                    let errorAlert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                    errorAlert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self?.present(errorAlert, animated: true)
+                }
+            }
+        }
     }
 }

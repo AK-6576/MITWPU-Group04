@@ -103,9 +103,12 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         Task {
             do {
                 let prompt = """
-                Analyze this transcript.
-                Step 1: Write section "NOTES:" with bullet points.
-                Step 2: For each participant, write "SUMMARY_[Name]:" with a short summary.
+                Analyze the following transcript.
+                
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point on a new line as a standalone sentence.
+                
+                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences.
+                
                 TRANSCRIPT:
                 \(text)
                 """

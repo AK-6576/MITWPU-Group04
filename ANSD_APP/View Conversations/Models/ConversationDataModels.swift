@@ -70,11 +70,12 @@ class Conversation {
     var calendarDate: Date?
     var notes: String?
     var isPinned: Bool
+    var ownerUID: String = ""
     
     @Relationship(deleteRule: .cascade, inverse: \Participant.conversation) var participants: [Participant]?
     @Relationship(deleteRule: .cascade, inverse: \Message.conversation) var messages: [Message]?
 
-    init(id: String, title: String, details: String = "", date: String = "", startTime: String = "", endTime: String = "", location: String = "", category: String = "", icon: String = "", info: Bool? = nil, calendarDate: Date? = nil, notes: String? = nil, isPinned: Bool = false, participants: [Participant]? = [], messages: [Message]? = []) {
+    init(id: String, title: String, details: String = "", date: String = "", startTime: String = "", endTime: String = "", location: String = "", category: String = "", icon: String = "", info: Bool? = nil, calendarDate: Date? = nil, notes: String? = nil, isPinned: Bool = false, ownerUID: String = "", participants: [Participant]? = [], messages: [Message]? = []) {
         self.id = id
         self.title = title
         self.details = details
@@ -88,6 +89,7 @@ class Conversation {
         self.calendarDate = calendarDate
         self.notes = notes
         self.isPinned = isPinned
+        self.ownerUID = ownerUID
         self.participants = participants
         self.messages = messages
     }

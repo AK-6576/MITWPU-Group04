@@ -110,9 +110,9 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
                 let prompt = """
                 Analyze the following transcript.
                 
-                Step 1: Write a section strictly labeled "NOTES:" containing bullet points of action items and key takeaways.
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point on a new line as a standalone sentence.
                 
-                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in third person.
+                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences.
                 
                 TRANSCRIPT:
                 \(fullTranscript)

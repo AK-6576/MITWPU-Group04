@@ -115,19 +115,105 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                 switch result {
                 case .success(let user):
                     print("Successfully logged in: \(user.uid)")
-                    // Persist first name from displayName (e.g. "John Doe" → "John") so Home screen shows it
-                    if let displayName = user.displayName, !displayName.isEmpty {
-                        let firstName = displayName.components(separatedBy: " ").first ?? displayName
-                        UserDefaults.standard.set(firstName, forKey: "user_first_name")
-                    } else {
-                        // Fallback: derive a name from the email prefix
-                        let emailPrefix = email.components(separatedBy: "@").first ?? ""
-                        let firstName = emailPrefix.components(separatedBy: ".").first?.capitalized ?? emailPrefix
-                        if !firstName.isEmpty {
-                            UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                    let uid = user.uid
+                    
+                    // --- Step 1: Fetch user profile (names) ---
+                    FirebaseManager.shared.fetchUserProfile(uid: uid) { profileData in
+                        DispatchQueue.main.async {
+                            if let data = profileData {
+                                let firstName = data["firstName"] as? String ?? ""
+                                let lastName = data["lastName"] as? String ?? ""
+                                if !firstName.isEmpty {
+                                    UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                                }
+                                if !lastName.isEmpty {
+                                    UserDefaults.standard.set(lastName, forKey: "user_last_name")
+                                }
+                            } else {
+                                let emailPrefix = email.components(separatedBy: "@").first ?? ""
+                                let firstName = emailPrefix.components(separatedBy: ".").first?.capitalized ?? emailPrefix
+                                if !firstName.isEmpty {
+                                    UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                                }
+                            }
+                            
+                            // --- Step 2: Restore conversation history ---
+                            FirebaseManager.shared.fetchConversationHistory(uid: uid) { conversations in
+                                DispatchQueue.main.async {
+                                    for dict in conversations {
+                                        guard let id = dict["id"] as? String,
+                                              let title = dict["title"] as? String else { continue }
+                                        
+                                        // Skip if already exists locally
+                                        if DataManager.shared.fetchConversation(byId: id) != nil { continue }
+                                        
+                                        let convo = Conversation(
+                                            id: id,
+                                            title: title,
+                                            details: dict["details"] as? String ?? "",
+                                            date: dict["date"] as? String ?? "",
+                                            category: dict["category"] as? String ?? "",
+                                            icon: dict["icon"] as? String ?? "",
+                                            isPinned: dict["isPinned"] as? Bool ?? false,
+                                            ownerUID: uid
+                                        )
+                                        DataManager.shared.addConversation(convo)
+                                    }
+                                    
+                                    // --- Step 3: Restore Quick Actions ---
+                                    FirebaseManager.shared.fetchQuickActions(uid: uid) { actions in
+                                        DispatchQueue.main.async {
+                                            for dict in actions {
+                                                guard let id = dict["id"] as? String,
+                                                      let categoryTitle = dict["categoryTitle"] as? String,
+                                                      let conversationTopic = dict["conversationTopic"] as? String,
+                                                      let startTime = dict["startTime"] as? String,
+                                                      let status = dict["status"] as? String,
+                                                      let roomCode = dict["roomCode"] as? String,
+                                                      let iconName = dict["iconName"] as? String,
+                                                      let topicImage = dict["topicImage"] as? String,
+                                                      let timeImage = dict["timeImage"] as? String else { continue }
+                                                
+                                                let existing = QuickActionsRepository.shared.getAllActions()
+                                                if existing.contains(where: { $0.id == id }) { continue }
+                                                
+                                                let action = RoutineConversation(
+                                                    id: id,
+                                                    iconName: iconName,
+                                                    categoryTitle: categoryTitle,
+                                                    status: status,
+                                                    conversationTopic: conversationTopic,
+                                                    topicImage: topicImage,
+                                                    startTime: startTime,
+                                                    description: dict["description"] as? String,
+                                                    date: dict["date"] as? String,
+                                                    timeImage: timeImage,
+                                                    roomCode: roomCode,
+                                                    participantNames: dict["participantNames"] as? [String] ?? []
+                                                )
+                                                QuickActionsRepository.shared.addAction(action)
+                                            }
+                                            
+                                            // --- Step 4: Restore voice profile ---
+                                            FirebaseManager.shared.fetchVoiceProfileMetadata(uid: uid) { voiceData in
+                                                DispatchQueue.main.async {
+                                                    if let data = voiceData,
+                                                       let embedding = data["embedding"] as? [NSNumber],
+                                                       let name = data["name"] as? String {
+                                                        let floatEmbedding = embedding.map { $0.floatValue }
+                                                        VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: name, embedding: floatEmbedding)
+                                                    }
+                                                    
+                                                    // All data restored — navigate to Home
+                                                    self?.performSegue(withIdentifier: "loginToHome", sender: self)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    self?.performSegue(withIdentifier: "loginToHome", sender: self)
                     
                 case .failure(let error):
                     self?.showAlert(title: "Sign In Failed", message: error.localizedDescription)

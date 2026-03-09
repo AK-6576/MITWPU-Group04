@@ -47,7 +47,7 @@ class TextCleanupManager {
         guard model.isAvailable else { return }
         
         let prompt = """
-        Fix the grammar, punctuation, and capitalization of the following text, but keep the tone natural and conversational. Do not add any extra commentary.
+        Clean up the following conversational text by fixing grammar and punctuation. Keep the tone natural. Return ONLY the cleaned text. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
         
         Text: "\(text)"
         """
@@ -56,9 +56,16 @@ class TextCleanupManager {
         
         do {
             let response = try await session.respond(to: prompt)
+            var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Safety filter: If AI returns a commentary/apology, discard cleanup and use original text
+            let lowercaseResponse = cleanedText.lowercased()
+            if lowercaseResponse.contains("i'm sorry") || lowercaseResponse.contains("as an ai") || lowercaseResponse.contains("can't process") {
+                cleanedText = text
+            }
             
             await MainActor.run {
-                completion(index, response.content)
+                completion(index, cleanedText)
             }
         } catch {
             print("❌ AI Cleanup Error: \(error)")
