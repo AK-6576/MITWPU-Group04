@@ -105,9 +105,9 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     /// Check if a voice profile exists and update the status label accordingly
     private func refreshVoiceProfileStatus() {
         if let profile = VoiceProfileManager.shared.getVoiceProfile(byId: 0) {
-            voiceStatusLabel.text = "Calibrated ✓"
+            voiceStatusLabel.text = "Calibrated"
             voiceStatusLabel.textColor = .systemGreen
-            print("ProfileScreen: Voice profile found — \(profile.name)")
+            print("ProfileScreen: Voice profile found: \(profile.name)")
         } else {
             voiceStatusLabel.text = "Not Calibrated"
             voiceStatusLabel.textColor = .systemGray
@@ -120,13 +120,10 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         tableView.deselectRow(at: indexPath, animated: true)
         
         if indexPath.section == 0 {
-            // Vocal Profile is the 5th cell (index 4) in the first section
+            // Vocal Profile is row 4, Logout is row 5
             if indexPath.row == 4 {
                 handleVocalProfileTap()
-            }
-        } else if indexPath.section == 1 {
-            // Logout is the only cell in the second section
-            if indexPath.row == 0 {
+            } else if indexPath.row == 5 {
                 confirmSignOut()
             }
         }

@@ -173,11 +173,11 @@ class VoiceCalibrationViewController: UIViewController {
         guard index < statusLabels.count else { return }
         UIView.animate(withDuration: 0.3) {
             if verified {
-                self.statusLabels[index].text = "✓ Verified"
+                self.statusLabels[index].text = "Verified"
                 self.statusLabels[index].textColor = .white
                 self.statusLabels[index].backgroundColor = .systemGreen
             } else {
-                self.statusLabels[index].text = "✗ Mismatch"
+                self.statusLabels[index].text = "Mismatch"
                 self.statusLabels[index].textColor = .white
                 self.statusLabels[index].backgroundColor = .systemRed
             }
@@ -233,7 +233,7 @@ class VoiceCalibrationViewController: UIViewController {
 
         case .finished:
             setButton(title: "Go to Home", image: "checkmark.circle.fill", color: .systemGreen, enabled: true)
-            instructionLabel.text = "Voice profile saved! ✓\nYour unique voice is now set up."
+            instructionLabel.text = "Voice profile saved.\nYour unique voice is now set up."
             animateBarsToResting()
         }
     }
@@ -567,7 +567,7 @@ class VoiceCalibrationViewController: UIViewController {
         // Push the profile to Firebase so it syncs across logins
         FirebaseManager.shared.saveVoiceProfileMetadata(name: "Me", embedding: normalizedAvg)
         
-        print("VoiceCalibration: Voice profile saved successfully ✓")
+        print("VoiceCalibration: Voice profile saved successfully.")
     }
 
     // MARK: - Math Utilities (matching AudioDiarizer)

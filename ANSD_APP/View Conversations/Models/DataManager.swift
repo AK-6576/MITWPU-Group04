@@ -120,10 +120,10 @@ class DataManager {
 
         do {
             let fetchedData = try context.fetch(descriptor)
-            print("DataManager: 📅 Successfully fetched \(fetchedData.count) conversations for date: \(date)")
+            print("DataManager: Successfully fetched \(fetchedData.count) conversations for date: \(date)")
             return fetchedData
         } catch {
-            print("DataManager: ❌ Failed to fetch filtered data. Error: \(error.localizedDescription)")
+            print("DataManager: Failed to fetch filtered data. Error: \(error.localizedDescription)")
             return []
         }
     }

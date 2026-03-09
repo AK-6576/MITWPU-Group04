@@ -126,12 +126,98 @@ class FirebaseManager {
             "category": conversation.category,
             "icon": conversation.icon,
             "date": conversation.date,
+            "startTime": conversation.startTime,
+            "endTime": conversation.endTime,
             "isPinned": conversation.isPinned,
             "lastUpdated": ServerValue.timestamp()
         ]
         
         // This backups metadata to the logged-in user's own conversations folder
         databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID).updateChildValues(metadata)
+    }
+
+    /// Saves a COMPLETE conversation including all messages and participants to history.
+    func saveFullConversation(_ conversation: Conversation) {
+        guard let uid = currentUID else { return }
+        let safeUID = sanitizeKey(uid)
+        let safeConvID = sanitizeKey(conversation.id)
+        
+        // 1. Prepare Metadata
+        var metadata: [String: Any] = [
+            "id": conversation.id,
+            "title": conversation.title,
+            "details": conversation.details,
+            "category": conversation.category,
+            "icon": conversation.icon,
+            "date": conversation.date,
+            "startTime": conversation.startTime,
+            "endTime": conversation.endTime,
+            "location": conversation.location,
+            "isPinned": conversation.isPinned,
+            "lastUpdated": ServerValue.timestamp()
+        ]
+        
+        if let calendarDate = conversation.calendarDate {
+            metadata["calendarDate"] = calendarDate.timeIntervalSince1970
+        }
+        
+        if let notes = conversation.notes {
+            metadata["notes"] = notes
+        }
+        
+        // 2. Prepare Participants
+        var participantsDict: [String: Any] = [:]
+        if let participants = conversation.participants {
+            for participant in participants {
+                participantsDict[participant.id.uuidString] = [
+                    "name": participant.name,
+                    "summary": participant.summary,
+                    "image": participant.image
+                ]
+            }
+        }
+        
+        // 3. Prepare Messages
+        var messagesDict: [String: Any] = [:]
+        if let messages = conversation.messages {
+            for message in messages {
+                messagesDict[message.id.uuidString] = [
+                    "text": message.text,
+                    "senderName": message.senderName,
+                    "senderId": message.senderId,
+                    "isIncoming": message.isIncoming,
+                    "isHighlighted": message.isHighlighted,
+                    "isEdited": message.isEdited,
+                    "timestamp": message.timestamp.timeIntervalSince1970
+                ]
+            }
+        }
+        
+        let fullData: [String: Any] = [
+            "metadata": metadata,
+            "participants": participantsDict,
+            "messages": messagesDict
+        ]
+        
+        databaseRef.child("users").child(safeUID).child("history").child(safeConvID).setValue(fullData) { error, _ in
+            if let error = error {
+                print("Firebase: Failed to save full conversation: \(error.localizedDescription)")
+            } else {
+                print("Firebase: Successfully synced full transcript for: \(conversation.title)")
+            }
+        }
+        
+        // Also update the simple metadata list for quick fetching
+        saveConversationMetadata(conversation)
+    }
+    
+    /// Restores full conversation history (messages + participants) for a given ID
+    func fetchFullConversation(uid: String, conversationID: String, completion: @escaping ([String: Any]?) -> Void) {
+        let safeUID = sanitizeKey(uid)
+        let safeConvID = sanitizeKey(conversationID)
+        databaseRef.child("users").child(safeUID).child("history").child(safeConvID).observeSingleEvent(of: .value) { snapshot in
+            completion(snapshot.value as? [String: Any])
+        }
     }
     
     func stop() {

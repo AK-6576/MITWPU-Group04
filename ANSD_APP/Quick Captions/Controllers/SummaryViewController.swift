@@ -38,7 +38,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         view.backgroundColor = .systemGroupedBackground
         
         guard tableView != nil else {
-            print("❌ CRITICAL: TableView is not connected in Storyboard")
+            print("Error: Critical TableView is not connected in Storyboard")
             return
         }
         
@@ -60,7 +60,21 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
         
+        generateDateAndTime()
         generateAISummary()
+    }
+    
+    private func generateDateAndTime() {
+        let now = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .none
+        dateString = dateFormatter.string(from: now)
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateStyle = .none
+        timeFormatter.timeStyle = .short
+        timeString = timeFormatter.string(from: now)
     }
     
     // MARK: - AI Logic
@@ -353,6 +367,11 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     // MARK: - Save to History Translator
         
     private func saveSessionToHistory() {
+        // SAFETY: If time or date is empty, generate it now
+        if dateString.isEmpty || timeString.isEmpty {
+            generateDateAndTime()
+        }
+        
         // 1. Map Participants to History Format
         let historyParticipants: [Participant] = participantsData.map { person in
             Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
@@ -398,6 +417,10 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         // 5. Send to DataManager to permanently save!
         DataManager.shared.addConversation(newConversation)
-        print("Success: Saved '\(self.conversationTitle)' to History!")
+        
+        // 6. Sync full transcript to Firebase for persistent history
+        FirebaseManager.shared.saveFullConversation(newConversation)
+        
+        print("Success: Saved \(self.conversationTitle) to History!")
     }
 }

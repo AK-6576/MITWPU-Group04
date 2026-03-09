@@ -146,7 +146,7 @@ class AudioDiarizer: ObservableObject {
                     self.processEmbedding(rawEmbedding)
                 }
             } catch {
-                print("❌ Inference Error: \(error)")
+                print("Error: Inference Error: \(error)")
             }
         }
     }

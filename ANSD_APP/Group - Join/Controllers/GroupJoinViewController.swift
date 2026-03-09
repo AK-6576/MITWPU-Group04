@@ -206,6 +206,10 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                                 }
                             }
                         }
+                        
+                        // NEW FIX: Append locally immediately so transcript is available even if Firebase echo is slow
+                        let localMsg = GroupJoinChatMessage(text: combinedText, isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                        self.processIncomingMessage(text: localMsg.text, sender: localMsg.sender, senderID: localMsg.senderID)
                     }
                 }
                 
@@ -342,6 +346,11 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
 
     private func processIncomingMessage(text: String, sender: String, senderID: String) {
+        // Deduplication: Check if the message is already in our list (matching text and sender)
+        if messages.contains(where: { $0.text == text && $0.senderID == senderID }) {
+            return
+        }
+        
         let isListeningPresent = (self.messages.last?.text == "Listening..." || self.messages.last?.text == "...") && !self.messages.last!.isIncoming
         
         if isListeningPresent {

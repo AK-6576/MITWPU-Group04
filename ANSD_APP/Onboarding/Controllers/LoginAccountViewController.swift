@@ -147,17 +147,64 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                                         // Skip if already exists locally
                                         if DataManager.shared.fetchConversation(byId: id) != nil { continue }
                                         
-                                        let convo = Conversation(
-                                            id: id,
-                                            title: title,
-                                            details: dict["details"] as? String ?? "",
-                                            date: dict["date"] as? String ?? "",
-                                            category: dict["category"] as? String ?? "",
-                                            icon: dict["icon"] as? String ?? "",
-                                            isPinned: dict["isPinned"] as? Bool ?? false,
-                                            ownerUID: uid
-                                        )
-                                        DataManager.shared.addConversation(convo)
+                                        // Fetch FULL DATA (Messages + Participants)
+                                        FirebaseManager.shared.fetchFullConversation(uid: uid, conversationID: id) { fullData in
+                                            DispatchQueue.main.async {
+                                                let metadata = fullData?["metadata"] as? [String: Any] ?? dict
+                                                let participantsDict = fullData?["participants"] as? [String: [String: Any]] ?? [:]
+                                                let messagesDict = fullData?["messages"] as? [String: [String: Any]] ?? [:]
+                                                
+                                                // 1. Create Participants
+                                                var historyParticipants: [Participant] = []
+                                                for (_, pData) in participantsDict {
+                                                    let p = Participant(
+                                                        name: pData["name"] as? String ?? "Unknown",
+                                                        summary: pData["summary"] as? String ?? "",
+                                                        image: pData["image"] as? String ?? "person.circle.fill"
+                                                    )
+                                                    historyParticipants.append(p)
+                                                }
+                                                
+                                                // 2. Create Messages
+                                                var historyMessages: [Message] = []
+                                                for (_, mData) in messagesDict {
+                                                    let m = Message(
+                                                        id: UUID(),
+                                                        text: mData["text"] as? String ?? "",
+                                                        senderId: mData["senderId"] as? String ?? "",
+                                                        senderName: mData["senderName"] as? String ?? "",
+                                                        isIncoming: mData["isIncoming"] as? Bool ?? false,
+                                                        timestamp: Date(timeIntervalSince1970: mData["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970),
+                                                        isHighlighted: mData["isHighlighted"] as? Bool ?? false,
+                                                        isEdited: mData["isEdited"] as? Bool ?? false
+                                                    )
+                                                    historyMessages.append(m)
+                                                }
+                                                
+                                                // 3. Create Conversation
+                                                let convo = Conversation(
+                                                    id: id,
+                                                    title: title,
+                                                    details: metadata["details"] as? String ?? "",
+                                                    date: metadata["date"] as? String ?? "",
+                                                    startTime: metadata["startTime"] as? String ?? "",
+                                                    endTime: metadata["endTime"] as? String ?? "",
+                                                    location: metadata["location"] as? String ?? "",
+                                                    category: metadata["category"] as? String ?? "",
+                                                    icon: metadata["icon"] as? String ?? "",
+                                                    info: metadata["info"] as? Bool,
+                                                    calendarDate: Date(timeIntervalSince1970: metadata["calendarDate"] as? TimeInterval ?? Date().timeIntervalSince1970),
+                                                    notes: metadata["notes"] as? String,
+                                                    isPinned: metadata["isPinned"] as? Bool ?? false,
+                                                    ownerUID: uid,
+                                                    participants: historyParticipants,
+                                                    messages: historyMessages
+                                                )
+                                                
+                                                DataManager.shared.addConversation(convo)
+                                                print("Success: Restored full transcript for \(title)")
+                                            }
+                                        }
                                     }
                                     
                                     // --- Step 3: Restore Quick Actions ---

@@ -62,7 +62,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
-        dateLabel.text = conversation.date
+        // dateLabel.text = conversation.date // REDUNDANT OVERWRITE REMOVED
         timeLabel.text = "\(conversation.startTime)"
         
         calendarIcon.image = UIImage(systemName: "calendar")

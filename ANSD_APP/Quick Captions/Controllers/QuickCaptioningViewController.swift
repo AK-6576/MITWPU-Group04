@@ -229,7 +229,9 @@ class QuickCaptioningViewController: UIViewController,
     
     private func processBuffer() {
         guard !transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard let speakerID = currentSpeakerID else { return }
+        
+        // NEW FALLBACK: If diarizer hasn't identified anyone yet, default to Speaker 1
+        let speakerID = currentSpeakerID ?? 1
         
         let textToFlush = transcriptBuffer
         

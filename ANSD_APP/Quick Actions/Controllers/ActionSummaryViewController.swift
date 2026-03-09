@@ -337,6 +337,11 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     
     // MARK: - Save to History
     private func saveSessionToHistory() {
+        // SAFETY: If time or date is empty, generate it now
+        if dateString.isEmpty || timeString.isEmpty {
+            generateDateAndTime()
+        }
+        
         let historyParticipants: [Participant] = participants.map { person in
             Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
         }
@@ -380,8 +385,13 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             messages: historyMessages
         )
         
+        // 5. Send to DataManager to permanently save!
         DataManager.shared.addConversation(newConversation)
-        print("✅ Success: Saved Action session '\(self.conversationTitle)' to History!")
+        
+        // 6. Sync full transcript to Firebase for persistent history
+        FirebaseManager.shared.saveFullConversation(newConversation)
+        
+        print("Success: Saved Action session \(self.conversationTitle) to History!")
     }
 }
 

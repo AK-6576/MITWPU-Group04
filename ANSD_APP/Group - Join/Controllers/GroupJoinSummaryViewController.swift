@@ -225,6 +225,7 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         dateFormatter.dateStyle = .medium
         dateString = dateFormatter.string(from: now)
         let timeFormatter = DateFormatter()
+        timeFormatter.dateStyle = .none
         timeFormatter.timeStyle = .short
         timeString = timeFormatter.string(from: now)
     }
@@ -295,6 +296,11 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - Save to History
     private func saveSessionToHistory() {
+        // SAFETY: If time or date is empty, generate it now
+        if dateString.isEmpty || timeString.isEmpty {
+            generateDateAndTime()
+        }
+
         // Converts participant data to the history-compatible Participant model.
         let historyParticipants: [Participant] = participantsData.map { person in
             Participant(name: person.name, summary: person.summary, image: "person.circle.fill")
@@ -338,6 +344,10 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         )
         // 5. Send to DataManager to permanently save!
         DataManager.shared.addConversation(newConversation)
-        print("✅ Success: Saved Group Join session '\(self.conversationTitle)' to History!")
+        
+        // 6. Sync full transcript to Firebase for persistent history
+        FirebaseManager.shared.saveFullConversation(newConversation)
+        
+        print("Success: Saved Group Join session \(self.conversationTitle) to History!")
     }
 }

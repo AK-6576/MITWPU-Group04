@@ -106,7 +106,7 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
         // 3. Save and Proceed
         UserDefaults.standard.set(userAnswers, forKey: UserKeys.profile)
         
-        print("✅ SAVED PROFILE →", userAnswers)
+        print("Success: Saved profile: ", userAnswers)
         performSegue(withIdentifier: "toProfile", sender: self)
     }
 

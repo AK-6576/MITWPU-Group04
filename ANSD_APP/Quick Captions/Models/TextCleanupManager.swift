@@ -68,7 +68,7 @@ class TextCleanupManager {
                 completion(index, cleanedText)
             }
         } catch {
-            print("❌ AI Cleanup Error: \(error)")
+            print("Error: AI Cleanup Error: \(error)")
         }
     }
     
