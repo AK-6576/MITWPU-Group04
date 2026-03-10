@@ -177,9 +177,11 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
                 {
                   "notes": "The bulleted-style string of clean standalone sentences.",
                   "participants": [
-                    { "name": "Participant Name", "summary": "A short 1-2 sentence third-person summary of what they said." }
+                    { "name": "EXACT_SPEAKER_NAME", "summary": "A short 1-2 sentence third-person summary of what they said." }
                   ]
                 }
+                
+                CRITICAL: You MUST use the EXACT speaker names exactly as they appear in the transcript below for the "name" field. Do not invent new names or use "Speaker 1".
                 
                 TRANSCRIPT:
                 \(fullTranscript)
@@ -203,8 +205,14 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     private func parseJSONResponse(_ text: String) {
-        var cleanJSONString = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if cleanJSONString.hasPrefix("```json") {
+        // Defensive JSON Extraction: find everything between first '{' and last '}'
+        var cleanJSONString = text
+        if let firstBrace = cleanJSONString.firstIndex(of: "{"),
+           let lastBrace = cleanJSONString.lastIndex(of: "}") {
+            cleanJSONString = String(cleanJSONString[firstBrace...lastBrace])
+        } else {
+            // If no braces found, fallback to original trimming logic
+            cleanJSONString = cleanJSONString.trimmingCharacters(in: .whitespacesAndNewlines)
             cleanJSONString = cleanJSONString.replacingOccurrences(of: "```json", with: "")
             cleanJSONString = cleanJSONString.replacingOccurrences(of: "```", with: "")
         }
@@ -222,7 +230,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             self.notesText = decodedSummary.notes
             
             for aiParticipant in decodedSummary.participants {
-                if let index = self.participants.firstIndex(where: { aiParticipant.name.contains($0.name) || $0.name.contains(aiParticipant.name) }) {
+                if let index = self.participants.firstIndex(where: { aiParticipant.name.localizedCaseInsensitiveContains($0.name) || $0.name.localizedCaseInsensitiveContains(aiParticipant.name) }) {
                     self.participants[index].summary = aiParticipant.summary
                 }
             }

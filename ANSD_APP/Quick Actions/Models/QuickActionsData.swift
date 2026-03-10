@@ -17,6 +17,7 @@ class QuickActionsRepository {
     static let shared = QuickActionsRepository()
 
     private var quickActionBubbles: [RoutineConversation] = []
+    private var isSyncingFromFirebase = false
 
     private init() {
         loadFromDisk()
@@ -91,8 +92,12 @@ class QuickActionsRepository {
             self.notifyObservers()
             print("QuickActionsData: Received shared Quick Action '\(action.conversationTopic)'")
         } else {
-            // Update existing
-            self.updateAction(action)
+            // Update locally ONLY — do NOT sync back to Firebase to avoid infinite loop
+            if let index = self.quickActionBubbles.firstIndex(where: { $0.id == action.id }) {
+                self.quickActionBubbles[index] = action
+                self.saveToDisk()
+                self.notifyObservers()
+            }
         }
     }
     
@@ -148,6 +153,9 @@ class QuickActionsRepository {
     }
     
     private func syncToFirebase(_ action: RoutineConversation) {
+        // Guard: don't write back to Firebase if we're processing incoming Firebase data
+        guard !isSyncingFromFirebase else { return }
+        
         let rawID = Auth.auth().currentUser?.uid ?? "UnknownUser"
         let hostID = rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
         if action.roomCode != nil {

@@ -149,8 +149,9 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             
             if let targetUID = hostUID {
                 // Room exists -> JOIN IT
-                print("DEBUG: Action Room found. Joining as Guest. HostUID: \(targetUID)")
-                self.firebase.setupSession(hostUID: targetUID, conversationID: code, isHost: false)
+                let isMeHost = (targetUID == self.currentUserID)
+                print("DEBUG: Action Room found. HostUID: \(targetUID). Am I Host?: \(isMeHost)")
+                self.firebase.setupSession(hostUID: targetUID, conversationID: code, isHost: isMeHost)
                 self.firebase.linkConversationToJoiner(hostUID: targetUID, conversationID: code, conversationTitle: self.sessionTitle)
             } else {
                 // Doesn't exist -> CREATE IT
