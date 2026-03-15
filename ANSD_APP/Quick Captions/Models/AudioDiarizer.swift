@@ -29,7 +29,7 @@ class AudioDiarizer: ObservableObject {
     private var model: VL1004?
     
     private let requiredSamples = 96000
-    private let stride = 16000
+    private let stride = 8000
     private var collectedSamples: [Float] = []
     
     private let learningRate: Float = 0.05
@@ -49,6 +49,7 @@ class AudioDiarizer: ObservableObject {
     private var isEnrolling = false
     private var enrollmentCompletion: ((Bool) -> Void)?
     
+    private var isInferenceRunning = false
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -114,11 +115,28 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Processing Logic
 
     private func processSamples(_ samples: [Float]) {
+        if collectedSamples.isEmpty {
+            collectedSamples.reserveCapacity(requiredSamples + 8000)
+        }
+        
         collectedSamples.append(contentsOf: samples)
         
         if collectedSamples.count >= requiredSamples {
             let chunk = Array(collectedSamples.prefix(requiredSamples))
-            collectedSamples.removeFirst(stride)
+            
+            // Efficient sliding window array shift instead of reallocation
+            let removeCount = stride
+            let remainingCount = collectedSamples.count - removeCount
+            if remainingCount > 0 {
+                collectedSamples.withUnsafeMutableBufferPointer { ptr in
+                    guard let baseAddress = ptr.baseAddress else { return }
+                    memmove(baseAddress, baseAddress.advanced(by: removeCount), remainingCount * MemoryLayout<Float>.size)
+                }
+                collectedSamples.removeLast(removeCount)
+            } else {
+                collectedSamples.removeAll(keepingCapacity: true)
+            }
+            
             runInference(on: chunk)
         }
     }
@@ -126,13 +144,19 @@ class AudioDiarizer: ObservableObject {
     private func runInference(on samples: [Float]) {
         guard let model = model else { return }
         
+        if isInferenceRunning { return } // Drop overlapping heavy inferences
+        
         guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else { return }
         
         for (i, sample) in samples.enumerated() {
             inputMultiArray[i] = NSNumber(value: sample)
         }
         
+        isInferenceRunning = true
+        
         DispatchQueue.global(qos: .userInitiated).async {
+            defer { self.isInferenceRunning = false }
+            
             do {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let prediction = try model.prediction(audio: inputMultiArray)

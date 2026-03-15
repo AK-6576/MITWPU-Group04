@@ -29,6 +29,7 @@ class QuickCaptioningViewController: UIViewController,
     
     // MARK: - Buffering & Logic State
     private var transcriptBuffer: String = ""
+    private var holdTimer: Timer?
     
     let locationManager = CLLocationManager()
     var currentLocationString: String = "Location Unknown"
@@ -195,35 +196,41 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Transcript Handling (FIXED DUPLICATION)
     
     private func handleSpeechTranscript(fullText: String, isFinal: Bool) {
-        // SAFETY CHECK: If offset > fullText, a correction happened (backspace).
-        // Return immediately to prevent reading old text as new text (Duplication Fix).
-        if consumedTranscriptOffset > fullText.count {
-            return
-        }
-        
-        let startIndex = fullText.index(fullText.startIndex, offsetBy: consumedTranscriptOffset)
-        let newContent = String(fullText[startIndex...])
-        
-        guard !newContent.isEmpty else { return }
-        
-        // Add to Buffer
-        transcriptBuffer += newContent
-        consumedTranscriptOffset = fullText.count
-        
-        // Process Buffer
-        processBuffer()
-        
-        if isFinal {
-            // Ensure everything is flushed
-            if !transcriptBuffer.isEmpty { processBuffer() }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             
-            // Clean the last active bubble since the sentence is done
-            if !messages.isEmpty {
-                finalizeBubble(at: messages.count - 1)
+            // SAFETY CHECK: If offset > fullText, a correction happened (backspace).
+            if self.consumedTranscriptOffset > fullText.count {
+                return
             }
             
-            transcriptBuffer = ""
-            // NOTE: Do NOT reset consumedTranscriptOffset here unless we restart the request object.
+            let startIndex = fullText.index(fullText.startIndex, offsetBy: self.consumedTranscriptOffset)
+            let newContent = String(fullText[startIndex...])
+            
+            guard !newContent.isEmpty else { return }
+            
+            // Add to Buffer
+            self.transcriptBuffer += newContent
+            self.consumedTranscriptOffset = fullText.count
+            
+            self.holdTimer?.invalidate()
+            
+            if isFinal {
+                // Ensure everything is flushed
+                if !self.transcriptBuffer.isEmpty { self.processBuffer() }
+                
+                // Clean the last active bubble since the sentence is done
+                if !self.messages.isEmpty {
+                    self.finalizeBubble(at: self.messages.count - 1)
+                }
+                
+                self.transcriptBuffer = ""
+            } else {
+                // Hold and wait buffer: allow diarization to catch up
+                self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+                    self?.processBuffer()
+                }
+            }
         }
     }
     
@@ -329,6 +336,9 @@ class QuickCaptioningViewController: UIViewController,
         
         var newMessage = QuickCaptionsChat(sender: name, text: text, isIncoming: !isBlue)
         newMessage.speakerID = id
+        if let currentEvent = diarizer.segmentHistory.last {
+            newMessage.eventId = currentEvent.id
+        }
         
         messages.append(newMessage)
         currentMessageIndex = messages.count - 1
@@ -511,7 +521,9 @@ class QuickCaptioningViewController: UIViewController,
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
             
-            if let bubbleSpeakerID = msg.speakerID {
+            if let eventId = msg.eventId {
+                self.diarizer.applyRetroactiveCorrection(forEventID: eventId, newName: newName)
+            } else if let bubbleSpeakerID = msg.speakerID {
                 self.diarizer.speakerNames[bubbleSpeakerID] = newName
             } else {
                 if let key = self.diarizer.speakerNames.first(where: { $0.value == currentName })?.key {
@@ -520,13 +532,26 @@ class QuickCaptioningViewController: UIViewController,
             }
 
             for i in 0..<self.messages.count {
-                if self.messages[i].sender == currentName {
-                    self.messages[i].sender = newName
-                }
-                if let sid = self.messages[i].speakerID,
-                   let registeredName = self.diarizer.speakerNames[sid],
-                   registeredName == newName {
-                    self.messages[i].sender = newName
+                if let eid = self.messages[i].eventId, 
+                   let historyEvent = self.diarizer.segmentHistory.first(where: { $0.id == eid }) {
+                    
+                    let sid = historyEvent.assignedSpeakerID
+                    self.messages[i].speakerID = sid
+                    self.messages[i].isIncoming = (sid != 0)
+                    if sid == 0 {
+                        self.messages[i].sender = self.diarizer.speakerNames[0] ?? "Me"
+                    } else {
+                        self.messages[i].sender = self.diarizer.speakerNames[sid] ?? "Speaker \(sid)"
+                    }
+                } else {
+                    if self.messages[i].sender == currentName {
+                        self.messages[i].sender = newName
+                    }
+                    if let sid = self.messages[i].speakerID,
+                       let registeredName = self.diarizer.speakerNames[sid],
+                       registeredName == newName {
+                        self.messages[i].sender = newName
+                    }
                 }
             }
             

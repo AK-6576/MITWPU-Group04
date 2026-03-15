@@ -12,5 +12,6 @@ struct QuickCaptionsChat: Sendable {
     var sender: String
     var text: String
     var isIncoming: Bool
-    var speakerID : Int?
+    var speakerID: Int?
+    var eventId: UUID?
 }
