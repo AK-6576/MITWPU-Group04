@@ -46,13 +46,32 @@ class GroupJoinParticipantsCardCell: UITableViewCell {
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
+
+        avatarView?.layer.cornerRadius = 8
+        avatarView?.clipsToBounds = true
     }
 
     func configure(with data: GroupJoinParticipants) {
-        summaryLabel.text = data.summary
+        // Use Attributed Text to show Name (Bold) and Summary (Regular)
+        let nameAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 16, weight: .bold),
+            .foregroundColor: UIColor.label
+        ]
+        let summaryAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 14),
+            .foregroundColor: UIColor.secondaryLabel
+        ]
         
-        let initials = data.avatarTitle.isEmpty ? String(data.name.prefix(2)) : data.avatarTitle
-        initialsLabel?.text = initials.uppercased()
+        let combinedText = NSMutableAttributedString(string: "\(data.name)\n", attributes: nameAttributes)
+        combinedText.append(NSAttributedString(string: data.summary, attributes: summaryAttributes))
+        
+        summaryLabel.attributedText = combinedText
+        
+        // Initials Logic
+        let components = data.name.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.map { String($0) }.joined()
+        initialsLabel?.text = String(initials.prefix(2)).uppercased()
+        initialsLabel?.font = .systemFont(ofSize: 16, weight: .bold)
 
         let currentUserName = (UserDefaults.standard.string(forKey: "user_first_name") ?? "").lowercased()
         let speakerName = data.name.lowercased()

@@ -241,19 +241,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                                                 QuickActionsRepository.shared.addAction(action)
                                             }
                                             
-                                            // --- Step 4: Restore voice profile ---
-                                            FirebaseManager.shared.fetchVoiceProfileMetadata(uid: uid) { voiceData in
-                                                DispatchQueue.main.async {
-                                                    if let data = voiceData,
-                                                       let embedding = data["embedding"] as? [NSNumber],
-                                                       let name = data["name"] as? String {
-                                                        let floatEmbedding = embedding.map { $0.floatValue }
-                                                        VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: name, embedding: floatEmbedding)
-                                                    }
-                                                    
-                                                    // All data restored — navigate to Home
-                                                    self?.performSegue(withIdentifier: "loginToHome", sender: self)
-                                                }
+                                            // --- Step 4: Voice profile is natively stored in SwiftData. ---
+                                            DispatchQueue.main.async {
+                                                // All data restored — navigate to Home
+                                                self?.performSegue(withIdentifier: "loginToHome", sender: self)
                                             }
                                         }
                                     }

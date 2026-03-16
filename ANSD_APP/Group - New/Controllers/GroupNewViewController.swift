@@ -48,7 +48,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         return rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
     }
         
-        let myName = UIDevice.current.name
+        var myName: String {
+        UserDefaults.standard.string(forKey: "user_first_name") ?? UIDevice.current.name
+    }
         // -----------------------------------
         
         var consumedTranscriptOffset = 0

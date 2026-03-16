@@ -75,19 +75,19 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     // MARK: - Data Preparation
     private func prepareParticipantsFromMessages() {
         // Identify all unique speakers
-        var seenSenders = Set<String>()
-        var ordering: [String] = []
+        var uniqueSenders = [String: String]() // senderID: name
+        var order = [String]() // list of senderIDs
         
         for msg in transcriptMessages {
-            if !seenSenders.contains(msg.sender) {
-                seenSenders.insert(msg.sender)
-                ordering.append(msg.sender)
+            if uniqueSenders[msg.senderID] == nil {
+                uniqueSenders[msg.senderID] = msg.sender
+                order.append(msg.senderID)
             }
         }
         
         // Initialize with "Waiting..."
-        self.participantsData = ordering.map { name in
-            GroupNewParticipantData(name: name, summary: "Waiting for analysis...")
+        self.participantsData = order.map { id in
+            GroupNewParticipantData(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis...")
         }
         
         GroupNewTableView.reloadData()
@@ -178,8 +178,15 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         // Update Participants Data
         for (name, summary) in participantSummaries {
             // Fuzzy match the name (case insensitive or contains)
-            if let index = participantsData.firstIndex(where: { name.contains($0.name) || $0.name.contains(name) }) {
-                participantsData[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Fuzzy match the name (case insensitive or contains)
+            if let index = participantsData.firstIndex(where: { name.localizedCaseInsensitiveContains($0.name) || $0.name.localizedCaseInsensitiveContains(name) }) {
+                // Clean the summary - remove leading dashes or symbols if AI added them
+                var cleanSummary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+                if cleanSummary.hasPrefix("-") || cleanSummary.hasPrefix("•") {
+                    cleanSummary.removeFirst()
+                    cleanSummary = cleanSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                participantsData[index].summary = cleanSummary
             }
         }
     }
@@ -209,8 +216,8 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         
         if let request = MKReverseGeocodingRequest(location: location) {
             request.getMapItems { mapItems, error in
-                if let place = mapItems?.first?.placemark {
-                    self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
+                if let place = mapItems?.first {
+                    self.locationString = [place.addressRepresentations?.cityName, place.addressRepresentations?.regionName].compactMap { $0 }.joined(separator: ", ")
                     self.locationManager.stopUpdatingLocation()
                     DispatchQueue.main.async {
                         self.GroupNewTableView.reloadSections(IndexSet(integer: 1), with: .none)

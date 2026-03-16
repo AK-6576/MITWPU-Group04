@@ -56,7 +56,9 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         return rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
     }
     
-    let myName = UIDevice.current.name
+    var myName: String {
+        UserDefaults.standard.string(forKey: "user_first_name") ?? UIDevice.current.name
+    }
     var otherPersonName = "Host"
     
     // Constant for bubble splitting (Adjust based on your UI)
@@ -207,9 +209,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                             }
                         }
                         
-                        // NEW FIX: Append locally immediately so transcript is available even if Firebase echo is slow
-                        let localMsg = GroupJoinChatMessage(text: combinedText, isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                        self.processIncomingMessage(text: localMsg.text, sender: localMsg.sender, senderID: localMsg.senderID)
                     }
                 }
                 

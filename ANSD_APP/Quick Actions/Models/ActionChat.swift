@@ -21,6 +21,7 @@ struct ChatMessage {
     let text: String
     let isIncoming: Bool
     let sender: String
+    let senderID: String
 }
 
 // 3. This defines the rules for a message (used by your Join controllers)

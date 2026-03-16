@@ -10,6 +10,7 @@ import Foundation
 
 struct QuickCaptionsChat: Sendable {
     var sender: String
+    var senderID: String
     var text: String
     var isIncoming: Bool
     var speakerID: Int?

@@ -11,6 +11,7 @@ import Foundation
 // 1. This is the "Identity Card" for a person.
 struct ParticipantData {
     var name: String
+    var senderID: String
     var summary: String
     var isCurrentUser: Bool = false
 }

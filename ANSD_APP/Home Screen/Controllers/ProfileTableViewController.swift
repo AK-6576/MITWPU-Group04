@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import FirebaseAuth
 
 // Defines the delegate protocol for propagating profile updates to the Home Screen.
 protocol ProfileUpdateDelegate: AnyObject {
@@ -104,7 +105,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     
     /// Check if a voice profile exists and update the status label accordingly
     private func refreshVoiceProfileStatus() {
-        if let profile = VoiceProfileManager.shared.getVoiceProfile(byId: 0) {
+        if let uid = Auth.auth().currentUser?.uid, let profile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
             voiceStatusLabel.text = "Calibrated"
             voiceStatusLabel.textColor = .systemGreen
             print("ProfileScreen: Voice profile found: \(profile.name)")
@@ -130,7 +131,9 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     }
     
     private func handleVocalProfileTap() {
-        if VoiceProfileManager.shared.getVoiceProfile(byId: 0) != nil {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        if VoiceProfileManager.shared.getVoiceProfile(byUID: uid) != nil {
             let actionSheet = UIAlertController(title: "Voice Profile", message: "Manage your voice profile", preferredStyle: .actionSheet)
             
             actionSheet.addAction(UIAlertAction(title: "Update Profile", style: .default) { [weak self] _ in
@@ -138,7 +141,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             })
             
             actionSheet.addAction(UIAlertAction(title: "Delete Profile", style: .destructive) { [weak self] _ in
-                VoiceProfileManager.shared.deleteVoiceProfile(byId: 0)
+                VoiceProfileManager.shared.deleteVoiceProfile(byUID: uid)
                 self?.refreshVoiceProfileStatus()
                 
                 let confirmation = UIAlertController(title: "Deleted", message: "Your voice profile has been removed.", preferredStyle: .alert)

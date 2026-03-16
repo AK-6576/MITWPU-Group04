@@ -177,8 +177,14 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             let person = participantsData[i]
             let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
             
-            if let summary = participantBuffers[safeName], !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                participantsData[i].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let rawSummary = participantBuffers[safeName], !rawSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                var cleanSummary = rawSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+                // Strip leading dashes or bullets if AI added them
+                if cleanSummary.hasPrefix("-") || cleanSummary.hasPrefix("•") {
+                    cleanSummary.removeFirst()
+                    cleanSummary = cleanSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                participantsData[i].summary = cleanSummary
             } else {
                 participantsData[i].summary = "No summary available."
             }
@@ -384,7 +390,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             let msg = Message(
                 id: UUID(),
                 text: chat.text,
-                senderId: String(chat.speakerID ?? -1),
+                senderId: chat.senderID,
                 senderName: chat.sender,
                 isIncoming: chat.isIncoming, // Pass the exact flag from the diarizer
                 timestamp: Date(),

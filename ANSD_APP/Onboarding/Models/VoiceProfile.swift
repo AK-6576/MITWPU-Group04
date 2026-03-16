@@ -10,13 +10,13 @@ import SwiftData
 
 @Model
 class VoiceProfile {
-    @Attribute(.unique) var id: Int
+    @Attribute(.unique) var ownerUID: String
     var name: String
     var embedding: [Float]
     var createdAt: Date
     
-    init(id: Int = 0, name: String, embedding: [Float], createdAt: Date = Date()) {
-        self.id = id
+    init(ownerUID: String, name: String, embedding: [Float], createdAt: Date = Date()) {
+        self.ownerUID = ownerUID
         self.name = name
         self.embedding = embedding
         self.createdAt = createdAt

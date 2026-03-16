@@ -10,6 +10,7 @@ import Foundation
 
 struct GroupJoinParticipants {
     var name: String
+    var senderID: String
     var summary: String
     var avatarTitle: String
 }

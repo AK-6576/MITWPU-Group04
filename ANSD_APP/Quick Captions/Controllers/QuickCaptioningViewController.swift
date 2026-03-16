@@ -13,6 +13,7 @@ import Combine
 import CoreLocation
 import MapKit
 import FoundationModels
+import FirebaseAuth
 
 let MAX_BUBBLE_CHAR_LIMIT = 120
 
@@ -65,7 +66,7 @@ class QuickCaptioningViewController: UIViewController,
             
             // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
-        if let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byId: 0) {
+        if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
             // Profile exists! Load it into the Diarizer memory
             diarizer.speakerProfiles[0] = savedProfile.embedding
             diarizer.speakerNames[0] = savedProfile.name
@@ -101,9 +102,9 @@ class QuickCaptioningViewController: UIViewController,
         if let request = MKReverseGeocodingRequest(location: loc) {
             request.getMapItems { [weak self] mapItems, error in
                 guard let self = self else { return }
-                if let place = mapItems?.first?.placemark {
-                    let city = place.locality ?? ""
-                    let country = place.country ?? ""
+                if let place = mapItems?.first {
+                    let city = place.addressRepresentations?.cityName ?? ""
+                    let country = place.addressRepresentations?.regionName ?? ""
                     if !city.isEmpty {
                         self.currentLocationString = "\(city), \(country)"
                     }
@@ -146,8 +147,8 @@ class QuickCaptioningViewController: UIViewController,
             self.diarizer.setUserName(name)
             
             // 2. Extract the mathematical vector and Save Permanently to SwiftData!
-            if let userVector = self.diarizer.speakerProfiles[0] {
-                VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: name, embedding: userVector)
+            if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
+                VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: name, embedding: userVector)
             }
             
             self.hasEnrolled = true
@@ -334,7 +335,8 @@ class QuickCaptioningViewController: UIViewController,
     private func appendNewBubble(text: String, isBlue: Bool, name: String, id: Int?) {
         if let last = messages.last, (last.sender == "Listening..." || last.sender == "System") { messages.removeLast() }
         
-        var newMessage = QuickCaptionsChat(sender: name, text: text, isIncoming: !isBlue)
+        let senderID = id != nil ? String(id!) : "system"
+        var newMessage = QuickCaptionsChat(sender: name, senderID: senderID, text: text, isIncoming: !isBlue)
         newMessage.speakerID = id
         if let currentEvent = diarizer.segmentHistory.last {
             newMessage.eventId = currentEvent.id
@@ -450,12 +452,20 @@ class QuickCaptioningViewController: UIViewController,
                 summaryVC.locationString = self.currentLocationString
                 
                 var participants: [QuickCaptionsParticipantData] = []
-                let uniqueSenders = Set(self.messages.map { $0.sender }).sorted()
+                var uniqueSenders = [String: String]() // senderID: name
+                var order = [String]()
                 
-                for name in uniqueSenders {
-                    if name != "Listening..." && name != "..." && name != "System" {
-                        participants.append(QuickCaptionsParticipantData(name: name, summary: "Waiting for analysis..."))
+                for msg in self.messages {
+                    if msg.senderID != "system" {
+                        if uniqueSenders[msg.senderID] == nil {
+                            uniqueSenders[msg.senderID] = msg.sender
+                            order.append(msg.senderID)
+                        }
                     }
+                }
+                
+                for id in order {
+                    participants.append(QuickCaptionsParticipantData(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis..."))
                 }
                 
                 summaryVC.participantsData = participants

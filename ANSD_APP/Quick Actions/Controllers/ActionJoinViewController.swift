@@ -42,7 +42,9 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     var isRecording = false
     var isRestarting = false
     var consumedTranscriptOffset = 0
-    let myName = UIDevice.current.name
+    var myName: String {
+        UserDefaults.standard.string(forKey: "user_first_name") ?? UIDevice.current.name
+    }
     
     var currentUserID: String {
         let rawID = Auth.auth().currentUser?.uid ?? UIDevice.current.identifierForVendor?.uuidString ?? "UnknownUser"
@@ -276,7 +278,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         summaryVC.category = self.category
         summaryVC.conversationTitle = self.sessionTitle
         summaryVC.transcriptMessages = self.messages.map { msg in
-            ChatMessage(text: msg.text, isIncoming: msg.isIncoming, sender: msg.sender)
+            ChatMessage(text: msg.text, isIncoming: msg.isIncoming, sender: msg.sender, senderID: msg.senderID)
         }
         
         // 1. Wrap your summaryVC in a new Navigation Controller
@@ -364,9 +366,6 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                         if self.isRecording { self.restartRecordingCycle() }
                     }
                     
-                    // NEW FIX: Append locally immediately so transcript is available even if Firebase echo is slow
-                    let localMsg = GroupJoinChatMessage(text: combinedText, isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                    self.processIncomingMessage(text: localMsg.text, sender: localMsg.sender, senderID: localMsg.senderID)
                 }
             }
             

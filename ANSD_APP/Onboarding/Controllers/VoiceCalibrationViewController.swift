@@ -12,6 +12,7 @@ import UIKit
 import AVFoundation
 import CoreML
 import Accelerate
+import FirebaseAuth
 
 // MARK: - Calibration Phase
 private enum CalibrationPhase {
@@ -562,12 +563,12 @@ class VoiceCalibrationViewController: UIViewController {
         
         // Save to persistent storage via VoiceProfileManager
         // Use "Me" as default name — user can change it later
-        VoiceProfileManager.shared.saveVoiceProfile(id: 0, name: "Me", embedding: normalizedAvg)
-        
-        // Push the profile to Firebase so it syncs across logins
-        FirebaseManager.shared.saveVoiceProfileMetadata(name: "Me", embedding: normalizedAvg)
-        
-        print("VoiceCalibration: Voice profile saved successfully.")
+        if let uid = Auth.auth().currentUser?.uid {
+            VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: "Me", embedding: normalizedAvg)
+            print("VoiceCalibration: Voice profile saved successfully for user \\(uid).")
+        } else {
+            print("VoiceCalibration: Error - No logged-in user to save voice profile.")
+        }
     }
 
     // MARK: - Math Utilities (matching AudioDiarizer)

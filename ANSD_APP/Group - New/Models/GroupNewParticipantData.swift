@@ -10,5 +10,6 @@ import Foundation
 
 struct GroupNewParticipantData {
     var name: String
+    var senderID: String
     var summary: String
 }

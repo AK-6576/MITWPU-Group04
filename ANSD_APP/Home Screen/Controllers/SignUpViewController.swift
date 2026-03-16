@@ -16,7 +16,6 @@ struct UserKeys {
     static let email     = "email"
     static let password  = "password"
     static let dob       = "dob"
-    static let phone     = "phone"
     static let gender    = "gender"
     static let image     = "profile_image"
     static let impairment = "impairment_level" // Added key
@@ -46,7 +45,6 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
         FormFieldItem(title: "Last Name", key: UserKeys.lastName, type: .text),
         FormFieldItem(title: "Email", key: UserKeys.email, type: .text),
         FormFieldItem(title: "Password", key: UserKeys.password, type: .text),
-        FormFieldItem(title: "Phone Number", key: UserKeys.phone, type: .text),
         FormFieldItem(title: "Date of Birth", key: UserKeys.dob, type: .date),
         FormFieldItem(title: "Gender", key: UserKeys.gender, type: .gender),
         FormFieldItem(title: "Hearing Impairment", key: UserKeys.impairment, type: .impairment)

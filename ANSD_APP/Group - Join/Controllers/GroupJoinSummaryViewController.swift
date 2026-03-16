@@ -83,9 +83,18 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - Logic
     private func prepareParticipantsFromMessages() {
-        let uniqueSenders = Set(transcriptMessages.map { $0.sender }).sorted()
-        participantsData = uniqueSenders.map { name in
-            GroupJoinParticipants(name: name, summary: "Waiting for analysis...", avatarTitle: "")
+        var uniqueSenders = [String: String]() // senderID: name
+        var order = [String]()
+        
+        for msg in transcriptMessages {
+            if uniqueSenders[msg.senderID] == nil {
+                uniqueSenders[msg.senderID] = msg.sender
+                order.append(msg.senderID)
+            }
+        }
+        
+        participantsData = order.map { id in
+            GroupJoinParticipants(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis...", avatarTitle: "")
         }
         GroupJoinTableView.reloadData()
     }
@@ -159,8 +168,13 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         if self.notesText.isEmpty { self.notesText = text }
         
         for (name, summary) in participantSummaries {
-            if let index = participantsData.firstIndex(where: { name.contains($0.name) || $0.name.contains(name) }) {
-                participantsData[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let index = participantsData.firstIndex(where: { name.localizedCaseInsensitiveContains($0.name) || $0.name.localizedCaseInsensitiveContains(name) }) {
+                var cleanSummary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+                if cleanSummary.hasPrefix("-") || cleanSummary.hasPrefix("•") {
+                    cleanSummary.removeFirst()
+                    cleanSummary = cleanSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                participantsData[index].summary = cleanSummary
             }
         }
     }
@@ -241,8 +255,8 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         
         if let request = MKReverseGeocodingRequest(location: location) {
             request.getMapItems { mapItems, error in
-                if let place = mapItems?.first?.placemark {
-                    self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
+                if let place = mapItems?.first {
+                    self.locationString = [place.addressRepresentations?.cityName, place.addressRepresentations?.regionName].compactMap { $0 }.joined(separator: ", ")
                     self.locationManager.stopUpdatingLocation()
                     DispatchQueue.main.async {
                         self.GroupJoinTableView.reloadSections(IndexSet(integer: 1), with: .none)

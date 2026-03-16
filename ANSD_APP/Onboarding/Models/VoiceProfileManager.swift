@@ -18,10 +18,10 @@ class VoiceProfileManager {
     private init() {}
     
     // MARK: - Fetch Profile
-    func getVoiceProfile(byId id: Int = 0) -> VoiceProfile? {
+    func getVoiceProfile(byUID ownerUID: String) -> VoiceProfile? {
         guard let context = context else { return nil }
         
-        let descriptor = FetchDescriptor<VoiceProfile>(predicate: #Predicate { $0.id == id })
+        let descriptor = FetchDescriptor<VoiceProfile>(predicate: #Predicate { $0.ownerUID == ownerUID })
         
         do {
             let results = try context.fetch(descriptor)
@@ -33,17 +33,17 @@ class VoiceProfileManager {
     }
     
     // MARK: - Save or Update Profile
-    func saveVoiceProfile(id: Int = 0, name: String, embedding: [Float]) {
+    func saveVoiceProfile(ownerUID: String, name: String, embedding: [Float]) {
         guard let context = context else { return }
         
-        if let existingProfile = getVoiceProfile(byId: id) {
+        if let existingProfile = getVoiceProfile(byUID: ownerUID) {
             // Update existing profile
             existingProfile.name = name
             existingProfile.embedding = embedding
             existingProfile.createdAt = Date()
         } else {
             // Create new profile
-            let newProfile = VoiceProfile(id: id, name: name, embedding: embedding)
+            let newProfile = VoiceProfile(ownerUID: ownerUID, name: name, embedding: embedding)
             context.insert(newProfile)
         }
         
@@ -51,10 +51,10 @@ class VoiceProfileManager {
     }
     
     // MARK: - Delete Profile (For resetting calibration)
-    func deleteVoiceProfile(byId id: Int = 0) {
+    func deleteVoiceProfile(byUID ownerUID: String) {
         guard let context = context else { return }
         
-        if let profileToDelete = getVoiceProfile(byId: id) {
+        if let profileToDelete = getVoiceProfile(byUID: ownerUID) {
             context.delete(profileToDelete)
             saveData()
         }

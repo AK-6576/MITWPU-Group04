@@ -105,18 +105,18 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     
     // MARK: - Data Preparation
     private func prepareParticipantsFromMessages() {
-        var seenSenders = Set<String>()
-        var ordering: [String] = []
+        var uniqueSenders = [String: String]() // senderID: name
+        var order = [String]()
         
         for msg in transcriptMessages {
-            if !seenSenders.contains(msg.sender) {
-                seenSenders.insert(msg.sender)
-                ordering.append(msg.sender)
+            if uniqueSenders[msg.senderID] == nil {
+                uniqueSenders[msg.senderID] = msg.sender
+                order.append(msg.senderID)
             }
         }
         
-        self.participants = ordering.map { name in
-            ParticipantData(name: name, summary: "Waiting for analysis...")
+        self.participants = order.map { id in
+            ParticipantData(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis...")
         }
         tableView.reloadData()
     }
@@ -145,9 +145,10 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         guard let location = locations.last else { return }
         
         if let request = MKReverseGeocodingRequest(location: location) {
-            request.getMapItems { mapItems, error in
-                if let place = mapItems?.first?.placemark {
-                    self.locationString = [place.locality, place.administrativeArea].compactMap { $0 }.joined(separator: ", ")
+            request.getMapItems { [weak self] mapItems, error in
+                guard let self = self else { return }
+                if let place = mapItems?.first {
+                    self.locationString = [place.addressRepresentations?.cityName, place.addressRepresentations?.regionName].compactMap { $0 }.joined(separator: ", ")
                     self.locationManager.stopUpdatingLocation()
                     DispatchQueue.main.async {
                         self.tableView.reloadSections(IndexSet(integer: 1), with: .none)
@@ -231,7 +232,12 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             
             for aiParticipant in decodedSummary.participants {
                 if let index = self.participants.firstIndex(where: { aiParticipant.name.localizedCaseInsensitiveContains($0.name) || $0.name.localizedCaseInsensitiveContains(aiParticipant.name) }) {
-                    self.participants[index].summary = aiParticipant.summary
+                    var cleanSummary = aiParticipant.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if cleanSummary.hasPrefix("-") || cleanSummary.hasPrefix("•") {
+                        cleanSummary.removeFirst()
+                        cleanSummary = cleanSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                    self.participants[index].summary = cleanSummary
                 }
             }
             

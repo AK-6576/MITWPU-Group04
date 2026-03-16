@@ -359,7 +359,6 @@ class FirebaseManager {
             let userProfile: [String: Any] = [
                 "firstName": details["firstName"] ?? "",
                 "lastName": details["lastName"] ?? "",
-                "phone": details["phone"] ?? "",
                 "email": email,
                 "createdAt": ServerValue.timestamp()
             ]
@@ -398,37 +397,6 @@ class FirebaseManager {
     func fetchUserProfile(uid: String, completion: @escaping ([String: Any]?) -> Void) {
         let safeUID = sanitizeKey(uid)
         databaseRef.child("users").child(safeUID).child("profile").observeSingleEvent(of: .value) { snapshot in
-            if let profileData = snapshot.value as? [String: Any] {
-                completion(profileData)
-            } else {
-                completion(nil)
-            }
-        }
-    }
-    
-    // MARK: - Voice Profile Syncing
-    func saveVoiceProfileMetadata(name: String, embedding: [Float]) {
-        guard let uid = currentUID else { return }
-        let safeUID = sanitizeKey(uid)
-        
-        let metadata: [String: Any] = [
-            "name": name,
-            "embedding": embedding,
-            "lastUpdated": ServerValue.timestamp()
-        ]
-        
-        databaseRef.child("users").child(safeUID).child("voice_profile").setValue(metadata) { error, _ in
-            if let error = error {
-                print("DEBUG: Firebase - Failed to save voice profile: \(error.localizedDescription)")
-            } else {
-                print("DEBUG: Firebase - Successfully saved voice profile for \(safeUID)")
-            }
-        }
-    }
-    
-    func fetchVoiceProfileMetadata(uid: String, completion: @escaping ([String: Any]?) -> Void) {
-        let safeUID = sanitizeKey(uid)
-        databaseRef.child("users").child(safeUID).child("voice_profile").observeSingleEvent(of: .value) { snapshot in
             if let profileData = snapshot.value as? [String: Any] {
                 completion(profileData)
             } else {
