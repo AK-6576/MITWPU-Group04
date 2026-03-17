@@ -12,7 +12,7 @@ class VoiceProfileManager {
     static let shared = VoiceProfileManager()
 
     private var context: ModelContext? {
-        return AppDelegate.dbContext
+        return DataManager.shared.context
     }
     
     private init() {}

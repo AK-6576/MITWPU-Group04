@@ -286,6 +286,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         // 2. Set the modal style on the Nav Controller, not the summaryVC
         navController.modalPresentationStyle = .pageSheet
+        navController.isModalInPresentation = true
         
         // 3. Present the Navigation Controller
         self.present(navController, animated: true, completion: nil)

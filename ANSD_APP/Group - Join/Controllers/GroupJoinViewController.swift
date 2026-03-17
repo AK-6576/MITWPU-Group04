@@ -402,6 +402,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             summaryVC.conversationTitle = self.sessionTitle
             let nav = UINavigationController(rootViewController: summaryVC)
             nav.modalPresentationStyle = .pageSheet
+            nav.isModalInPresentation = true
             self.present(nav, animated: true)
         }
         firebase.stop()

@@ -31,6 +31,9 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Buffering & Logic State
     private var transcriptBuffer: String = ""
     private var holdTimer: Timer?
+    /// While holdTimer is active, this holds the speaker ID of the in-progress bubble.
+    /// Diarizer updates to a DIFFERENT speaker are suppressed until the timer fires.
+    private var lockedSpeakerID: Int? = nil
     
     let locationManager = CLLocationManager()
     var currentLocationString: String = "Location Unknown"
@@ -229,6 +232,8 @@ class QuickCaptioningViewController: UIViewController,
             } else {
                 // Hold and wait buffer: allow diarization to catch up
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+                    // Lock expires — release speaker lock and flush
+                    self?.lockedSpeakerID = nil
                     self?.processBuffer()
                 }
             }
@@ -334,17 +339,21 @@ class QuickCaptioningViewController: UIViewController,
     
     private func appendNewBubble(text: String, isBlue: Bool, name: String, id: Int?) {
         if let last = messages.last, (last.sender == "Listening..." || last.sender == "System") { messages.removeLast() }
-        
+
         let senderID = id != nil ? String(id!) : "system"
         var newMessage = QuickCaptionsChat(sender: name, senderID: senderID, text: text, isIncoming: !isBlue)
         newMessage.speakerID = id
         if let currentEvent = diarizer.segmentHistory.last {
             newMessage.eventId = currentEvent.id
         }
-        
+
         messages.append(newMessage)
         currentMessageIndex = messages.count - 1
-        if let sid = id { currentSpeakerID = sid }
+        if let sid = id {
+            currentSpeakerID = sid
+            // Activate speaker lock so mid-sentence diarizer updates don't split this bubble
+            lockedSpeakerID  = sid
+        }
         collectionView.reloadData()
         scrollToBottom()
     }
@@ -354,13 +363,25 @@ class QuickCaptioningViewController: UIViewController,
     private func bindDiarizer() {
         diarizer.$currentSpeakerID.receive(on: DispatchQueue.main).sink { [weak self] id in
             guard let self = self else { return }
+
+            // SPEAKER LOCK: while the hold timer is active, ignore speaker switches
+            // to a DIFFERENT speaker — this prevents mid-sentence bleed-over.
+            if let newID = id,
+               let locked = self.lockedSpeakerID,
+               self.holdTimer != nil,
+               newID != locked {
+                // Diarizer thinks someone else is talking, but we are locked mid-sentence.
+                // Update internal tracking quietly without flushing a new bubble.
+                return
+            }
+
             self.currentSpeakerID = id
-            
-            // Trigger buffer processing immediately
+
+            // Trigger buffer processing immediately on speaker identification
             if id != nil {
                 self.processBuffer()
             }
-            
+
             // Check for name updates (renames)
             if let validID = id, !self.messages.isEmpty {
                 let lastIdx = self.messages.count - 1
@@ -368,7 +389,7 @@ class QuickCaptioningViewController: UIViewController,
                     var newName = "..."
                     if validID == 0 { newName = self.diarizer.speakerNames[0] ?? "Me" }
                     else { newName = self.diarizer.speakerNames[validID] ?? "Speaker \(validID)" }
-                    
+
                     if self.messages[lastIdx].sender != newName {
                         self.messages[lastIdx].sender = newName
                         UIView.performWithoutAnimation { self.collectionView.reloadItems(at: [IndexPath(item: lastIdx, section: 0)]) }
@@ -414,6 +435,9 @@ class QuickCaptioningViewController: UIViewController,
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
+            
+            // Flush any remaining text in the buffer to a bubble
+            self.processBuffer()
             
             if !self.messages.isEmpty {
                 self.finalizeBubble(at: self.messages.count - 1)
@@ -471,6 +495,7 @@ class QuickCaptioningViewController: UIViewController,
                 summaryVC.participantsData = participants
                 
                 summaryNav.modalPresentationStyle = .pageSheet
+                summaryNav.isModalInPresentation = true // Prevent swipe-to-dismiss so session isn't lost
                 self.present(summaryNav, animated: true, completion: nil)
             }
         }

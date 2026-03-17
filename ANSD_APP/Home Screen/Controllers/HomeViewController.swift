@@ -50,7 +50,10 @@ class HomeViewController: UIViewController {
     }
     
     @objc func handleDataUpdate() {
-        loadData()
+        print("HomeViewController: Received ConversationHistoryUpdated notification.")
+        DispatchQueue.main.async { [weak self] in
+            self?.loadData()
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -96,28 +99,30 @@ class HomeViewController: UIViewController {
     // MARK: - Queue Logic & Data Loading
     
     func loadData() {
-        // 1. Quick Actions Queue: Limit visible to TOP 3
-        let allItems = QuickActionsRepository.shared.getAllActions()
-        let cutoffTime = Date().addingTimeInterval(-1800)
-        
-        let sortedFutureActions = allItems.filter { item in
-            guard item.status != "Done", let itemDate = getDate(from: item.startTime) else { return false }
-            return itemDate > cutoffTime
-        }.sorted { (item1, item2) -> Bool in
-            guard let date1 = getDate(from: item1.startTime),
-                  let date2 = getDate(from: item2.startTime) else { return false }
-            return date1 < date2
-        }
-        
-        self.quickActions = Array(sortedFutureActions.prefix(3))
-        
-        // 2. Recent History Queue: Limit visible to TOP 2
-        let allConversations = DataManager.shared.fetchConversations()
-        self.recentHistory = Array(allConversations.prefix(2))
-        
-        syncNotifications(for: allItems)
-        
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            print("HomeViewController: loadData() called on Main Thread. Fetching...")
+            
+            // 1. Quick Actions Queue: Limit visible to TOP 3
+            let allItems = QuickActionsRepository.shared.getAllActions()
+            let cutoffTime = Date().addingTimeInterval(-1800)
+            
+            let sortedFutureActions = allItems.filter { item in
+                guard item.status != "Done", let itemDate = self.getDate(from: item.startTime) else { return false }
+                return itemDate > cutoffTime
+            }.sorted { (item1, item2) -> Bool in
+                guard let date1 = self.getDate(from: item1.startTime),
+                      let date2 = self.getDate(from: item2.startTime) else { return false }
+                return date1 < date2
+            }
+            
+            self.quickActions = Array(sortedFutureActions.prefix(3))
+            
+            // 2. Recent History Queue: Limit visible to TOP 2
+            let allConversations = DataManager.shared.fetchConversations()
+            self.recentHistory = Array(allConversations.prefix(2))
+            
+            self.syncNotifications(for: allItems)
             self.tableView.reloadData()
         }
     }

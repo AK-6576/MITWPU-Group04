@@ -8,7 +8,8 @@
 
 import UIKit
 import PDFKit
-import FoundationModels // Apple Intelligence
+import FoundationModels
+import FirebaseAuth // Apple Intelligence
 
 class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, QuickCaptionsNotesCardCellDelegate, QuickCaptionsSummaryCardDelegate {
     
@@ -417,11 +418,14 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             icon: "waveform",
             calendarDate: Date(), // <--- Feed the current date so sorting works
             notes: finalNotes,
+            ownerUID: Auth.auth().currentUser?.uid ?? "",
             participants: historyParticipants,
             messages: historyMessages
         )
         
         // 5. Send to DataManager to permanently save!
+        let currentUID = Auth.auth().currentUser?.uid ?? "NIL_UID"
+        print("DEBUG: Saving Conversation with UID: \(currentUID) | Title: \(newConversation.title)")
         DataManager.shared.addConversation(newConversation)
         
         // 6. Sync full transcript to Firebase for persistent history

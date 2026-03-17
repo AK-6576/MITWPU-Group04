@@ -8,7 +8,8 @@
 
 import UIKit
 import PDFKit
-import FoundationModels // Apple Intelligence
+import FoundationModels
+import FirebaseAuth // Apple Intelligence
 import CoreLocation
 import MapKit
 
@@ -353,6 +354,7 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
             calendarDate: Date(),          // Matches 'calendarDate' in @Model
             notes: finalNotes,          // Matches 'notes' in @Model
             isPinned: false,            // Matches 'isPinned' in @Model
+            ownerUID: Auth.auth().currentUser?.uid ?? "",
             participants: historyParticipants, // Matches relationship
             messages: historyMessages          // Matches relationship
         )

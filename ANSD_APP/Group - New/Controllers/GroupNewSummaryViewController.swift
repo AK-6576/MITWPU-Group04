@@ -8,7 +8,8 @@
 
 import UIKit
 import PDFKit
-import FoundationModels // Apple Intelligence
+import FoundationModels
+import FirebaseAuth // Apple Intelligence
 import CoreLocation
 import MapKit
 
@@ -385,8 +386,6 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
         let finalNotes = self.notesText == "Generating summary..." ? "No notes generated." : self.notesText
         let cleanOneLiner = finalNotes.replacingOccurrences(of: "\n", with: " ")
         
-        // 4. Package everything into a Conversation Object
-        // 4. Package everything into a Conversation Object
         let newConversation = Conversation(
             id: UUID().uuidString,
             title: self.conversationTitle,
@@ -401,6 +400,7 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
             calendarDate: Date(),          // Matches 'calendarDate' in @Model
             notes: finalNotes,          // Matches 'notes' in @Model
             isPinned: false,            // Matches 'isPinned' in @Model
+            ownerUID: Auth.auth().currentUser?.uid ?? "",
             participants: historyParticipants, // Matches relationship
             messages: historyMessages          // Matches relationship
         )

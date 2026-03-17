@@ -439,6 +439,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             
             let nav = UINavigationController(rootViewController: summaryVC)
             nav.modalPresentationStyle = .pageSheet
+            nav.isModalInPresentation = true
             self.present(nav, animated: true)
         }
         

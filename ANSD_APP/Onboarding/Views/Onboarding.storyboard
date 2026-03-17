@@ -518,6 +518,7 @@
                         <outlet property="loginButton" destination="UZP-mh-dUW" id="b1C-uf-WaD"/>
                         <outlet property="passwordTextField" destination="kBK-4K-Vup" id="5Sx-sX-ycU"/>
                         <segue destination="KzG-rr-mfo" kind="show" identifier="loginToHome" id="xLM-BL-bhg"/>
+                        <segue destination="fpw-vc-001" kind="show" identifier="showForgotPassword" id="fpw-seg-001"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="3Ap-AG-jOf" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -551,6 +552,98 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="izG-uY-4l5" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="418" y="148"/>
+        </scene>
+        <!--Forgot Password View Controller-->
+        <scene sceneID="fpw-sc-001">
+            <objects>
+                <viewController id="fpw-vc-001" customClass="ForgotPasswordViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="fpw-vw-001">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-sv-001">
+                                <rect key="frame" x="24" y="130" width="345" height="234"/>
+                                <subviews>
+                                    <!-- Description label -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter the email address associated with your account and we'll send you a reset link." textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-desc">
+                                        <rect key="frame" x="0.0" y="0.0" width="345" height="60"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                        <color key="textColor" systemColor="secondaryLabelColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <!-- Email stack -->
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-sv-email">
+                                        <rect key="frame" x="0.0" y="84" width="345" height="75"/>
+                                        <subviews>
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="252" text="EMAIL" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-email">
+                                                <rect key="frame" x="0.0" y="0.0" width="345" height="17"/>
+                                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="14"/>
+                                                <nil key="textColor"/>
+                                                <nil key="highlightedColor"/>
+                                            </label>
+                                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="your@email.com" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-tf-email">
+                                                <rect key="frame" x="0.0" y="25" width="345" height="50"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="50" id="fpw-h-email"/>
+                                                </constraints>
+                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                <textInputTraits key="textInputTraits" autocorrectionType="no" keyboardType="emailAddress" textContentType="emailAddress"/>
+                                            </textField>
+                                        </subviews>
+                                    </stackView>
+                                    <!-- Status label -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-status">
+                                        <rect key="frame" x="0.0" y="167" width="345" height="18"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                        <nil key="textColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <!-- Send button -->
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-btn-send">
+                                        <rect key="frame" x="0.0" y="197" width="345" height="56"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="56" id="fpw-h-btn"/>
+                                        </constraints>
+                                        <state key="normal" title="Send Reset Link"/>
+                                        <buttonConfiguration key="configuration" style="filled" title="Send Reset Link" cornerStyle="large">
+                                            <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <color key="baseBackgroundColor" systemColor="systemBlueColor"/>
+                                        </buttonConfiguration>
+                                        <connections>
+                                            <action selector="sendResetLinkTapped:" destination="fpw-vc-001" eventType="touchUpInside" id="fpw-act-send"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="345" id="fpw-w-sv"/>
+                                </constraints>
+                            </stackView>
+                            <!-- Activity indicator -->
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" animating="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-ai-001">
+                                <rect key="frame" x="184.5" y="400" width="24" height="24"/>
+                            </activityIndicatorView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="fpw-sg-001"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="fpw-sv-001" firstAttribute="top" secondItem="fpw-sg-001" secondAttribute="top" constant="20" id="fpw-c-top"/>
+                            <constraint firstItem="fpw-sv-001" firstAttribute="leading" secondItem="fpw-sg-001" secondAttribute="leading" constant="24" id="fpw-c-lead"/>
+                            <constraint firstItem="fpw-sg-001" firstAttribute="trailing" secondItem="fpw-sv-001" secondAttribute="trailing" constant="24" id="fpw-c-trail"/>
+                            <constraint firstItem="fpw-ai-001" firstAttribute="centerX" secondItem="fpw-vw-001" secondAttribute="centerX" id="fpw-c-ai-cx"/>
+                            <constraint firstItem="fpw-ai-001" firstAttribute="top" secondItem="fpw-sv-001" secondAttribute="bottom" constant="16" id="fpw-c-ai-top"/>
+                        </constraints>
+                    </view>
+                    <navigationItem key="navigationItem" title="Reset Password" largeTitleDisplayMode="always" id="fpw-ni-001"/>
+                    <connections>
+                        <outlet property="emailTextField" destination="fpw-tf-email" id="fpw-out-email"/>
+                        <outlet property="sendButton" destination="fpw-btn-send" id="fpw-out-btn"/>
+                        <outlet property="statusLabel" destination="fpw-lbl-status" id="fpw-out-status"/>
+                        <outlet property="activityIndicator" destination="fpw-ai-001" id="fpw-out-ai"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="fpw-fr-001" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1265" y="1660"/>
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>

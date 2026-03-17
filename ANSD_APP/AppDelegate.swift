@@ -13,25 +13,12 @@ import SwiftData
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    var sharedModelContainer: ModelContainer?
-
-    // MARK: - Core Data Context
-    // Global access point for the SwiftData persistent context, enabling database operations across the application.
-    static var dbContext: ModelContext? {
-        guard let delegate = UIApplication.shared.delegate as? AppDelegate else { return nil }
-        return delegate.sharedModelContainer?.mainContext
-    }
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
         FirebaseApp.configure()
         
-        do {
-            sharedModelContainer = try ModelContainer(for: Conversation.self, Message.self, Participant.self, VoiceProfile.self)
-            print("SwiftData: Successfully initialized the ModelContainer.")
-        } catch {
-            print("SwiftData: Failed to initialize ModelContainer. Error: \(error.localizedDescription)")
-        }
+        // Warm up the database singleton
+        _ = DataManager.shared
         
         return true
     }

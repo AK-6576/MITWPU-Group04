@@ -261,35 +261,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
     
     @IBAction func forgotPasswordTapped(_ sender: UIButton) {
-        let alert = UIAlertController(
-            title: "Reset Password",
-            message: "Enter your email address and we'll send you a password reset link.",
-            preferredStyle: .alert
-        )
-        alert.addTextField { textField in
-            textField.placeholder = "Email address"
-            textField.keyboardType = .emailAddress
-            textField.autocapitalizationType = .none
-        }
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Send Reset Link", style: .default) { [weak self] _ in
-            guard let email = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !email.isEmpty else {
-                self?.showAlert(title: "Error", message: "Please enter a valid email address.")
-                return
-            }
-            
-            Auth.auth().sendPasswordReset(withEmail: email) { error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        self?.showAlert(title: "Error", message: error.localizedDescription)
-                    } else {
-                        self?.showAlert(title: "Email Sent", message: "Check your inbox for the password reset link.")
-                    }
-                }
-            }
-        })
-        present(alert, animated: true)
+        performSegue(withIdentifier: "showForgotPassword", sender: self)
     }
 
     // MARK: - Helpers

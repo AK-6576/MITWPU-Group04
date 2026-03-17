@@ -9,6 +9,7 @@
 import UIKit
 import PDFKit
 import FoundationModels
+import FirebaseAuth
 import CoreLocation
 import MapKit
 
@@ -395,6 +396,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             calendarDate: now,
             notes: finalNotes,
             isPinned: false,
+            ownerUID: Auth.auth().currentUser?.uid ?? "",
             participants: historyParticipants,
             messages: historyMessages
         )

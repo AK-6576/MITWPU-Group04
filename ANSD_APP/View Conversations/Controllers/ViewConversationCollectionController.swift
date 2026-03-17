@@ -255,34 +255,37 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
     
     func loadConversationData() {
-        let allConvos = DataManager.shared.fetchConversations()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM"
-        
-        var sectionsDict: [String: [Conversation]] = [:]
-        var sectionTitles: [String] = []
-        
-        for convo in allConvos {
-            let title = convo.calendarDate != nil ? formatter.string(from: convo.calendarDate!) : "Recent History"
-            if sectionsDict[title] == nil {
-                sectionsDict[title] = []
-                sectionTitles.append(title)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let allConvos = DataManager.shared.fetchConversations()
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMMM"
+            
+            var sectionsDict: [String: [Conversation]] = [:]
+            var sectionTitles: [String] = []
+            
+            for convo in allConvos {
+                let title = convo.calendarDate != nil ? formatter.string(from: convo.calendarDate!) : "Recent History"
+                if sectionsDict[title] == nil {
+                    sectionsDict[title] = []
+                    sectionTitles.append(title)
+                }
+                sectionsDict[title]?.append(convo)
             }
-            sectionsDict[title]?.append(convo)
+            
+            var loadedSections: [ConversationSection] = []
+            for title in sectionTitles {
+                loadedSections.append(ConversationSection(title: title, conversations: sectionsDict[title]!))
+            }
+            
+            if loadedSections.isEmpty {
+                loadedSections = [ConversationSection(title: "No Conversations Found.", conversations: [])]
+            }
+            
+            self.allConversationSections = loadedSections
+            self.conversationSections = loadedSections
+            self.collectionView.reloadData()
         }
-        
-        var loadedSections: [ConversationSection] = []
-        for title in sectionTitles {
-            loadedSections.append(ConversationSection(title: title, conversations: sectionsDict[title]!))
-        }
-        
-        if loadedSections.isEmpty {
-            loadedSections = [ConversationSection(title: "No Conversations Found.", conversations: [])]
-        }
-        
-        allConversationSections = loadedSections
-        conversationSections = loadedSections
-        collectionView.reloadData()
     }
     
     // UPDATED: Properly resets the title and rebuilds the calendar button
