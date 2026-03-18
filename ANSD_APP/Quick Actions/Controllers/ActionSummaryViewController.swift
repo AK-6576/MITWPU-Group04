@@ -173,7 +173,8 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         Task {
             do {
                 let prompt = """
-                Analyze the following transcript. Summarize the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point as a standalone sentence. 
+                Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript. 
+                Summarize the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point as a standalone sentence. 
                 
                 The JSON must perfectly match this structure:
                 {

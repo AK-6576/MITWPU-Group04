@@ -106,23 +106,7 @@ class ConversationCardCell: UITableViewCell {
         topicLabel.text = conversation.title
         descriptionLabel.text = conversation.details
         
-        if let date = conversation.calendarDate {
-            let calendar = Calendar.current
-            let day = calendar.component(.day, from: date)
-            
-            let monthFormatter = DateFormatter()
-            monthFormatter.dateFormat = "MMMM"
-            let month = monthFormatter.string(from: date)
-            
-            let numberFormatter = NumberFormatter()
-            numberFormatter.numberStyle = .ordinal
-            let dayString = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
-            
-            dateLabel.text = "\(month) \(dayString)"
-        } else {
-            dateLabel.text = conversation.date
-        }
-        
+        dateLabel.text = conversation.formattedDisplayDate
         timeLabel.text = "\(conversation.startTime)"
         
         calendarIcon.image = UIImage(systemName: "calendar")
@@ -131,42 +115,9 @@ class ConversationCardCell: UITableViewCell {
         clockIcon.image = UIImage(systemName: "clock")
         clockIcon.tintColor = .systemGray2
         
-        let categoryString = conversation.category
-        let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
-        categoryLabel.text = capitalizedCategory
-        
-        let iconName: String
-        let tintColor: UIColor
-        
-        switch categoryString {
-        case "Family":
-            iconName = "figure.2.and.child.holdinghands"
-            tintColor = .systemPurple
-        case "Friends":
-            iconName = "person.3.fill"
-            tintColor = .systemGreen
-        case "Office", "work":
-            iconName = "briefcase.fill"
-            tintColor = .systemBlue
-        case "Medical", "Health":
-            iconName = "cross.case.fill"
-            tintColor = .systemGreen
-        case "Quick Captions":
-            iconName = "waveform"
-            tintColor = .systemBlue
-        case "Group-Join":
-            iconName = "person.bubble"
-            tintColor = .systemBlue
-        case "Group-New":
-            iconName = "square.and.pencil"
-            tintColor = .systemBlue
-        default:
-            iconName = "folder.fill"
-            tintColor = .systemGray
-        }
-        
-        categoryIcon.image = UIImage(systemName: iconName)
-        categoryIcon.tintColor = tintColor
+        categoryLabel.text = conversation.displayCategory
+        categoryIcon.image = UIImage(systemName: conversation.categoryIconName)
+        categoryIcon.tintColor = conversation.categoryTintColor
         
         categoryLabel.textColor = .secondaryLabel
     }

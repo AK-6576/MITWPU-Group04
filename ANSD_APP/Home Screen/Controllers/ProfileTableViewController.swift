@@ -25,6 +25,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     @IBOutlet weak var profileImageView: UIImageView!
     @IBOutlet weak var firstNameTextField: UITextField!
     @IBOutlet weak var lastNameTextField: UITextField!
+    @IBOutlet weak var languageButton: UIButton!
     
     // MARK: - Outlets (Vocal Profile)
     @IBOutlet weak var voiceStatusLabel: UILabel!
@@ -46,6 +47,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         setupHideKeyboardOnTap()
         setupTextFieldListeners()
         setupGenderButton()
+        setupLanguageButton()
         loadPersistentData()
         
         // Initial Name Setup
@@ -99,6 +101,32 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         
         genderButton.menu = UIMenu(children: actions)
         genderButton.showsMenuAsPrimaryAction = true
+    }
+    
+    // MARK: - Language Menu Setup
+    private func setupLanguageButton() {
+        let languages = LanguageManager.shared.supportedLanguages
+        var actions = [UIAction]()
+        
+        let currentLocaleID = LanguageManager.shared.currentLocale.identifier
+        
+        for lang in languages {
+            let isSelected = lang.locale.identifier == currentLocaleID
+            let action = UIAction(title: lang.name, state: isSelected ? .on : .off) { [weak self] _ in
+                LanguageManager.shared.currentLocale = lang.locale
+                self?.updateLanguageButtonTitle()
+                self?.setupLanguageButton() // Re-setup to update checkmarks
+            }
+            actions.append(action)
+        }
+        
+        languageButton.menu = UIMenu(title: "Select Language", children: actions)
+        languageButton.showsMenuAsPrimaryAction = true
+        updateLanguageButtonTitle()
+    }
+    
+    private func updateLanguageButtonTitle() {
+        languageButton.setTitle(LanguageManager.shared.currentLanguageDisplayName, for: .normal)
     }
     
     // MARK: - Voice Profile Setup
@@ -219,59 +247,27 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     }
     
     func performAutoSave() {
-        let name = firstNameTextField.text ?? "User"
-        let lastName = lastNameTextField.text ?? ""
-        let dob = datePicker.date
-        let gender = genderButton.title(for: .normal) ?? "Select"
-        
-        // Persists the data to UserDefaults.
-        UserDefaults.standard.set(name, forKey: firstNameKey)
-        UserDefaults.standard.set(lastName, forKey: lastNameKey)
-        UserDefaults.standard.set(gender, forKey: genderKey)
-        UserDefaults.standard.set(dob, forKey: dobKey)
-        
-        // Broadcasts the updated name via NotificationCenter to refresh the Home Screen greeting.
-        NotificationCenter.default.post(name: NSNotification.Name("ProfileNameUpdated"),
-                                      object: nil,
-                                      userInfo: ["name": name])
+        ProfileManager.shared.firstName = firstNameTextField.text ?? "User"
+        ProfileManager.shared.lastName = lastNameTextField.text ?? ""
+        ProfileManager.shared.dob = datePicker.date
+        ProfileManager.shared.gender = genderButton.title(for: .normal) ?? "Select"
     }
     
     func loadPersistentData() {
-        if let savedName = UserDefaults.standard.string(forKey: firstNameKey) {
-            firstNameTextField.text = savedName
-        }
-        if let savedLastName = UserDefaults.standard.string(forKey: lastNameKey) {
-            lastNameTextField.text = savedLastName
-        }
-        if let savedGender = UserDefaults.standard.string(forKey: genderKey), savedGender != "Select" {
-            genderButton.setTitle(savedGender, for: .normal)
-        }
-        if let savedDOB = UserDefaults.standard.object(forKey: dobKey) as? Date {
-            datePicker.date = savedDOB
-        }
+        firstNameTextField.text = ProfileManager.shared.firstName
+        lastNameTextField.text = ProfileManager.shared.lastName
+        genderButton.setTitle(ProfileManager.shared.gender, for: .normal)
+        datePicker.date = ProfileManager.shared.dob
     }
     
     // MARK: - Image Picker Delegate
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        var selectedImage: UIImage?
-        
         if let edited = info[.editedImage] as? UIImage {
-            selectedImage = edited
+            profileImageView.image = edited
+            ProfileManager.shared.profileImage = edited
         } else if let original = info[.originalImage] as? UIImage {
-            selectedImage = original
-        }
-        
-        if let finalImage = selectedImage {
-            // Updates the profile image view with the selected photo.
-            profileImageView.image = finalImage
-            
-            // Persists the selected image as JPEG data in UserDefaults.
-            if let data = finalImage.jpegData(compressionQuality: 0.8) {
-                UserDefaults.standard.set(data, forKey: imageKey)
-            }
-            
-            // Broadcasts the new profile image to the Home Screen via NotificationCenter.
-            NotificationCenter.default.post(name: NSNotification.Name("ProfileImageUpdated"), object: finalImage)
+            profileImageView.image = original
+            ProfileManager.shared.profileImage = original
         }
         dismiss(animated: true)
     }

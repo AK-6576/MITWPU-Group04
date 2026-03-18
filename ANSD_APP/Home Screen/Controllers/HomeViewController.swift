@@ -103,26 +103,13 @@ class HomeViewController: UIViewController {
             guard let self = self else { return }
             print("HomeViewController: loadData() called on Main Thread. Fetching...")
             
-            // 1. Quick Actions Queue: Limit visible to TOP 3
-            let allItems = QuickActionsRepository.shared.getAllActions()
-            let cutoffTime = Date().addingTimeInterval(-1800)
-            
-            let sortedFutureActions = allItems.filter { item in
-                guard item.status != "Done", let itemDate = self.getDate(from: item.startTime) else { return false }
-                return itemDate > cutoffTime
-            }.sorted { (item1, item2) -> Bool in
-                guard let date1 = self.getDate(from: item1.startTime),
-                      let date2 = self.getDate(from: item2.startTime) else { return false }
-                return date1 < date2
-            }
-            
-            self.quickActions = Array(sortedFutureActions.prefix(3))
+            // 1. Quick Actions Queue: Fetched via Repository (Top 3 Upcoming)
+            self.quickActions = QuickActionsRepository.shared.getUpcomingActions(limit: 3)
             
             // 2. Recent History Queue: Limit visible to TOP 2
             let allConversations = DataManager.shared.fetchConversations()
             self.recentHistory = Array(allConversations.prefix(2))
             
-            self.syncNotifications(for: allItems)
             self.tableView.reloadData()
         }
     }
@@ -131,18 +118,14 @@ class HomeViewController: UIViewController {
     private func performQueueDeletion(for section: Int, at indexPath: IndexPath) {
         if section == 0 {
             let item = quickActions[indexPath.row]
-            cancelNotifications(for: item)
             QuickActionsRepository.shared.deleteAction(item)
         } else {
             let historyItem = recentHistory[indexPath.row]
             DataManager.shared.deleteConversation(historyItem)
         }
         
-        // Re-run the prefix(3)/prefix(2) logic
         loadData()
         
-        // Reloading the section ensures the next item in the master list
-        // "slides up" into the visible array safely.
         DispatchQueue.main.async {
             self.tableView.reloadSections(IndexSet(integer: section), with: .automatic)
         }
@@ -209,28 +192,6 @@ class HomeViewController: UIViewController {
         }
     }
     
-    private func getDate(from timeString: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        guard let timeDate = formatter.date(from: timeString) else { return nil }
-        let calendar = Calendar.current
-        let now = Date()
-        let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
-        return calendar.date(bySettingHour: timeComponents.hour ?? 0, minute: timeComponents.minute ?? 0, second: 0, of: now)
-    }
-
-    private func syncNotifications(for items: [RoutineConversation]) {
-        for item in items {
-            guard let targetDate = getDate(from: item.startTime) else { continue }
-            NotificationManager.shared.scheduleNotification(identifier: item.id, title: item.conversationTopic, body: "Join \(item.categoryTitle).", for: targetDate)
-        }
-    }
-    
-    private func cancelNotifications(for item: RoutineConversation) {
-        NotificationManager.shared.cancelNotification(identifier: item.id)
-        NotificationManager.shared.cancelNotification(identifier: "\(item.id)_pre")
-    }
 }
 
 // MARK: - TableView Delegate & DataSource (RESTORED HEADERS)

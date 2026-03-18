@@ -47,7 +47,7 @@ class TextCleanupManager {
         guard model.isAvailable else { return }
         
         let prompt = """
-        Clean up the following conversational text by fixing grammar and punctuation. Keep the tone natural. Return ONLY the cleaned text. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+        Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
         
         Text: "\(text)"
         """

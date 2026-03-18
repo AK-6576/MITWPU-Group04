@@ -831,6 +831,35 @@
                       </subviews>
                     </tableViewCellContentView>
                   </tableViewCell>
+                  <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" id="Lang-Cell-ID">
+                    <rect key="frame" x="0.0" y="460.66666412353516" width="393" height="51"/>
+                    <autoresizingMask key="autoresizingMask"/>
+                    <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Lang-Cell-ID" id="Lang-Content-ID">
+                      <rect key="frame" x="0.0" y="0.0" width="362.66666666666669" height="51"/>
+                      <autoresizingMask key="autoresizingMask"/>
+                      <subviews>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Language" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Lang-Label-ID">
+                          <rect key="frame" x="20" y="15" width="76" height="21"/>
+                          <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                          <nil key="textColor"/>
+                          <nil key="highlightedColor"/>
+                        </label>
+                        <button opaque="NO" contentMode="scaleToFill" showsMenuAsPrimaryAction="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lang-Btn-ID">
+                          <rect key="frame" x="270.66666666666669" y="8" width="84" height="35"/>
+                          <state key="normal" title="English"/>
+                          <buttonConfiguration key="configuration" style="plain" title="English">
+                            <color key="baseForegroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                          </buttonConfiguration>
+                        </button>
+                      </subviews>
+                      <constraints>
+                        <constraint firstAttribute="trailingMargin" secondItem="Lang-Btn-ID" secondAttribute="trailing" id="Lang-Cons-1"/>
+                        <constraint firstItem="Lang-Label-ID" firstAttribute="centerY" secondItem="Lang-Content-ID" secondAttribute="centerY" id="Lang-Cons-2"/>
+                        <constraint firstItem="Lang-Btn-ID" firstAttribute="centerY" secondItem="Lang-Content-ID" secondAttribute="centerY" id="Lang-Cons-3"/>
+                        <constraint firstItem="Lang-Label-ID" firstAttribute="leading" secondItem="Lang-Content-ID" secondAttribute="leadingMargin" id="Lang-Cons-4"/>
+                      </constraints>
+                    </tableViewCellContentView>
+                  </tableViewCell>
                   <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" textLabel="LogoutTextLabel" style="IBUITableViewCellStyleDefault" id="LogoutCell">
                     <rect key="frame" x="0.0" y="511.66666412353516" width="393" height="44"/>
                     <autoresizingMask key="autoresizingMask"/>
@@ -871,6 +900,7 @@
             <outlet property="lastNameTextField" destination="4tL-tO-6nT" id="8Ad-Uf-aut"/>
             <outlet property="profileImageView" destination="Fx9-5H-8Y1" id="VLO-pE-eYu"/>
             <outlet property="voiceStatusLabel" destination="vPr-Lb-05e" id="vPr-OL-25y"/>
+            <outlet property="languageButton" destination="Lang-Btn-ID" id="Lang-Conn-ID"/>
           </connections>
         </tableViewController>
         <placeholder placeholderIdentifier="IBFirstResponder" id="Lny-UR-tZD" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

@@ -29,7 +29,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     // Apple Intelligence on-device language model used for text cleanup.
     private let model = SystemLanguageModel.default
     
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
@@ -73,6 +73,8 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         
         self.title = sessionTitle
         
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+        
         if !currentSessionID.isEmpty {
                 // Only have the code? Find the Host UID first!
                 firebase.findHostID(for: currentSessionID) { [weak self] hostUID in
@@ -96,6 +98,11 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         stopRecording()
+        NotificationCenter.default.removeObserver(self, name: .languageDidChange, object: nil)
+    }
+    
+    @objc private func handleLanguageChange() {
+        speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
     
     // MARK: - Setup
@@ -139,7 +146,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        if #available(iOS 13, *) { request.requiresOnDeviceRecognition = true }
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
@@ -157,6 +163,8 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             updateMicButtonVisuals(isActive: true)
         } catch {
             print("Audio Engine Start Error: \(error)")
+            isRecording = false
+            updateMicButtonVisuals(isActive: false)
         }
         
         recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] (result, error) in
@@ -229,7 +237,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         Task {
             do {
                 let prompt = """
-                Clean up the following conversational text by fixing grammar and punctuation. Keep the tone natural. Return ONLY the cleaned text. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+                Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
                 
                 Text: "\(text)"
                 """

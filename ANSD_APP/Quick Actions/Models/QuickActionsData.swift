@@ -115,6 +115,22 @@ class QuickActionsRepository {
         return quickActionBubbles.sorted { compareTimes(time1: $0.startTime, time2: $1.startTime) }
     }
     
+    /// MVC Refactor: Provides the top-N upcoming actions for the dashboard, filtered by a cutoff time.
+    func getUpcomingActions(limit: Int = 3) -> [RoutineConversation] {
+        let cutoffTime = Date().addingTimeInterval(-1800) // 30 mins ago
+        
+        let sortedFutureActions = quickActionBubbles.filter { item in
+            guard item.status != "Done", let itemDate = getDate(from: item.startTime) else { return false }
+            return itemDate > cutoffTime
+        }.sorted { (item1, item2) -> Bool in
+            guard let date1 = getDate(from: item1.startTime),
+                  let date2 = getDate(from: item2.startTime) else { return false }
+            return date1 < date2
+        }
+        
+        return Array(sortedFutureActions.prefix(limit))
+    }
+    
     func addAction(_ action: RoutineConversation) {
         quickActionBubbles.append(action)
         saveToDisk()

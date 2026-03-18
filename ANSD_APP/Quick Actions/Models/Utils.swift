@@ -71,3 +71,15 @@ func compareTimes(time1: String, time2: String) -> Bool {
     
     return false
 }
+
+// Function - Converts a time string (e.g., "2:30 PM") into a Date object for the current day.
+func getDate(from timeString: String) -> Date? {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "h:mm a"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    guard let timeDate = formatter.date(from: timeString) else { return nil }
+    let calendar = Calendar.current
+    let now = Date()
+    let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
+    return calendar.date(bySettingHour: timeComponents.hour ?? 0, minute: timeComponents.minute ?? 0, second: 0, of: now)
+}

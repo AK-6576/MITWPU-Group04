@@ -52,7 +52,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
 
     // Speech Engine Properties
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
@@ -74,6 +74,12 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         setupParticipantsButton()
         
         startFirebaseSession()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+    }
+    
+    @objc private func handleLanguageChange() {
+        speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
     
     private func setupParticipantsButton() {
@@ -307,7 +313,6 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        if #available(iOS 13, *) { request.requiresOnDeviceRecognition = true }
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
@@ -321,8 +326,13 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         do {
             try audioEngine.start()
             isRecording = true
+            micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
+            micButton.tintColor = .systemRed
         } catch {
             print("Audio Engine Error: \(error)")
+            isRecording = false
+            micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
+            micButton.tintColor = .label
         }
         
         recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
@@ -386,7 +396,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         Task {
             do {
                 let prompt = """
-                Clean up the following conversational text by fixing grammar and punctuation. Keep the tone natural. Return ONLY the cleaned text. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+                Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
                 
                 Text: "\(text)"
                 """

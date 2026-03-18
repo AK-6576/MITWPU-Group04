@@ -41,7 +41,7 @@ class QuickCaptioningViewController: UIViewController,
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
 
     private let diarizer = AudioDiarizer()
     private var diarizerCancellables = Set<AnyCancellable>()
@@ -65,6 +65,13 @@ class QuickCaptioningViewController: UIViewController,
         setupLocation()
         
         checkCalibrationStatus()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+    }
+    
+    @objc private func handleLanguageChange() {
+        // Reinitialize the recognizer with the new language. Next recording session will pick it up.
+        speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
             
             // MARK: - Voice Profile Check
@@ -88,6 +95,7 @@ class QuickCaptioningViewController: UIViewController,
         super.viewWillDisappear(animated)
         cleanupManager.cancelAllPendingTasks()
         stopRecording()
+        NotificationCenter.default.removeObserver(self, name: .languageDidChange, object: nil)
     }
     
     // MARK: - Location Services
