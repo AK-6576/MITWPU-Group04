@@ -139,11 +139,11 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     // MARK: - Firebase Integration
     private func startFirebaseSession() {
         guard let code = roomCode else {
-            print("DEBUG: No Room Code passed to ActionJoinViewController")
+            // print("DEBUG: No Room Code passed to ActionJoinViewController")
             return
         }
         
-        print("DEBUG: ActionJoin - Starting Firebase session for code: \(code), myID: \(currentUserID)")
+        // print("DEBUG: ActionJoin - Starting Firebase session for code: \(code), myID: \(currentUserID)")
         
         // Try to find if a host exists for this code
         firebase.findHostID(for: code) { [weak self] hostUID in
@@ -152,13 +152,13 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             if let targetUID = hostUID {
                 // Room exists -> JOIN IT
                 let isMeHost = (targetUID == self.currentUserID)
-                print("DEBUG: Action Room found. HostUID: \(targetUID). Am I Host?: \(isMeHost)")
+                // print("DEBUG: Action Room found. HostUID: \(targetUID). Am I Host?: \(isMeHost)")
                 self.firebase.setupSession(hostUID: targetUID, conversationID: code, isHost: isMeHost)
                 self.firebase.linkConversationToJoiner(hostUID: targetUID, conversationID: code, conversationTitle: self.sessionTitle)
             } else {
                 // Doesn't exist -> CREATE IT
                 let hostID = self.currentUserID
-                print("DEBUG: Action Room not found. Creating as Host. UID: \(hostID)")
+                // print("DEBUG: Action Room not found. Creating as Host. UID: \(hostID)")
                 self.firebase.registerRoom(code: code, hostUID: hostID)
                 self.firebase.setupSession(hostUID: hostID, conversationID: code, isHost: true)
                 self.firebase.linkConversationToJoiner(hostUID: hostID, conversationID: code, conversationTitle: self.sessionTitle)
@@ -169,7 +169,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     private func setupFirebaseObservers() {
-        print("DEBUG: ActionJoin - Setting up Firebase observers")
+        // print("DEBUG: ActionJoin - Setting up Firebase observers")
         
         firebase.observeSessionStatus { [weak self] status in
             guard let self = self else { return }
@@ -184,17 +184,17 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             guard let text = data["text"] as? String,
                   let sender = data["sender"] as? String,
                   let senderID = data["senderID"] as? String else {
-                print("DEBUG: ActionJoin - Received malformed message data: \(data)")
+                // print("DEBUG: ActionJoin - Received malformed message data: \(data)")
                 return
             }
             
-            print("DEBUG: ActionJoin - Received message from \(sender) (\(senderID)): \(text.prefix(30))...")
+            // print("DEBUG: ActionJoin - Received message from \(sender) (\(senderID)): \(text.prefix(30))...")
             
             // Deduplication
             if senderID == self.currentUserID {
                 let lastFinalized = self.messages.last(where: { !$0.isIncoming && $0.text != "..." && $0.text != "Listening..." })
                 if let last = lastFinalized, last.text == text {
-                    print("DEBUG: ActionJoin - Skipping duplicate self-message")
+                    // print("DEBUG: ActionJoin - Skipping duplicate self-message")
                     return
                 }
             }

@@ -411,7 +411,6 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     }
 }
 
-// MARK: - Storyboard Aliases
-typealias ActionSummaryViewController = BaseSummaryViewController
-typealias FriendsSummaryViewController = BaseSummaryViewController
-typealias OfficeSummaryViewController = BaseSummaryViewController
+class ActionSummaryViewController: BaseSummaryViewController {}
+class FriendsSummaryViewController: BaseSummaryViewController {}
+class OfficeSummaryViewController: BaseSummaryViewController {}

@@ -77,7 +77,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                 // Only have the code? Find the Host UID first!
                 firebase.findHostID(for: currentSessionID) { [weak self] hostUID in
                     guard let self = self, let uid = hostUID else {
-                        print("DEBUG: Room code not found.")
+                        // print("DEBUG: Room code not found.")
                         return
                     }
                     self.hostUserIDFromLink = uid
@@ -315,7 +315,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         firebase.observeSessionStatus { [weak self] status in
             guard let self = self else { return }
             if status == "ended" {
-                print("DEBUG: Session ended signal received.")
+                // print("DEBUG: Session ended signal received.")
                 self.handleGlobalSessionEnd()
             }
         }

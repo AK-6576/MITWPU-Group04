@@ -49,6 +49,6 @@ class RoutineTableViewCell: UITableViewCell {
 
 // MARK: - Storyboard Compatibility Aliases
 // Maps legacy class names in Storyboard to this single unified class.
-typealias RoutineTableViewCell1 = RoutineTableViewCell
-typealias FriendsRoutineTableViewCell = RoutineTableViewCell
-typealias OfficeRoutineTableViewCell = RoutineTableViewCell
+class RoutineTableViewCell1: RoutineTableViewCell {}
+class FriendsRoutineTableViewCell: RoutineTableViewCell {}
+class OfficeRoutineTableViewCell: RoutineTableViewCell {}

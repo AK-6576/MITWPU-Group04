@@ -35,7 +35,7 @@ class FirebaseManager {
         let safeConvID = sanitizeKey(conversationID)
         
         guard !safeUID.isEmpty, !safeConvID.isEmpty else {
-            print("DEBUG: Firebase - Cannot setup session with empty IDs")
+            // print("DEBUG: Firebase - Cannot setup session with empty IDs")
             return
         }
 
@@ -45,9 +45,9 @@ class FirebaseManager {
         
         if isHost {
             ref?.child("status").setValue("active")
-            print("DEBUG: Firebase - Host created room at users/\(safeUID)/conversations/\(safeConvID)")
+            // print("DEBUG: Firebase - Host created room at users/\(safeUID)/conversations/\(safeConvID)")
         } else {
-            print("DEBUG: Firebase - Joiner connected to room at users/\(safeUID)/conversations/\(safeConvID)")
+            // print("DEBUG: Firebase - Joiner connected to room at users/\(safeUID)/conversations/\(safeConvID)")
         }
     }
 
@@ -68,7 +68,7 @@ class FirebaseManager {
     
     func observeMessages(completion: @escaping ([String: Any]) -> Void) {
         guard let sessionRef = ref?.child("messages") else {
-            print("DEBUG: Firebase - Observer failed. Call setupSession first.")
+            // print("DEBUG: Firebase - Observer failed. Call setupSession first.")
             return
         }
 
@@ -269,7 +269,7 @@ class FirebaseManager {
                 lookupUID(byFirstName: trimmed) { [weak self] participantUID in
                     guard let self = self, let uid = participantUID else { return }
                     self.databaseRef.child("users").child(uid).child("quick_actions").child(safeCode).setValue(metadata)
-                    print("DEBUG: Firebase - Shared Quick Action to participant UID: \(uid)")
+                    // print("DEBUG: Firebase - Shared Quick Action to participant UID: \(uid)")
                 }
             }
         }

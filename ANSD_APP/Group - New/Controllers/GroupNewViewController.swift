@@ -323,8 +323,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         let hostID = currentUserID
         
         // PRINT THIS: You need this UID to let the other user join your room
-        print("DEBUG: Host UID is: \(hostID)")
-        print("DEBUG: Room ID is: \(currentSessionID)")
+        // print("DEBUG: Host UID is: \(hostID)")
+        // print("DEBUG: Room ID is: \(currentSessionID)")
             firebase.registerRoom(code: currentSessionID, hostUID: hostID)
 
             // 2. Setup the actual room path

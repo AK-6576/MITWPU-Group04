@@ -145,8 +145,7 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     }
 }
 
-// MARK: - Storyboard Compatibility Aliases
-typealias FamilyRoutineViewController = BaseRoutineViewController
-typealias FriendsRoutineViewController = BaseRoutineViewController
-typealias OfficeRoutineViewController = BaseRoutineViewController
-typealias OtherRoutineViewController = BaseRoutineViewController
+class FamilyRoutineViewController: BaseRoutineViewController {}
+class FriendsRoutineViewController: BaseRoutineViewController {}
+class OfficeRoutineViewController: BaseRoutineViewController {}
+class OtherRoutineViewController: BaseRoutineViewController {}

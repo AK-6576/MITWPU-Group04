@@ -21,7 +21,7 @@ class DataManager {
     }
     
     private init() {
-        print("DEBUG: DataManager.init() STARTED")
+        // print("DEBUG: DataManager.init() STARTED")
         do {
             let container = try ModelContainer(for: Conversation.self, Message.self, Participant.self, VoiceProfile.self)
             self.container = container
@@ -59,9 +59,9 @@ class DataManager {
             
             if fetchedData.isEmpty {
                 let allItems = try? context.fetch(FetchDescriptor<Conversation>())
-                print("DataManager DEBUG: Total conversations in DB (unfiltered): \(allItems?.count ?? 0)")
+                // print("DataManager DEBUG: Total conversations in DB (unfiltered): \(allItems?.count ?? 0)")
                 if let first = allItems?.first {
-                    print("DataManager DEBUG: Example first item has UID: '\(first.ownerUID)'")
+                    // print("DataManager DEBUG: Example first item has UID: '\(first.ownerUID)'")
                 }
             }
             

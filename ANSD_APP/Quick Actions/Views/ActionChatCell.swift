@@ -84,5 +84,5 @@ class IncomingCell: BaseChatCell {
     }
 }
 
-typealias OutgoingCell2 = OutgoingCell
-typealias IncomingCell2 = IncomingCell
+class OutgoingCell2: OutgoingCell {}
+class IncomingCell2: IncomingCell {}
