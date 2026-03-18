@@ -1,3 +1,11 @@
+//
+//  LanguageManager.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 18/03/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import Foundation
 import Speech
 
