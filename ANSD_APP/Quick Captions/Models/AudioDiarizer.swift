@@ -48,9 +48,9 @@ class AudioDiarizer: ObservableObject {
     // learningRate: weight of new vector when rolling-averaging a profile.
     //   Lowered from 0.05 → 0.03 for slower, more stable profile evolution.
     //
-    private let similarityThreshold: Float = 0.72
-    private let learningThreshold:   Float = 0.90
-    private let learningRate:        Float = 0.03
+    private let similarityThreshold: Float = 0.60
+    private let learningThreshold:   Float = 0.85
+    private let learningRate:        Float = 0.05
 
     // MARK: - Frame Voting
     //
@@ -408,12 +408,12 @@ class AudioDiarizer: ObservableObject {
 
         print("New Speaker Detected: Assigned ID \(newID)")
         self.speakerProfiles[newID] = vector
-        self.currentSpeakerID      = newID
         self.confidence            = "100%"
 
-        // Seed the vote buffer so the new speaker is immediately stable
-        leadingVoteID = newID
-        voteCount     = [newID: votingThreshold]
+        // We specifically DO NOT seed the vote buffer here.
+        // Let the new speaker accumulate 3 consecutive votes naturally.
+        // This prevents 300ms of initial breathing/noise from instantly
+        // hijacking the currentSpeakerID and breaking the app's speaker lock.
 
         return newID
     }
