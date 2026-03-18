@@ -109,6 +109,11 @@ class DataManager {
     // 4. DELETE: Removes a conversation from the database
     func deleteConversation(_ conversation: Conversation) {
         guard let context = context else { return }
+        
+        // 1. Delete from Firebase History
+        FirebaseManager.shared.deleteConversationMetadata(convoID: conversation.id)
+        
+        // 2. Delete from Local SwiftData
         context.delete(conversation)
         saveData()
     }

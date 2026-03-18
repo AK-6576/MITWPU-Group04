@@ -70,6 +70,8 @@ class QuickActionsRepository {
             return
         }
         
+        let hostUID = dict["hostUID"] as? String
+        
         let action = RoutineConversation(
             id: id,
             iconName: iconName,
@@ -82,7 +84,8 @@ class QuickActionsRepository {
             date: date,
             timeImage: timeImage,
             roomCode: roomCode,
-            participantNames: participantNames
+            participantNames: participantNames,
+            hostUID: hostUID
         )
         
         // Check if already exists to prevent dupes
@@ -140,6 +143,10 @@ class QuickActionsRepository {
     }
 
     func deleteAction(_ action: RoutineConversation) {
+        // 1. Delete from Firebase
+        FirebaseManager.shared.deleteQuickAction(actionID: action.id)
+        
+        // 2. Delete from Local
         self.quickActionBubbles.removeAll { $0.id == action.id }
         NotificationManager.shared.cancelNotification(identifier: "qa_\(action.id)_exact")
         NotificationManager.shared.cancelNotification(identifier: "qa_\(action.id)_5min")
@@ -172,8 +179,14 @@ class QuickActionsRepository {
         // Guard: don't write back to Firebase if we're processing incoming Firebase data
         guard !isSyncingFromFirebase else { return }
         
-        let rawID = Auth.auth().currentUser?.uid ?? "UnknownUser"
-        let hostID = rawID.components(separatedBy: CharacterSet(charactersIn: ".#$[]")).joined(separator: "_")
+        let hostID: String
+        if let existingHost = action.hostUID {
+            hostID = existingHost
+        } else {
+            let rawID = Auth.auth().currentUser?.uid ?? "UnknownUser"
+            hostID = FirebaseManager.shared.sanitizeKey(rawID)
+        }
+        
         if action.roomCode != nil {
             FirebaseManager.shared.saveQuickActionMetadata(action, hostUID: hostID)
         }

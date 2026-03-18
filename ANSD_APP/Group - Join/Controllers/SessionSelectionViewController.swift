@@ -17,6 +17,7 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
         GroupJoinSessions(title: "Join via Code", subtitle: "Enter a Room Code."),
 
     ]
+    var prefilledRoomCode: String?
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -28,8 +29,17 @@ class SessionSelectionViewController: UIViewController, UITableViewDelegate, UIT
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // Immediately present the "Join Session" popup
-        showJoinSessionAlert(title: "Join via Code")
+        
+        if let code = prefilledRoomCode {
+            // Automatically join if code is provided
+            let data = (code: code, title: "Quick Action Session")
+            self.performSegue(withIdentifier: "goToChat", sender: data)
+            // Clear it so it doesn't trigger again on re-entry
+            prefilledRoomCode = nil
+        } else {
+            // Immediately present the "Join Session" popup
+            showJoinSessionAlert(title: "Join via Code")
+        }
     }
     
     func setupTableView() {

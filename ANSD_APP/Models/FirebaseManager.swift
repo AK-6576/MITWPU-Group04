@@ -143,6 +143,78 @@ class FirebaseManager {
         // This backups metadata to the logged-in user's own conversations folder
         databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID).updateChildValues(metadata)
     }
+    
+    /// NEW: Deletes conversation metadata from Firebase to ensure permanent deletion.
+    func deleteConversationMetadata(convoID: String) {
+        guard let uid = currentUID else { return }
+        let safeUID = sanitizeKey(uid)
+        let safeConvID = sanitizeKey(convoID)
+        databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID).removeValue()
+        // Also remove from the "history" node used for full transcripts
+        databaseRef.child("users").child(safeUID).child("history").child(safeConvID).removeValue()
+    }
+    
+    /// NEW: Deletes a Quick Action from Firebase.
+    func deleteQuickAction(actionID: String) {
+        guard let uid = currentUID else { return }
+        let safeUID = sanitizeKey(uid)
+        let safeCode = sanitizeKey(actionID)
+        
+        // 1. Remove from global registry
+        databaseRef.child("quick_actions").child(safeCode).removeValue()
+        
+        // 2. Remove from Host's Personal Folder
+        databaseRef.child("users").child(safeUID).child("quick_actions").child(safeCode).removeValue()
+        
+        // 3. Remove from participant nodes (shared_quick_actions)
+        databaseRef.child("shared_quick_actions").observeSingleEvent(of: .value) { snapshot in
+            guard let allParticipants = snapshot.value as? [String: [String: Any]] else { return }
+            for (participantName, actions) in allParticipants {
+                if actions[safeCode] != nil {
+                    self.databaseRef.child("shared_quick_actions").child(participantName).child(safeCode).removeValue()
+                }
+            }
+        }
+    }
+    
+    /// NEW: Wipes all user-generated history and actions from Firebase.
+    func clearAllUserData(completion: @escaping (Error?) -> Void) {
+        guard let uid = currentUID else {
+            completion(NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "User not logged in"]))
+            return
+        }
+        let safeUID = sanitizeKey(uid)
+        
+        // Paths to clear
+        let conversationRef = databaseRef.child("users").child(safeUID).child("conversations")
+        let historyRef = databaseRef.child("users").child(safeUID).child("history")
+        let qaRef = databaseRef.child("users").child(safeUID).child("quick_actions")
+        
+        let group = DispatchGroup()
+        var lastError: Error?
+        
+        group.enter()
+        conversationRef.removeValue { error, _ in
+            if let error = error { lastError = error }
+            group.leave()
+        }
+        
+        group.enter()
+        historyRef.removeValue { error, _ in
+            if let error = error { lastError = error }
+            group.leave()
+        }
+        
+        group.enter()
+        qaRef.removeValue { error, _ in
+            if let error = error { lastError = error }
+            group.leave()
+        }
+        
+        group.notify(queue: .main) {
+            completion(lastError)
+        }
+    }
 
     /// Saves a COMPLETE conversation including all messages and participants to history.
     func saveFullConversation(_ conversation: Conversation) {

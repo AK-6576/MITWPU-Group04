@@ -9,6 +9,7 @@
 import UIKit
 import UserNotifications
 import Foundation
+import FirebaseAuth
 
 class HomeViewController: UIViewController {
     
@@ -145,13 +146,19 @@ class HomeViewController: UIViewController {
             guard let destVC = segue.destination as? ChatHistoryViewController,
                   let selectedConvo = sender as? Conversation else { return }
             destVC.histconversationData = selectedConvo
+        } else if segue.identifier == "showJoinConversation" {
+            // Participant joining from a Quick Action cell
+            if let selectedItem = sender as? RoutineConversation,
+               let destVC = segue.destination as? SessionSelectionViewController {
+                destVC.prefilledRoomCode = selectedItem.roomCode
+            }
         } else {
-            // Dashboard Quick Actions -> Chat
+            // Dashboard Quick Actions -> Chat (Direct Start for Host)
             let dashboardSegueIDs = ["office", "family", "friends"]
             if let segueID = segue.identifier, dashboardSegueIDs.contains(segueID) {
                 if let selectedItem = sender as? RoutineConversation {
                     if let chatVC = segue.destination as? ActionJoinViewController {
-                        chatVC.sessionTitle = "\(selectedItem.categoryTitle) Session"
+                        chatVC.sessionTitle = "\(selectedItem.conversationTopic) Session" // Use topic as title
                         chatVC.category = selectedItem.categoryTitle
                         chatVC.roomCode = selectedItem.roomCode
                         chatVC.participantNames = selectedItem.participantNames
@@ -249,14 +256,23 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.section == 0 && !quickActions.isEmpty {
             let item = quickActions[indexPath.row]
-            var segueID = ""
-            switch item.categoryTitle {
-                case "Office": segueID = "office"
-                case "Family": segueID = "family"
-                case "Friends": segueID = "friends"
-                default: return
+            
+            // ROLE-BASED NAVIGATION
+            let currentUID = Auth.auth().currentUser?.uid
+            if let host = item.hostUID, host != currentUID {
+                // I am a participant -> Go to Join screen with Room ID pre-filled
+                performSegue(withIdentifier: "showJoinConversation", sender: item)
+            } else {
+                // I am the host (or hostUID missing) -> Go to direct start/join transcription
+                var segueID = ""
+                switch item.categoryTitle {
+                    case "Office": segueID = "office"
+                    case "Family": segueID = "family"
+                    case "Friends": segueID = "friends"
+                    default: return
+                }
+                performSegue(withIdentifier: segueID, sender: item)
             }
-            performSegue(withIdentifier: segueID, sender: item)
         } else if indexPath.section == 1 && !recentHistory.isEmpty {
             performSegue(withIdentifier: "viewConvoCell", sender: recentHistory[indexPath.row])
         }

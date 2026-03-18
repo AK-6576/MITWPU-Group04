@@ -10,6 +10,7 @@ import UIKit
 import UserNotifications
 import MessageUI
 import Contacts
+import FirebaseAuth
 
 // MARK: - Add Action Delegate
 // Protocol for notifying the delegate when a new action is created.
@@ -195,7 +196,8 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             date: getFormattedDateString(),
             timeImage: "clock",
             roomCode: roomCode,
-            participantNames: participantNames
+            participantNames: participantNames,
+            hostUID: Auth.auth().currentUser?.uid
         )
         
         // 1. Save to Repository (The Source of Truth)

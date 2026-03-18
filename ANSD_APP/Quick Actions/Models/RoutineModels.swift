@@ -23,6 +23,7 @@ struct RoutineConversation: Codable, Identifiable {
     let timeImage: String
     var roomCode: String?
     var participantNames: [String]
+    var hostUID: String?
 }
 
 // MARK: - Section Model

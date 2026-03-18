@@ -148,13 +148,54 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        if indexPath.section == 0 {
-            // Vocal Profile is row 4, Logout is row 5
-            if indexPath.row == 4 {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        switch indexPath.section {
+        case 2: // Vocal Profile
+            if indexPath.row == 0 {
                 handleVocalProfileTap()
-            } else if indexPath.row == 5 {
+            }
+        case 3: // Account
+            if indexPath.row == 0 {
+                handleClearAllDataTap()
+            } else if indexPath.row == 1 {
                 confirmSignOut()
             }
+        default:
+            break
+        }
+    }
+    
+    private func handleClearAllDataTap() {
+        let alert = UIAlertController(title: "Clear All Data", message: "This will permanently delete ALL your conversation history and quick actions from both this device and the cloud. This action cannot be undone.", preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Clear Everything", style: .destructive) { [weak self] _ in
+            self?.performGlobalDataWipe()
+        })
+        
+        present(alert, animated: true)
+    }
+    
+    private func performGlobalDataWipe() {
+        // 1. Wipe Firebase (Remote)
+        FirebaseManager.shared.clearAllUserData { [weak self] error in
+            if let error = error {
+                let errorAlert = UIAlertController(title: "Sync Error", message: "Could not wipe cloud data: \(error.localizedDescription). Local data will still be cleared.", preferredStyle: .alert)
+                errorAlert.addAction(UIAlertAction(title: "OK", style: .default))
+                self?.present(errorAlert, animated: true)
+            }
+            
+            // 2. Wipe Local SwiftData (DataManager)
+            DataManager.shared.clearAllLocalData()
+            
+            // 3. Wipe Quick Actions Disk Storage
+            QuickActionsRepository.shared.clearAllActions()
+            
+            // 4. Feedback
+            let success = UIAlertController(title: "Data Cleared", message: "All your history and actions have been wiped.", preferredStyle: .alert)
+            success.addAction(UIAlertAction(title: "OK", style: .default))
+            self?.present(success, animated: true)
         }
     }
     
@@ -181,7 +222,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             
             // For iPad support
             if let popoverController = actionSheet.popoverPresentationController {
-                if let cell = tableView.cellForRow(at: IndexPath(row: 4, section: 0)) {
+                if let cell = tableView.cellForRow(at: IndexPath(row: 0, section: 2)) {
                     popoverController.sourceView = cell
                     popoverController.sourceRect = cell.bounds
                 }
