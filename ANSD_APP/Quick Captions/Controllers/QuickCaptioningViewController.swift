@@ -324,7 +324,12 @@ class QuickCaptioningViewController: UIViewController,
         let text = messages[index].text
         guard messages[index].sender != "Listening...", messages[index].sender != "System" else { return }
         
+        // 1. Update UI with raw text immediately for 0ms perceived latency
+        self.updateBubbleUI(at: index, text: text)
+
+        // 2. Background cleanup starts
         cleanupManager.scheduleCleanup(text: text, at: index) { [weak self] idx, cleaned in
+            // 3. Smoothly replace with refined AI version
             self?.updateBubbleUI(at: idx, text: cleaned)
         }
     }

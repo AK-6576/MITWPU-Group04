@@ -58,9 +58,14 @@ class TextCleanupManager {
             let response = try await session.respond(to: prompt)
             var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Safety filter: If AI returns a commentary/apology, discard cleanup and use original text
+            // Safety filter: Only discard if the response matches known AI boilerplate prefixes or is suspiciously short/generic
+            let boilerplatePrefixes = ["i'm sorry", "as a language model", "as an ai", "i cannot process"]
             let lowercaseResponse = cleanedText.lowercased()
-            if lowercaseResponse.contains("i'm sorry") || lowercaseResponse.contains("as an ai") || lowercaseResponse.contains("can't process") {
+            let isBoilerplate = boilerplatePrefixes.contains { prefix in
+                lowercaseResponse.hasPrefix(prefix) || (lowercaseResponse.contains(prefix) && cleanedText.count < 30)
+            }
+            
+            if isBoilerplate {
                 cleanedText = text
             }
             

@@ -342,14 +342,19 @@ class FirebaseManager {
             }
         }
         
-        // 4. Also save to each participant's own quick_actions node (by UID lookup)
+        // 4. Also save to each participant's own quick_actions node (by EMAIL lookup)
         for participant in action.participantNames {
             let trimmed = participant.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
+            if trimmed.contains("@") { // Probable email
+                lookupUID(byEmail: trimmed) { [weak self] participantUID in
+                    guard let self = self, let uid = participantUID else { return }
+                    self.databaseRef.child("users").child(uid).child("quick_actions").child(safeCode).setValue(metadata)
+                }
+            } else {
+                // Fallback to name lookup (less secure)
                 lookupUID(byFirstName: trimmed) { [weak self] participantUID in
                     guard let self = self, let uid = participantUID else { return }
                     self.databaseRef.child("users").child(uid).child("quick_actions").child(safeCode).setValue(metadata)
-                    // print("DEBUG: Firebase - Shared Quick Action to participant UID: \(uid)")
                 }
             }
         }
@@ -444,7 +449,13 @@ class FirebaseManager {
             ]
 
             let safeUID = self.sanitizeKey(user.uid)
-            self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile) { error, _ in
+            let safeEmail = self.sanitizeKey(email.lowercased())
+            
+            // 1. Save standard profile
+            self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile)
+            
+            // 2. NEW: Save to 'users_by_email' index for secure lookup
+            self.databaseRef.child("users_by_email").child(safeEmail).setValue(user.uid) { error, _ in
                 if let error = error {
                     completion(.failure(error))
                 } else {
@@ -517,7 +528,17 @@ class FirebaseManager {
         }
     }
     
-    // MARK: - UID Lookup by Name
+    // MARK: - UID Lookup (SECURE)
+    
+    /// NEW: Search by Email (Precise) instead of First Name (Ambiguous)
+    func lookupUID(byEmail email: String, completion: @escaping (String?) -> Void) {
+        let safeEmail = sanitizeKey(email.lowercased())
+        databaseRef.child("users_by_email").child(safeEmail).observeSingleEvent(of: .value) { snapshot in
+            completion(snapshot.value as? String)
+        }
+    }
+
+    /// DEPRECATED: Use lookupUID(byEmail:) for security
     func lookupUID(byFirstName name: String, completion: @escaping (String?) -> Void) {
         databaseRef.child("users").observeSingleEvent(of: .value) { snapshot in
             if let users = snapshot.value as? [String: Any] {
