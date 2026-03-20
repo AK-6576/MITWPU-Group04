@@ -502,7 +502,10 @@ class FirebaseManager {
     }
     
     func createAccount(details: [String: String], completion: @escaping (Result<User, Error>) -> Void) {
-        guard let email = details["email"], let password = details["password"] else { return }
+        guard let email = details["email"], let password = details["password"] else {
+            completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Email and password are required"])))
+            return
+        }
         
         Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
             if let error = error {
@@ -510,7 +513,10 @@ class FirebaseManager {
                 return
             }
             
-            guard let user = authResult?.user else { return }
+            guard let user = authResult?.user else {
+                completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to retrieve user after creation"])))
+                return
+            }
             
             let userProfile: [String: Any] = [
                 "firstName": details["firstName"] ?? "",
@@ -525,10 +531,13 @@ class FirebaseManager {
             // 1. Save standard profile
             self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile)
             
-            // 2. NEW: Save to 'users_by_email' index for secure lookup
+            // 2. Save to 'users_by_email' index for secure lookup (Non-fatal)
             self.databaseRef.child("users_by_email").child(safeEmail).setValue(user.uid) { error, _ in
                 if let error = error {
-                    completion(.failure(error))
+                    print("Firebase: WARNING - Failed to update email index: \(error.localizedDescription)")
+                    print("Firebase: Check your Realtime Database security rules for /users_by_email")
+                    // Still complete with success because the user and profile were created
+                    completion(.success(user))
                 } else {
                     completion(.success(user))
                 }
@@ -538,8 +547,7 @@ class FirebaseManager {
     
     func loginUser(details: [String: String], completion: @escaping (Result<User, Error>) -> Void) {
         guard let email = details["email"], let password = details["password"] else {
-            let error = NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Email or Password missing"])
-            completion(.failure(error))
+            completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Email and password are required"])))
             return
         }
         
@@ -551,6 +559,8 @@ class FirebaseManager {
             
             if let user = authResult?.user {
                 completion(.success(user))
+            } else {
+                completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to retrieve user after sign-in"])))
             }
         }
     }
