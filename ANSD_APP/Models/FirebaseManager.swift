@@ -7,8 +7,10 @@
 //
 
 import Foundation
+import FirebaseCore
 import FirebaseDatabase
 import FirebaseAuth
+import GoogleSignIn
 
 class FirebaseManager {
     
@@ -427,6 +429,75 @@ class FirebaseManager {
         let safeCode = sanitizeKey(code)
         databaseRef.child("room_registry").child(safeCode).child("hostUID").observeSingleEvent(of: .value) { snapshot in
             completion(snapshot.value as? String)
+        }
+    }
+    
+    // MARK: - Google Sign-In
+    
+    func signInWithGoogle(presenting: UIViewController, completion: @escaping (Result<User, Error>) -> Void) {
+        // 1. Get Client ID from Firebase options
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Firebase Client ID not found"])))
+            return
+        }
+        
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+        
+        // 2. Start Google Sign-In Flow
+        GIDSignIn.sharedInstance.signIn(withPresenting: presenting) { [weak self] signInResult, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let user = signInResult?.user,
+                  let idToken = user.idToken?.tokenString else {
+                completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Google Sign-In failed to return tokens"])))
+                return
+            }
+            
+            // 3. Create Firebase Credential
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
+            
+            // 4. Authenticate with Firebase
+            Auth.auth().signIn(with: credential) { authResult, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let firebaseUser = authResult?.user else {
+                    completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Firebase Sign-In failed"])))
+                    return
+                }
+                
+                // 5. If new user, save initial profile to RTDB
+                let isNewUser = authResult?.additionalUserInfo?.isNewUser ?? false
+                if isNewUser {
+                    let userProfile: [String: Any] = [
+                        "firstName": user.profile?.givenName ?? "",
+                        "lastName": user.profile?.familyName ?? "",
+                        "email": firebaseUser.email ?? "",
+                        "createdAt": ServerValue.timestamp()
+                    ]
+                    
+                    let safeUID = self.sanitizeKey(firebaseUser.uid)
+                    let safeEmail = self.sanitizeKey(firebaseUser.email?.lowercased() ?? "")
+                    
+                    // Save standard profile
+                    self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile)
+                    
+                    // Save to 'users_by_email' index
+                    if !safeEmail.isEmpty {
+                        self.databaseRef.child("users_by_email").child(safeEmail).setValue(firebaseUser.uid)
+                    }
+                }
+                
+                completion(.success(firebaseUser))
+            }
         }
     }
     
