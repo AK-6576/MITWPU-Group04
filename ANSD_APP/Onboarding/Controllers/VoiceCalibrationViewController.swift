@@ -327,7 +327,7 @@ class VoiceCalibrationViewController: UIViewController {
         }
     }
 
-    /// Step 1 — 3-2-1 countdown before recording
+    /// Initiates the 3-2-1 countdown sequence before recording starts.
     private func beginCountdown() {
         var count = 3
         phase = .countdown(count)
@@ -345,7 +345,7 @@ class VoiceCalibrationViewController: UIViewController {
         }
     }
 
-    /// Step 2 — Record one sentence, then verify voice, then chain to next or finish
+    /// Records a single sentence, triggers voice verification, and continues the flow.
     private func recordSentence(index: Int) {
         guard index < sentences.count else {
             // All sentences verified — save the profile
@@ -446,9 +446,14 @@ class VoiceCalibrationViewController: UIViewController {
                 self?.recordSentence(index: index + 1)
             }
         } else {
-            // All sentences done and verified
-            saveVoiceProfile()
-            phase = .finished
+            // All sentences completed and verified — brief delay for UI to breathe
+            print("VoiceCalibration: All sentences verified. Saving profile in 0.5s...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self else { return }
+                self.saveVoiceProfile()
+                self.phase = .finished
+                print("VoiceCalibration: Phase transitioned to .finished")
+            }
         }
     }
     
@@ -565,7 +570,7 @@ class VoiceCalibrationViewController: UIViewController {
         // Use "Me" as default name — user can change it later
         if let uid = Auth.auth().currentUser?.uid {
             VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: "Me", embedding: normalizedAvg)
-            print("VoiceCalibration: Voice profile saved successfully for user \\(uid).")
+            print("VoiceCalibration: Voice profile successfully saved for user \(uid)")
         } else {
             print("VoiceCalibration: Error - No logged-in user to save voice profile.")
         }

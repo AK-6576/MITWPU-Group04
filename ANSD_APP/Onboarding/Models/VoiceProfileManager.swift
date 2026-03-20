@@ -56,18 +56,23 @@ class VoiceProfileManager {
         
         if let profileToDelete = getVoiceProfile(byUID: ownerUID) {
             context.delete(profileToDelete)
+            print("VoiceProfileManager: Deleting existing voice profile for user \(ownerUID)...")
             saveData()
         }
     }
     
     // MARK: - Private Save Helper
     private func saveData() {
-        guard let context = context else { return }
+        guard let context = context else { 
+            print("VoiceProfileManager: ERROR - No ModelContext found for saveData")
+            return 
+        }
         do {
+            print("VoiceProfileManager: Attempting to save ModelContext...")
             try context.save()
-            print("VoiceProfileManager: Successfully saved changes.")
+            print("VoiceProfileManager: SUCCESS - Successfully saved changes to SwiftData.")
         } catch {
-            print("VoiceProfileManager: Failed to save context. Error: \(error.localizedDescription)")
+            print("VoiceProfileManager: ERROR - Failed to save context: \(error.localizedDescription)")
         }
     }
 }

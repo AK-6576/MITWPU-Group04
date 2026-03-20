@@ -434,7 +434,7 @@ class FirebaseManager {
     
     // MARK: - Google Sign-In
     
-    func signInWithGoogle(presenting: UIViewController, completion: @escaping (Result<User, Error>) -> Void) {
+    func signInWithGoogle(presenting: UIViewController, completion: @escaping (Result<(User, Bool), Error>) -> Void) {
         // 1. Get Client ID from Firebase options
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             completion(.failure(NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Firebase Client ID not found"])))
@@ -496,7 +496,7 @@ class FirebaseManager {
                     }
                 }
                 
-                completion(.success(firebaseUser))
+                completion(.success((firebaseUser, isNewUser)))
             }
         }
     }

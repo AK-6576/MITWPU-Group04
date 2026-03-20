@@ -94,7 +94,7 @@
                                                             <constraint firstAttribute="height" constant="50" id="Ypa-QE-mv7"/>
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
-                                                         <buttonConfiguration key="configuration" style="filled" title="Sign Up" cornerStyle="dynamic" titleAlignment="center">
+                                                        <buttonConfiguration key="configuration" style="filled" title="Sign Up" cornerStyle="dynamic" titleAlignment="center">
                                                             <color key="baseForegroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <color key="baseBackgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </buttonConfiguration>
@@ -169,13 +169,14 @@
                         <segue destination="lGr-uB-ayk" kind="show" identifier="showCreateAccount" id="Hbf-qz-pNh"/>
                         <segue destination="rqB-Fu-B5g" kind="show" identifier="showLoginAccount" id="dtV-CI-Qcz"/>
                         <segue destination="KzG-rr-mfo" kind="show" identifier="googleSignInToHome" id="v8f-ta-Zn6"/>
+                        <segue destination="9Sf-As-Ivm" kind="show" identifier="showCalibrationFromWelcome" id="c2S-4f-B5g"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ief-a0-LHa" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1265" y="148"/>
+            <point key="canvasLocation" x="-622" y="100"/>
         </scene>
-        <!--Sign Up View Controller-->
+        <!--Create Account View Controller-->
         <scene sceneID="fnF-oG-5DV">
             <objects>
                 <viewController id="lGr-uB-ayk" customClass="CreateAccountViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
@@ -344,7 +345,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="aBq-gP-tqL" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2218" y="148"/>
+            <point key="canvasLocation" x="424" y="100"/>
         </scene>
         <!--Voice Calibration View Controller-->
         <scene sceneID="J28-ad-L1g">
@@ -426,7 +427,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zHl-vg-YLx" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3124" y="148"/>
+            <point key="canvasLocation" x="1660" y="100"/>
         </scene>
         <!--Welcome Back-->
         <scene sceneID="5kP-rc-p3h">
@@ -524,7 +525,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="3Ap-AG-jOf" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1265" y="904"/>
+            <point key="canvasLocation" x="-622" y="904"/>
         </scene>
         <!--Home-->
         <scene sceneID="8iu-dJ-Oql">
@@ -534,7 +535,7 @@
                 </viewControllerPlaceholder>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="yfK-pU-lTD" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2217" y="904"/>
+            <point key="canvasLocation" x="1696" y="613"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="Vne-GZ-7Us">
@@ -552,9 +553,9 @@
                 </navigationController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="izG-uY-4l5" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="418" y="148"/>
+            <point key="canvasLocation" x="-1479" y="100"/>
         </scene>
-        <!--Forgot Password View Controller-->
+        <!--Reset Password-->
         <scene sceneID="fpw-sc-001">
             <objects>
                 <viewController id="fpw-vc-001" customClass="ForgotPasswordViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
@@ -563,18 +564,16 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-sv-001">
-                                <rect key="frame" x="24" y="130" width="345" height="234"/>
+                                <rect key="frame" x="24" y="192" width="345" height="215"/>
                                 <subviews>
-                                    <!-- Description label -->
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter the email address associated with your account and we'll send you a reset link." textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-desc">
-                                        <rect key="frame" x="0.0" y="0.0" width="345" height="60"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="345" height="36"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                         <color key="textColor" systemColor="secondaryLabelColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <!-- Email stack -->
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-sv-email">
-                                        <rect key="frame" x="0.0" y="84" width="345" height="75"/>
+                                        <rect key="frame" x="0.0" y="60" width="345" height="75"/>
                                         <subviews>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="252" text="EMAIL" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-email">
                                                 <rect key="frame" x="0.0" y="0.0" width="345" height="17"/>
@@ -592,16 +591,14 @@
                                             </textField>
                                         </subviews>
                                     </stackView>
-                                    <!-- Status label -->
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-status">
-                                        <rect key="frame" x="0.0" y="167" width="345" height="18"/>
+                                    <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-lbl-status">
+                                        <rect key="frame" x="0.0" y="147" width="345" height="0.0"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <!-- Send button -->
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-btn-send">
-                                        <rect key="frame" x="0.0" y="197" width="345" height="56"/>
+                                        <rect key="frame" x="0.0" y="159" width="345" height="56"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="56" id="fpw-h-btn"/>
                                         </constraints>
@@ -619,36 +616,36 @@
                                     <constraint firstAttribute="width" constant="345" id="fpw-w-sv"/>
                                 </constraints>
                             </stackView>
-                            <!-- Activity indicator -->
-                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" animating="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-ai-001">
-                                <rect key="frame" x="184.5" y="400" width="24" height="24"/>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="fpw-ai-001">
+                                <rect key="frame" x="186.66666666666666" y="423" width="20" height="20"/>
                             </activityIndicatorView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="fpw-sg-001"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
-                            <constraint firstItem="fpw-sv-001" firstAttribute="top" secondItem="fpw-sg-001" secondAttribute="top" constant="20" id="fpw-c-top"/>
-                            <constraint firstItem="fpw-sv-001" firstAttribute="leading" secondItem="fpw-sg-001" secondAttribute="leading" constant="24" id="fpw-c-lead"/>
-                            <constraint firstItem="fpw-sg-001" firstAttribute="trailing" secondItem="fpw-sv-001" secondAttribute="trailing" constant="24" id="fpw-c-trail"/>
                             <constraint firstItem="fpw-ai-001" firstAttribute="centerX" secondItem="fpw-vw-001" secondAttribute="centerX" id="fpw-c-ai-cx"/>
                             <constraint firstItem="fpw-ai-001" firstAttribute="top" secondItem="fpw-sv-001" secondAttribute="bottom" constant="16" id="fpw-c-ai-top"/>
+                            <constraint firstItem="fpw-sv-001" firstAttribute="leading" secondItem="fpw-sg-001" secondAttribute="leading" constant="24" id="fpw-c-lead"/>
+                            <constraint firstItem="fpw-sv-001" firstAttribute="top" secondItem="fpw-sg-001" secondAttribute="top" constant="20" id="fpw-c-top"/>
+                            <constraint firstItem="fpw-sg-001" firstAttribute="trailing" secondItem="fpw-sv-001" secondAttribute="trailing" constant="24" id="fpw-c-trail"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Reset Password" largeTitleDisplayMode="always" id="fpw-ni-001"/>
                     <connections>
+                        <outlet property="activityIndicator" destination="fpw-ai-001" id="fpw-out-ai"/>
                         <outlet property="emailTextField" destination="fpw-tf-email" id="fpw-out-email"/>
                         <outlet property="sendButton" destination="fpw-btn-send" id="fpw-out-btn"/>
                         <outlet property="statusLabel" destination="fpw-lbl-status" id="fpw-out-status"/>
-                        <outlet property="activityIndicator" destination="fpw-ai-001" id="fpw-out-ai"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="fpw-fr-001" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1265" y="1660"/>
+            <point key="canvasLocation" x="424" y="904"/>
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="v8f-ta-Zn6"/>
+        <segue reference="q9E-6e-uno"/>
+        <segue reference="pDO-OP-atx"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="AppLogo" width="1024" height="1024"/>

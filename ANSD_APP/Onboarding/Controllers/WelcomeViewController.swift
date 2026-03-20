@@ -82,8 +82,8 @@ class WelcomeViewController: UIViewController {
                 self?.googleSignInButton.isEnabled = true
                 
                 switch result {
-                case .success(let user):
-                    self?.restoreUserAndNavigate(user: user)
+                case .success(let (user, isNewUser)):
+                    self?.restoreUserAndNavigate(user: user, isNewUser: isNewUser)
                     
                 case .failure(let error):
                     self?.showAlert(title: "Sign In Failed", message: error.localizedDescription)
@@ -92,10 +92,10 @@ class WelcomeViewController: UIViewController {
         }
     }
     
-    private func restoreUserAndNavigate(user: User) {
+    private func restoreUserAndNavigate(user: User, isNewUser: Bool) {
         let uid = user.uid
         
-        // Restore user profile
+        // Fetch user profile from Realtime Database
         FirebaseManager.shared.fetchUserProfile(uid: uid) { profileData in
             DispatchQueue.main.async {
                 if let data = profileData {
@@ -212,9 +212,13 @@ class WelcomeViewController: UIViewController {
                                     QuickActionsRepository.shared.addAction(action)
                                 }
                                 
-                                // Navigate to home screen
+                                // Handle navigation based on user status
                                 DispatchQueue.main.async {
-                                    self.performSegue(withIdentifier: "googleSignInToHome", sender: self)
+                                    if isNewUser || VoiceProfileManager.shared.getVoiceProfile(byUID: uid) == nil {
+                                        self.performSegue(withIdentifier: "showCalibrationFromWelcome", sender: self)
+                                    } else {
+                                        self.performSegue(withIdentifier: "googleSignInToHome", sender: self)
+                                    }
                                 }
                             }
                         }
