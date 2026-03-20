@@ -26,39 +26,51 @@ class WelcomeViewController: UIViewController {
     }
     
     private func setupUI() {
-        // Logo styling
+        // App logo styling
         logoImageView.layer.cornerRadius = 20
         logoImageView.clipsToBounds = true
         
-        // Apple Sign In (Black with rounded corners)
-        appleSignInButton.layer.cornerRadius = 28
+        // Apple Sign In styling
+        appleSignInButton.layer.cornerRadius = 25
         appleSignInButton.backgroundColor = .black
         appleSignInButton.setTitleColor(.white, for: .normal)
         
-        // Google Sign In (Bordered/White)
-        googleSignInButton.layer.cornerRadius = 28
+        // Google Sign In styling (Capsule shape with border)
+        googleSignInButton.layer.cornerRadius = 25
         googleSignInButton.layer.borderWidth = 1
-        googleSignInButton.layer.borderColor = UIColor.systemGray4.cgColor
+        googleSignInButton.layer.borderColor = UIColor.systemGray3.cgColor
+        googleSignInButton.backgroundColor = .white
         
-        if let googleIcon = UIImage(named: "google_icon")?.withRenderingMode(.alwaysOriginal) {
-            googleSignInButton.setImage(googleIcon, for: .normal)
+        var googleConfig = UIButton.Configuration.plain()
+        if let googleIcon = UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal) {
+            let resizedIcon = googleIcon.resized(to: CGSize(width: 24, height: 24))
+            googleConfig.image = resizedIcon
         }
-
-        googleSignInButton.configuration?.imagePadding = 10
-        googleSignInButton.imageView?.contentMode = .scaleAspectFit
+        googleConfig.imagePadding = 12
+        googleConfig.titleAlignment = .center
         
-        createAccountButton.layer.cornerRadius = 28
-        createAccountButton.layer.borderWidth = 1
-        createAccountButton.layer.borderColor = UIColor.systemGray4.cgColor
+        var googleTitle = AttributedString("Sign in with Google")
+        googleTitle.font = .systemFont(ofSize: 17, weight: .medium)
+        googleTitle.foregroundColor = .black
+        googleConfig.attributedTitle = googleTitle
         
-        loginButton.layer.cornerRadius = 28
-        loginButton.layer.borderWidth = 1
-        loginButton.layer.borderColor = UIColor.systemGray4.cgColor
+        googleSignInButton.configuration = googleConfig
+        
+        // Secondary action buttons styling
+        let secondaryButtons = [createAccountButton, loginButton]
+        for button in secondaryButtons {
+            button?.layer.cornerRadius = 25
+            button?.layer.borderWidth = 1
+            button?.layer.borderColor = UIColor.systemGray4.cgColor
+        }
+        
+        createAccountButton.setTitle("Sign Up", for: .normal)
+        loginButton.setTitle("Sign In", for: .normal)
     }
 
     // MARK: - Actions
     @IBAction func appleSignInTapped(_ sender: UIButton) {
-        print("Apple Sign In initiated")
+        // Handle Apple Sign In
     }
     
     @IBAction func googleSignInTapped(_ sender: UIButton) {
@@ -71,11 +83,9 @@ class WelcomeViewController: UIViewController {
                 
                 switch result {
                 case .success(let user):
-                    print("Google Sign In Success: \(user.uid)")
                     self?.restoreUserAndNavigate(user: user)
                     
                 case .failure(let error):
-                    print("Google Sign In Error: \(error.localizedDescription)")
                     self?.showAlert(title: "Sign In Failed", message: error.localizedDescription)
                 }
             }
@@ -85,7 +95,7 @@ class WelcomeViewController: UIViewController {
     private func restoreUserAndNavigate(user: User) {
         let uid = user.uid
         
-        // --- Step 1: Fetch user profile (names) ---
+        // Restore user profile
         FirebaseManager.shared.fetchUserProfile(uid: uid) { profileData in
             DispatchQueue.main.async {
                 if let data = profileData {
@@ -99,7 +109,7 @@ class WelcomeViewController: UIViewController {
                     }
                 }
                 
-                // --- Step 2: Restore conversation history ---
+                // Restore conversation history
                 FirebaseManager.shared.fetchConversationHistory(uid: uid) { conversations in
                     DispatchQueue.main.async {
                         for dict in conversations {
@@ -164,12 +174,11 @@ class WelcomeViewController: UIViewController {
                                     )
                                     
                                     DataManager.shared.addConversation(convo)
-                                    print("Success: Restored full transcript for \(title)")
                                 }
                             }
                         }
                         
-                        // --- Step 3: Restore Quick Actions ---
+                        // Restore Quick Actions
                         FirebaseManager.shared.fetchQuickActions(uid: uid) { actions in
                             DispatchQueue.main.async {
                                 for dict in actions {
@@ -203,7 +212,7 @@ class WelcomeViewController: UIViewController {
                                     QuickActionsRepository.shared.addAction(action)
                                 }
                                 
-                                // --- Step 4: Navigate to Home ---
+                                // Navigate to home screen
                                 DispatchQueue.main.async {
                                     self.performSegue(withIdentifier: "googleSignInToHome", sender: self)
                                 }
@@ -227,5 +236,14 @@ class WelcomeViewController: UIViewController {
     
     @IBAction func loginTapped(_ sender: UIButton) {
         performSegue(withIdentifier: "showLoginAccount", sender: self)
+    }
+}
+
+// MARK: - UIImage Extension
+extension UIImage {
+    func resized(to size: CGSize) -> UIImage {
+        return UIGraphicsImageRenderer(size: size).image { _ in
+            draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 }

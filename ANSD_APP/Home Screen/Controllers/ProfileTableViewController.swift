@@ -167,14 +167,14 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     }
     
     private func handleClearAllDataTap() {
-        let alert = UIAlertController(title: "Clear All Data", message: "This will permanently delete ALL your conversation history and quick actions from both this device and the cloud. This action cannot be undone.", preferredStyle: .alert)
+        let actionSheet = UIAlertController(title: "Clear All Data", message: "This will permanently delete ALL your conversation history and quick actions from both this device and the cloud. This action cannot be undone.", preferredStyle: .actionSheet)
         
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Clear Everything", style: .destructive) { [weak self] _ in
+        actionSheet.addAction(UIAlertAction(title: "Clear Everything", style: .destructive) { [weak self] _ in
             self?.performGlobalDataWipe()
         })
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         
-        present(alert, animated: true)
+        present(actionSheet, animated: true)
     }
     
     private func performGlobalDataWipe() {
@@ -189,8 +189,8 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             // 2. Wipe Local SwiftData (DataManager)
             DataManager.shared.clearAllLocalData()
             
-            // 3. Wipe Quick Actions Disk Storage
-            QuickActionsRepository.shared.clearAllActions()
+            // 3. Wipe User Preferences & Quick Actions Disk Storage
+            FirebaseManager.shared.clearLocalUserDefaults()
             
             // 4. Feedback
             let success = UIAlertController(title: "Data Cleared", message: "All your history and actions have been wiped.", preferredStyle: .alert)
@@ -325,13 +325,15 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     }
     
     // MARK: - Sign Out
-    @objc private func confirmSignOut() {
-        let alert = UIAlertController(title: "Log Out", message: "Are you sure you want to log out? This will clear all local data.", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Log Out", style: .destructive) { [weak self] _ in
+    @objc    private func confirmSignOut() {
+        let actionSheet = UIAlertController(title: "Log Out", message: "Are you sure you want to log out?", preferredStyle: .actionSheet)
+        
+        actionSheet.addAction(UIAlertAction(title: "Log Out", style: .destructive) { [weak self] _ in
             self?.performSignOut()
         })
-        present(alert, animated: true)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        present(actionSheet, animated: true)
     }
     
     private func performSignOut() {

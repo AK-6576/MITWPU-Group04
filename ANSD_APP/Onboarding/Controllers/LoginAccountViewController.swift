@@ -32,11 +32,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     // MARK: - UI Setup
     
     private func setupUI() {
-        // Style the Sign In button
+        // Sign In button styling
         loginButton.layer.cornerRadius = 14
         loginButton.clipsToBounds = true
         
-        // Style the text fields with consistent rounded look
+        // Text field styling for consistent appearance
         let fields = [emailTextField, passwordTextField]
         for field in fields {
             guard let field = field else { continue }
@@ -114,10 +114,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                 
                 switch result {
                 case .success(let user):
-                    print("Successfully logged in: \(user.uid)")
                     let uid = user.uid
-                    
-                    // --- Step 1: Fetch user profile (names) ---
+                    // Fetch user profile
                     FirebaseManager.shared.fetchUserProfile(uid: uid) { profileData in
                         DispatchQueue.main.async {
                             if let data = profileData {
@@ -130,6 +128,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                                     UserDefaults.standard.set(lastName, forKey: "user_last_name")
                                 }
                             } else {
+                                // Fallback to email prefix if profile data is not available
                                 let emailPrefix = email.components(separatedBy: "@").first ?? ""
                                 let firstName = emailPrefix.components(separatedBy: ".").first?.capitalized ?? emailPrefix
                                 if !firstName.isEmpty {
@@ -137,14 +136,14 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                                 }
                             }
                             
-                            // --- Step 2: Restore conversation history ---
+                            // Restore conversation history
                             FirebaseManager.shared.fetchConversationHistory(uid: uid) { conversations in
                                 DispatchQueue.main.async {
                                     for dict in conversations {
                                         guard let id = dict["id"] as? String,
                                               let title = dict["title"] as? String else { continue }
                                         
-                                        // Skip if already exists locally
+                                        // Skip if conversation already exists locally
                                         if DataManager.shared.fetchConversation(byId: id) != nil { continue }
                                         
                                         // Fetch FULL DATA (Messages + Participants)
@@ -202,12 +201,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                                                 )
                                                 
                                                 DataManager.shared.addConversation(convo)
-                                                print("Success: Restored full transcript for \(title)")
                                             }
                                         }
                                     }
                                     
-                                    // --- Step 3: Restore Quick Actions ---
+                                    // Restore Quick Actions
                                     FirebaseManager.shared.fetchQuickActions(uid: uid) { actions in
                                         DispatchQueue.main.async {
                                             for dict in actions {
@@ -241,9 +239,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                                                 QuickActionsRepository.shared.addAction(action)
                                             }
                                             
-                                            // --- Step 4: Voice profile is natively stored in SwiftData. ---
                                             DispatchQueue.main.async {
-                                                // All data restored — navigate to Home
+                                                // Navigate to Home
                                                 self?.performSegue(withIdentifier: "loginToHome", sender: self)
                                             }
                                         }

@@ -94,7 +94,7 @@
                                                             <constraint firstAttribute="height" constant="50" id="Ypa-QE-mv7"/>
                                                         </constraints>
                                                         <state key="normal" title="Button"/>
-                                                        <buttonConfiguration key="configuration" style="filled" title="Create Account" cornerStyle="dynamic" titleAlignment="center">
+                                                         <buttonConfiguration key="configuration" style="filled" title="Sign Up" cornerStyle="dynamic" titleAlignment="center">
                                                             <color key="baseForegroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <color key="baseBackgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </buttonConfiguration>
@@ -109,7 +109,7 @@
                                                         </constraints>
                                                         <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         <state key="normal" title="Button"/>
-                                                        <buttonConfiguration key="configuration" style="plain" title="Login to existing account">
+                                                        <buttonConfiguration key="configuration" style="plain" title="Sign In">
                                                             <backgroundConfiguration key="background"/>
                                                         </buttonConfiguration>
                                                         <connections>
@@ -175,7 +175,7 @@
             </objects>
             <point key="canvasLocation" x="1265" y="148"/>
         </scene>
-        <!--Create Account View Controller-->
+        <!--Sign Up View Controller-->
         <scene sceneID="fnF-oG-5DV">
             <objects>
                 <viewController id="lGr-uB-ayk" customClass="CreateAccountViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
@@ -186,10 +186,10 @@
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" bounces="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YQT-8V-Bny">
                                 <rect key="frame" x="0.0" y="172" width="393" height="612"/>
                                 <subviews>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="LTk-Bg-E9B" userLabel="CreateAccountView">
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="LTk-Bg-E9B" userLabel="SignUpView">
                                         <rect key="frame" x="0.0" y="0.0" width="394" height="589"/>
                                         <subviews>
-                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="iI1-qO-e7o" userLabel="Credientials">
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="iI1-qO-e7o" userLabel="Credentials">
                                                 <rect key="frame" x="24" y="24" width="346" height="545"/>
                                                 <subviews>
                                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="lCM-jv-Q9z" userLabel="FNStack">

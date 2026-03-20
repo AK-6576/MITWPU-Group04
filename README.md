@@ -69,12 +69,13 @@ Built as a capstone project by **MIT-WPU Group 4**, SyncWave is aimed at improvi
 ### 💾 Persistent Data & History
 - **SwiftData** for local persistence of conversations, messages, participants, and voice profiles.
 - **View Conversations** screen with full chat history replay.
+- **Clear All Data** — one-tap global wipe of all local history and cloud backups (Firebase).
 - Context-menu deletion with confirmation alerts.
 - Data synced to personal Firebase folder for backup.
 
 ### 👤 User Profiles
 - Account creation and login via **Firebase Authentication**.
-- Customizable profile with name and photo (stored in `UserDefaults`).
+- Customizable profile with name, birth date, and photo (stored in `UserDefaults`).
 - Dynamic greeting on the home screen.
 
 ---
@@ -93,7 +94,7 @@ ANSD_APP/
 │   │   ├── VoiceProfile.swift             # SwiftData model for voice embeddings
 │   │   └── VoiceProfileManager.swift      # CRUD for voice profiles
 │   ├── Views/
-│   │   └── Onboarding.storyboard         # Storyboard layouts
+│   │   └── Onboarding.storyboard
 │   └── Controllers/
 │       ├── WelcomeViewController.swift
 │       ├── CreateAccountViewController.swift
@@ -102,104 +103,72 @@ ANSD_APP/
 │
 ├── Home Screen/
 │   ├── Models/
-│   │   └── SignUpScreen.swift             # FormField data struct
+│   │   ├── SignUpScreen.swift
+│   │   └── ProfileManager.swift            # Singleton for user preferences
 │   ├── Views/
 │   │   ├── Home.storyboard
-│   │   ├── GreetingViewCell.swift          # Personalized greeting header
-│   │   ├── ConversationCardCell.swift      # Conversation + Quick Action cells
-│   │   ├── HeaderCells.swift              # Section header cell
-│   │   └── SignUpTableViewCell.swift       # Sign-up form cell
+│   │   ├── GreetingViewCell.swift
+│   │   ├── ConversationCardCell.swift
+│   │   ├── HeaderCells.swift
+│   │   └── SignUpTableViewCell.swift
 │   └── Controllers/
-│       ├── HomeViewController.swift        # Dashboard with Quick Actions + History
-│       ├── ProfileTableViewController.swift
+│       ├── HomeViewController.swift
+│       ├── ProfileTableViewController.swift # Settings + Data Management
 │       └── SignUpViewController.swift
 │
 ├── Quick Captions/
 │   ├── Models/
-│   │   ├── QuickCaptionsChat.swift        # Chat message struct
-│   │   ├── QuickCaptionsParticipantData.swift
-│   │   ├── AudioDiarizer.swift            # CoreML-based speaker ID engine
-│   │   └── TextCleanupManager.swift       # Post-processing transcript cleanup
+│   │   ├── QuickCaptionsChat.swift
+│   │   ├── AudioDiarizer.swift
+│   │   └── TextCleanupManager.swift
 │   ├── Views/
-│   │   ├── QuickCaptionsChatCell.swift    # Incoming/outgoing chat cells
-│   │   └── QuickCaptionsSummaryCells.swift # Summary card cells
+│   │   ├── QuickCaptionsChatCell.swift
+│   │   └── QuickCaptionsSummaryCells.swift
 │   └── Controllers/
-│       ├── QuickCaptioningViewController.swift  # Live captioning + diarization
-│       └── SummaryViewController.swift          # AI summary + PDF export
+│       ├── QuickCaptioningViewController.swift
+│       └── SummaryViewController.swift
 │
 ├── Quick Actions/
 │   ├── Models/
-│   │   ├── ActionRoutineItem.swift        # Routine item struct
-│   │   ├── ActionParticipantData.swift
-│   │   ├── ActionSessions.swift
-│   │   ├── ActionChat.swift               # Chat enums, structs, protocols
-│   │   ├── ActionRoutineData.swift        # Routine repository
-│   │   ├── RoutineModels.swift
-│   │   ├── QuickActionsData.swift         # Repository (UserDefaults-backed)
-│   │   ├── NotificationManager.swift      # Local notification scheduling
-│   │   └── Utils.swift                    # Shared utilities
+│   │   ├── ActionRoutineItem.swift
+│   │   ├── QuickActionsRepository.swift   # Local action storage
+│   │   └── NotificationManager.swift
 │   ├── Views/
 │   │   ├── Action.storyboard
-│   │   ├── ActionChatCell.swift
-│   │   ├── ActionSummaryCells.swift
-│   │   ├── CategoryTableViewCell.swift
-│   │   ├── QuickActionCell.swift
-│   │   └── RoutineTableViewCell.swift
+│   │   └── QuickActionCell.swift
 │   └── Controllers/
 │       ├── QuickActionsViewController.swift
-│       ├── ActionJoinViewController.swift
-│       ├── ActionSummaryViewController.swift
-│       ├── AddActionTableViewController.swift
-│       ├── InfoViewController.swift
-│       ├── ParticipantsViewController.swift
 │       └── RoutineViewController.swift
 │
 ├── Group - New/
 │   ├── Models/
-│   │   ├── GroupNewChat.swift
-│   │   ├── GroupNewParticipantData.swift
-│   │   └── FirebaseManager.swift          # Singleton: Auth, RTDB, presence
+│   │   └── FirebaseManager.swift          # Auth, RTDB, synchronization
 │   ├── Views/
-│   │   ├── Group-New.storyboard
-│   │   ├── ContactCell.swift
-│   │   ├── GroupNewChatCell.swift
-│   │   └── GroupNewSummaryCells.swift
+│   │   └── Group-New.storyboard
 │   └── Controllers/
-│       ├── GroupNewViewController.swift
-│       ├── GroupNewSummaryViewController.swift
-│       └── ParticipantSelectionViewController.swift
+│       └── GroupNewViewController.swift
 │
 ├── Group - Join/
-│   ├── Models/
-│   │   ├── GroupJoinChat.swift
-│   │   ├── GroupJoinParticipantData.swift
-│   │   └── GroupJoinSessions.swift
 │   ├── Views/
-│   │   ├── Group-Join.storyboard
-│   │   ├── GroupJoinChatCell.swift
-│   │   └── GroupJoinSummaryCells.swift
+│   │   └── Group-Join.storyboard
 │   └── Controllers/
-│       ├── GroupJoinViewController.swift
-│       ├── GroupJoinSummaryViewController.swift
-│       └── SessionSelectionViewController.swift
+│       └── GroupJoinViewController.swift
 │
 ├── View Conversations/
 │   ├── Models/
-│   │   ├── ConversationDataModels.swift   # Conversation, Message, Participant
-│   │   └── DataManager.swift             # SwiftData CRUD operations
+│   │   ├── ConversationDataModels.swift
+│   │   └── DataManager.swift              # SwiftData CRUD logic
 │   ├── Views/
-│   │   ├── ViewConvo.storyboard
-│   │   ├── ConversationCollectionViewCell.xib
-│   │   ├── CollectionViewCell.swift
-│   │   └── ConversationCollectionViewCell.swift
+│   │   └── ViewConvo.storyboard
 │   └── Controllers/
 │       ├── ViewConversationCollectionController.swift
-│       ├── ChatHistoryViewController.swift
-│       └── CalenderViewController.swift
+│       └── ChatHistoryViewController.swift
 │
-└── Assets.xcassets/                   # App icons, images, color sets
-
-VL1004.mlpackage/                      # CoreML voice embedding model
+└── Models/                            # Shared data structures
+    ├── AudioDiarizer.swift
+    ├── FirebaseManager.swift
+    ├── LanguageManager.swift
+    └── ProfileManager.swift
 ```
 
 ---
@@ -210,16 +179,13 @@ VL1004.mlpackage/                      # CoreML voice embedding model
 |---|---|
 | **Language** | Swift 5 |
 | **UI Framework** | UIKit + Storyboards |
-| **Persistence** | SwiftData (`ModelContainer`, `ModelContext`) |
-| **Authentication** | Firebase Auth |
-| **Real-Time Sync** | Firebase Realtime Database |
-| **Speech-to-Text** | Apple Speech Framework (`SFSpeechRecognizer`) |
-| **Speaker ID** | CoreML (`VL1004.mlpackage`) + Accelerate (vDSP) |
-| **AI Summaries** | Apple Intelligence (`FoundationModels`) |
-| **Notifications** | UserNotifications framework |
-| **Location** | CoreLocation + MapKit (reverse geocoding) |
-| **PDF Export** | UIGraphicsPDFRenderer |
-| **Dependency Mgmt** | Swift Package Manager |
+| **Local Database** | SwiftData (Voice Profiles, History) |
+| **Cloud Database** | Firebase Realtime Database (Live Sync) |
+| **Authentication** | Firebase Auth + Google Sign-In |
+| **Speech-to-Text** | Apple Speech Framework |
+| **Speaker ID** | CoreML (VL1004) + Accelerate |
+| **AI Summaries** | Apple Intelligence (FoundationModels) |
+| **Location** | CoreLocation (Reverse Geocoding) |
 
 ---
 

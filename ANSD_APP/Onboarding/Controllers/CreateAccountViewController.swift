@@ -32,7 +32,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        title = "Create Account"
+        title = "Sign Up"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
         
@@ -60,17 +60,18 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     // MARK: - UI Setup
     
     private func setupUI() {
-        // Round the continue button for that sleek SyncWave look
+        // Continue button styling
         continueButton.layer.cornerRadius = 28
         continueButton.clipsToBounds = true
+        continueButton.setTitle("Sign Up", for: .normal)
         
-        // Upgrade the text fields to look modern and soft
+        // Text field styling
         for field in orderedTextFields {
             field.layer.cornerRadius = 12
             field.backgroundColor = .systemGray6
             field.borderStyle = .none
             
-            // Add a little breathing room inside the text boxes
+            // Add horizontal padding
             let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: field.frame.height))
             field.leftView = paddingView
             field.leftViewMode = .always
@@ -175,8 +176,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     @IBAction func continueTapped(_ sender: UIButton) {
         // Dismiss keyboard first
         view.endEditing(true)
-        
-        // 1. Validate Password Match
+        // Validate password match
         guard let password = passwordTextField.text,
               let confirmPassword = confirmPasswordTextField.text,
               password == confirmPassword else {
@@ -186,7 +186,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
-        // 2. Package the data
+        // Prepare user details for registration
         let firstName = firstNameTextField.text ?? ""
         let lastName = lastNameTextField.text ?? ""
         let userDetails = [
@@ -196,7 +196,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
             "password": password
         ]
 
-        // 3. Register with Firebase Auth
+        // Register with Firebase Auth
         continueButton.isEnabled = false
         FirebaseManager.shared.createAccount(details: userDetails) { [weak self] result in
             DispatchQueue.main.async {
@@ -205,7 +205,7 @@ class CreateAccountViewController: UIViewController, UITextFieldDelegate {
 
                 switch result {
                 case .success:
-                    // Save the user's name so the Home screen large title can display it
+                    // Store user names locally for profile display
                     UserDefaults.standard.set(firstName, forKey: "user_first_name")
                     UserDefaults.standard.set(lastName, forKey: "user_last_name")
                     self.performSegue(withIdentifier: "showCalibration", sender: self)

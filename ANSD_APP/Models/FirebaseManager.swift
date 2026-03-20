@@ -20,18 +20,18 @@ class FirebaseManager {
     private let databaseRef = Database.database(url: "https://ansd-f90fc-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     
     private init() {}
-
+    
     // Helper to get current authenticated user's ID
     private var currentUID: String? {
         return Auth.auth().currentUser?.uid
     }
-
+    
     // MARK: - Safety Helper
     /// Firebase keys cannot contain . # $ [ ]
     /// This replaces those characters with underscores to prevent app crashes.
     func sanitizeKey(_ key: String) -> String {
         return key.components(separatedBy: CharacterSet(charactersIn: ".#$[]"))
-                  .joined(separator: "_")
+            .joined(separator: "_")
     }
     // MARK: - Session Management
     
@@ -48,7 +48,7 @@ class FirebaseManager {
             // print("DEBUG: Firebase - Cannot setup session with empty IDs")
             return
         }
-
+        
         // CRITICAL: Both Host and Joiner point to the HOST'S path to share messages
         // Path: users -> {hostUID} -> conversations -> {conversationID}
         self.ref = databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID)
@@ -60,12 +60,12 @@ class FirebaseManager {
             // print("DEBUG: Firebase - Joiner connected to room at users/\(safeUID)/conversations/\(safeConvID)")
         }
     }
-
+    
     func endSession() {
         // Only the host usually triggers this, but it updates the shared 'status' node
         ref?.child("status").setValue("ended")
     }
-
+    
     func observeSessionStatus(completion: @escaping (String) -> Void) {
         ref?.child("status").observe(.value) { snapshot in
             if let status = snapshot.value as? String {
@@ -73,7 +73,7 @@ class FirebaseManager {
             }
         }
     }
-
+    
     // MARK: - Message Handling
     
     func observeMessages(completion: @escaping ([String: Any]) -> Void) {
@@ -81,7 +81,7 @@ class FirebaseManager {
             // print("DEBUG: Firebase - Observer failed. Call setupSession first.")
             return
         }
-
+        
         // .childAdded pulls all previous history immediately AND stays active for new messages.
         sessionRef.observe(.childAdded) { snapshot, _ in
             if let value = snapshot.value as? [String: Any] {
@@ -89,7 +89,7 @@ class FirebaseManager {
             }
         }
     }
-
+    
     func send(text: String, sender: String, senderID: String) {
         let dict: [String: Any] = [
             "text": text,
@@ -100,7 +100,7 @@ class FirebaseManager {
         // This writes to the 'messages' node of whatever room was set in setupSession()
         ref?.child("messages").childByAutoId().setValue(dict)
     }
-
+    
     // MARK: - Mirroring Logic (Sync across Users)
     
     /// Saves room metadata to the joiner's personal profile so it appears in their history.
@@ -121,14 +121,14 @@ class FirebaseManager {
         // Save to the JOINER'S personal node: users/{joinerUID}/conversations/{roomID}
         databaseRef.child("users").child(safeMyUID).child("conversations").child(safeConvID).updateChildValues(linkData)
     }
-
+    
     // MARK: - Conversation Sync (Local SwiftData to Personal Firebase)
     
     func saveConversationMetadata(_ conversation: Conversation) {
         guard let uid = currentUID else { return }
         let safeUID = sanitizeKey(uid)
         let safeConvID = sanitizeKey(conversation.id)
-
+        
         let metadata: [String: Any] = [
             "id": conversation.id,
             "title": conversation.title,
@@ -217,7 +217,7 @@ class FirebaseManager {
             completion(lastError)
         }
     }
-
+    
     /// Saves a COMPLETE conversation including all messages and participants to history.
     func saveFullConversation(_ conversation: Conversation) {
         guard let uid = currentUID else { return }
@@ -306,13 +306,13 @@ class FirebaseManager {
         ref?.removeAllObservers()
         ref = nil
     }
-
+    
     // MARK: - Quick Action Sync Integration
     func saveQuickActionMetadata(_ action: RoutineConversation, hostUID: String) {
         let safeHost = sanitizeKey(hostUID)
         guard let code = action.roomCode else { return }
         let safeCode = sanitizeKey(code)
-
+        
         let metadata: [String: Any] = [
             "id": action.id,
             "categoryTitle": action.categoryTitle,
@@ -423,7 +423,7 @@ class FirebaseManager {
         let safeCode = sanitizeKey(code)
         databaseRef.child("room_registry").child(safeCode).setValue(["hostUID": hostUID])
     }
-
+    
     /// Guest calls this to find the hostUID using only the Room Code
     func findHostID(for code: String, completion: @escaping (String?) -> Void) {
         let safeCode = sanitizeKey(code)
@@ -503,22 +503,22 @@ class FirebaseManager {
     
     func createAccount(details: [String: String], completion: @escaping (Result<User, Error>) -> Void) {
         guard let email = details["email"], let password = details["password"] else { return }
-
+        
         Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
-
+            
             guard let user = authResult?.user else { return }
-
+            
             let userProfile: [String: Any] = [
                 "firstName": details["firstName"] ?? "",
                 "lastName": details["lastName"] ?? "",
                 "email": email,
                 "createdAt": ServerValue.timestamp()
             ]
-
+            
             let safeUID = self.sanitizeKey(user.uid)
             let safeEmail = self.sanitizeKey(email.lowercased())
             
@@ -535,20 +535,20 @@ class FirebaseManager {
             }
         }
     }
-
+    
     func loginUser(details: [String: String], completion: @escaping (Result<User, Error>) -> Void) {
         guard let email = details["email"], let password = details["password"] else {
             let error = NSError(domain: "Auth", code: 0, userInfo: [NSLocalizedDescriptionKey: "Email or Password missing"])
             completion(.failure(error))
             return
         }
-
+        
         Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
-
+            
             if let user = authResult?.user {
                 completion(.success(user))
             }
@@ -608,7 +608,7 @@ class FirebaseManager {
             completion(snapshot.value as? String)
         }
     }
-
+    
     /// DEPRECATED: Use lookupUID(byEmail:) for security
     func lookupUID(byFirstName name: String, completion: @escaping (String?) -> Void) {
         databaseRef.child("users").observeSingleEvent(of: .value) { snapshot in
@@ -631,22 +631,27 @@ class FirebaseManager {
     func signOut(completion: @escaping (Result<Void, Error>) -> Void) {
         do {
             try Auth.auth().signOut()
-            
-            // No need to wipe SwiftData — data is now scoped per UID.
-            // Just clear the in-memory Quick Actions array and user-preference keys.
-            QuickActionsRepository.shared.clearAllActions()
-            
-            // Wipe generic user preferences to ensure no lingering UI state
-            let defs = UserDefaults.standard
-            let keysToRemove = ["user_first_name", "user_last_name", "user_gender", "user_dob", "profileImage"]
-            for key in keysToRemove {
-                defs.removeObject(forKey: key)
-            }
-            defs.synchronize()
-            
+            print("Successfully signed out")
             completion(.success(()))
-        } catch let error {
-            completion(.failure(error))
+        } catch let signOutError {
+            print("Error signing out: \(signOutError)")
+            completion(.failure(signOutError))
         }
+    }
+    
+    /// Clears all local user-related data from UserDefaults and repositories.
+    /// This should only be called when the user explicitly chooses to "Clear All Data".
+    func clearLocalUserDefaults() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "user_first_name")
+        defaults.removeObject(forKey: "user_last_name")
+        defaults.removeObject(forKey: "user_gender")
+        defaults.removeObject(forKey: "user_dob")
+        defaults.removeObject(forKey: "profileImage")
+        
+        // Clear local repository
+        QuickActionsRepository.shared.clearAllActions()
+        
+        print("Local user data and repositories cleared")
     }
 }
