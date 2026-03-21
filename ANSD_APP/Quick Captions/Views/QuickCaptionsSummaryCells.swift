@@ -70,6 +70,12 @@ class QuickCaptionsSummaryCardCell: UITableViewCell, UITextFieldDelegate {
         locationLabel.text = location ?? "Unknown Location"
     }
     
+    @IBAction func titleChanged(_ sender: UITextField) {
+        if let text = sender.text, !text.isEmpty {
+            delegate?.didChangeTitle(text: text)
+        }
+    }
+    
     func textFieldDidEndEditing(_ textField: UITextField) {
         if let text = textField.text, !text.isEmpty {
             delegate?.didChangeTitle(text: text)

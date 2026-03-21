@@ -53,6 +53,8 @@ class QuickCaptioningViewController: UIViewController,
     
     var consumedTranscriptOffset = 0
     var hasEnrolled = false
+    private var forceNewBubble = false
+    private var cleanupIDs: [UUID] = []
 
     // MARK: - Lifecycle
     
@@ -174,6 +176,7 @@ class QuickCaptioningViewController: UIViewController,
         if isRecording { return }
         consumedTranscriptOffset = 0
         transcriptBuffer = ""
+        forceNewBubble = false
         
         startSpeechRecognition()
         try? startAudioEngine()
@@ -238,6 +241,7 @@ class QuickCaptioningViewController: UIViewController,
                 // Clean the last active bubble since the sentence is done
                 if !self.messages.isEmpty {
                     self.finalizeBubble(at: self.messages.count - 1)
+                    self.forceNewBubble = true
                 }
                 
                 self.transcriptBuffer = ""
@@ -248,6 +252,12 @@ class QuickCaptioningViewController: UIViewController,
                     self?.holdTimer = nil
                     self?.lockedSpeakerID = nil
                     self?.processBuffer()
+                    
+                    // Seal the bubble because of a long pause
+                    if let messages = self?.messages, !messages.isEmpty {
+                        self?.finalizeBubble(at: messages.count - 1)
+                        self?.forceNewBubble = true
+                    }
                 }
             }
         }
@@ -264,13 +274,15 @@ class QuickCaptioningViewController: UIViewController,
         // Check LAST message
         if let lastMsg = messages.last,
            let lastID = lastMsg.speakerID,
-           lastID == speakerID {
+           lastID == speakerID,
+           !self.forceNewBubble {
             
             // SAME SPEAKER: Append
             updateLastBubble(with: textToFlush)
             
         } else {
-            // DIFFERENT SPEAKER: Split
+            // DIFFERENT SPEAKER or FORCED BREAK: Split
+            self.forceNewBubble = false
             
             // Seal previous bubble
             if !messages.isEmpty {
@@ -295,29 +307,57 @@ class QuickCaptioningViewController: UIViewController,
             name = diarizer.speakerNames[speakerID] ?? "Speaker \(speakerID)"
         }
         
-        DispatchQueue.main.async {
-            self.appendNewBubble(text: text, isBlue: isBlue, name: name, id: speakerID)
-        }
+        // Execute synchronously to prevent state desyncs in loops
+        self.appendNewBubble(text: text, isBlue: isBlue, name: name, id: speakerID)
     }
     
     private func updateLastBubble(with text: String) {
         DispatchQueue.main.async {
             guard !self.messages.isEmpty else { return }
-            let lastIndex = self.messages.count - 1
             
-            let currentText = self.messages[lastIndex].text
-            let combinedText = currentText + text
+            var textToProcess = text
             
-            self.updateBubbleUI(at: lastIndex, text: combinedText)
-            
-            // Focus on semantic completion instead of arbitrary character limits
-            if combinedText.hasSuffix(".") || combinedText.hasSuffix("?") || combinedText.hasSuffix("!") || combinedText.hasSuffix(".\n") || combinedText.hasSuffix("?\n") || combinedText.hasSuffix("!\n") {
-                self.finalizeBubble(at: lastIndex)
+            while true {
+                let activeIndex = self.messages.count - 1
+                let currentText = self.messages[activeIndex].text
+                let combinedText = currentText == "..." ? textToProcess : currentText + textToProcess
                 
-                // Start a fresh bubble for the same speaker
-                if let speakerID = self.messages[lastIndex].speakerID {
+                var splitRange: Range<String.Index>? = nil
+                let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                
+                for boundary in boundaries {
+                    if let range = combinedText.range(of: boundary) {
+                        if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
+                            splitRange = range
+                        }
+                    }
+                }
+                
+                guard let range = splitRange else {
+                    self.updateBubbleUI(at: activeIndex, text: combinedText)
+                    break
+                }
+                
+                let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                var secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                self.updateBubbleUI(at: activeIndex, text: firstPart)
+                self.finalizeBubble(at: activeIndex)
+                
+                if let speakerID = self.messages[activeIndex].speakerID {
                     self.flushBufferToNewBubble(text: "...", speakerID: speakerID)
                 }
+                
+                textToProcess = secondPart
+                if textToProcess.isEmpty { break }
+            }
+            
+            // Fallback: If it exactly ends with punctuation (no trailing space), seal for next iteration
+            let activeIndex = self.messages.count - 1
+            let finalCombinedText = self.messages[activeIndex].text
+            if finalCombinedText != "..." && (finalCombinedText.hasSuffix(".") || finalCombinedText.hasSuffix("?") || finalCombinedText.hasSuffix("!")) {
+                self.finalizeBubble(at: activeIndex)
+                self.forceNewBubble = true
             }
         }
     }
@@ -325,16 +365,71 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Cleanup & UI Updates
     
     private func finalizeBubble(at index: Int) {
+        guard index < messages.count, index < cleanupIDs.count else { return }
         let text = messages[index].text
         guard messages[index].sender != "Listening...", messages[index].sender != "System" else { return }
         
         // 1. Update UI with raw text immediately for 0ms perceived latency
         self.updateBubbleUI(at: index, text: text)
 
+        let targetID = cleanupIDs[index]
+
         // 2. Background cleanup starts
-        cleanupManager.scheduleCleanup(text: text, at: index) { [weak self] idx, cleaned in
-            // 3. Smoothly replace with refined AI version
-            self?.updateBubbleUI(at: idx, text: cleaned)
+        cleanupManager.scheduleCleanup(text: text, at: index) { [weak self] _, cleaned in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                guard let currentIndex = self.cleanupIDs.firstIndex(of: targetID) else { return }
+                
+                // Scan the AI-cleaned bubble and split any newly discovered sentences
+                var textToProcess = cleaned
+                var sentences: [String] = []
+                while true {
+                    var splitRange: Range<String.Index>? = nil
+                    let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                    for boundary in boundaries {
+                        if let range = textToProcess.range(of: boundary) {
+                            if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
+                                splitRange = range
+                            }
+                        }
+                    }
+                    guard let range = splitRange else {
+                        if !textToProcess.isEmpty && textToProcess != "..." { sentences.append(textToProcess) }
+                        break
+                    }
+                    let firstPart = String(textToProcess[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    sentences.append(firstPart)
+                    textToProcess = String(textToProcess[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if textToProcess.isEmpty { break }
+                }
+                
+                if sentences.isEmpty { return }
+                
+                // Replace the primary bubble with the first clean sentence
+                self.messages[currentIndex].text = sentences[0]
+                
+                // Safely spawn fresh bubbles for the remainder of the synthesized block
+                let originalMessage = self.messages[currentIndex]
+                var newMessages: [QuickCaptionsChat] = []
+                var newIDs: [UUID] = []
+                
+                for i in 1..<sentences.count {
+                    var newMsg = originalMessage
+                    newMsg.text = sentences[i]
+                    newMessages.append(newMsg)
+                    newIDs.append(UUID())
+                }
+                
+                if !newMessages.isEmpty {
+                    self.messages.insert(contentsOf: newMessages, at: currentIndex + 1)
+                    self.cleanupIDs.insert(contentsOf: newIDs, at: currentIndex + 1)
+                }
+                
+                UIView.performWithoutAnimation {
+                    self.collectionView.reloadData()
+                }
+                self.scrollToBottom()
+            }
         }
     }
     
@@ -355,7 +450,10 @@ class QuickCaptioningViewController: UIViewController,
     }
     
     private func appendNewBubble(text: String, isBlue: Bool, name: String, id: Int?) {
-        if let last = messages.last, (last.sender == "Listening..." || last.sender == "System") { messages.removeLast() }
+        if let last = messages.last, (last.sender == "Listening..." || last.sender == "System") {
+            messages.removeLast()
+            if !cleanupIDs.isEmpty { cleanupIDs.removeLast() }
+        }
 
         let senderID = id != nil ? String(id!) : "system"
         var newMessage = QuickCaptionsChat(sender: name, senderID: senderID, text: text, isIncoming: !isBlue)
@@ -365,6 +463,7 @@ class QuickCaptioningViewController: UIViewController,
         }
 
         messages.append(newMessage)
+        cleanupIDs.append(UUID())
         currentMessageIndex = messages.count - 1
         if let sid = id {
             currentSpeakerID = sid

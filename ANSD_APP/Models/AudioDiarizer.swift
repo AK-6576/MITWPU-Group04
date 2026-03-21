@@ -52,6 +52,11 @@ class AudioDiarizer: ObservableObject {
     private let learningThreshold:   Float = 0.85
     private let learningRate:        Float = 0.05
 
+    // MARK: - Voice Activity Detection (VAD) Gatekeeper
+    // Decibel threshold for active human speech context vs silence.
+    private let vadThresholdDB: Float = -35.0
+    private var isSilent: Bool = true
+    
     // MARK: - Frame Voting
     //
     // A speaker change only commits after votingThreshold consecutive frames agree
@@ -60,6 +65,11 @@ class AudioDiarizer: ObservableObject {
     private let votingThreshold = 3
     private var voteCount:    [Int: Int] = [:]   // speakerID → consecutive frame count
     private var leadingVoteID: Int?               // speaker currently accumulating votes
+
+    // MARK: - 3D Spectral Clustering (Online Memory Bank)
+    // Instead of a single drifting average, we maintain a robust topography of the speaker's voice.
+    private var speakerClusterMemory: [Int: [[Float]]] = [:]
+    private let maxClusterSize = 35
 
     @Published var speakerProfiles: [Int: [Float]] = [:]
     @Published var speakerNames:    [Int: String] = [:]
@@ -108,6 +118,7 @@ class AudioDiarizer: ObservableObject {
         self.enrollmentCompletion = completion
         self.collectedSamples.removeAll()
         self.speakerProfiles.removeAll()
+        self.speakerClusterMemory.removeAll()
         self.speakerNames.removeAll()
     }
 
@@ -151,6 +162,14 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Processing Logic
 
     private func processSamples(_ samples: [Float]) {
+        // VAD processing on incoming micro-frame
+        var frameRms: Float = 0
+        vDSP_rmsqv(samples, 1, &frameRms, vDSP_Length(samples.count))
+        let frameDb = 20 * log10(max(frameRms, 1e-8))
+        
+        let wasSilent = self.isSilent
+        self.isSilent = (frameDb < vadThresholdDB)
+
         if collectedSamples.isEmpty {
             collectedSamples.reserveCapacity(requiredSamples + stride)
         }
@@ -175,7 +194,13 @@ class AudioDiarizer: ObservableObject {
             collectedSamples.removeAll(keepingCapacity: true)
         }
 
-        scheduleInference(on: chunk)
+        // Only run the heavy inference if we are actively detecting voice activity.
+        if !isSilent {
+            scheduleInference(on: chunk)
+        } else if !wasSilent {
+            // Trailing edge: forced flush on utterance finish
+            scheduleInference(on: chunk)
+        }
     }
 
     // MARK: - Inference Scheduling
@@ -229,6 +254,7 @@ class AudioDiarizer: ObservableObject {
         if isEnrolling {
             print("Enrollment Complete. ID 0 Saved.")
             speakerProfiles[0] = normVector
+            speakerClusterMemory[0] = [normVector]
             if speakerNames[0] == nil { speakerNames[0] = "Me" }
             isEnrolling = false
             enrollmentCompletion?(true)
@@ -236,7 +262,7 @@ class AudioDiarizer: ObservableObject {
             return
         }
 
-        if speakerProfiles.isEmpty {
+        if speakerClusterMemory.isEmpty {
             createNewSpeaker(with: normVector)
             return
         }
@@ -245,8 +271,14 @@ class AudioDiarizer: ObservableObject {
         var maxScore: Float = -1.0
         var debugString = "Scores: "
 
-        for (id, profile) in speakerProfiles {
-            let score = cosineSim(normVector, profile)
+        for (id, cluster) in speakerClusterMemory {
+            // Nearest Neighbor Topography (Search the entire mathematical footprint of the person's voice)
+            var bestClusterScore: Float = -1.0
+            for memVector in cluster {
+                let s = cosineSim(normVector, memVector)
+                if s > bestClusterScore { bestClusterScore = s }
+            }
+            let score = bestClusterScore
             let name  = speakerNames[id] ?? "Spk\(id)"
             debugString += "\(name): \(String(format: "%.3f", score)) | "
 
@@ -355,6 +387,7 @@ class AudioDiarizer: ObservableObject {
             }
             let newID = (speakerProfiles.keys.max() ?? 0) + 1
             speakerProfiles[newID] = mistakeVector
+            speakerClusterMemory[newID] = [mistakeVector]
             speakerNames[newID] = newName
             targetID = newID
         }
@@ -399,6 +432,7 @@ class AudioDiarizer: ObservableObject {
 
         if ghostID != targetID {
             speakerProfiles.removeValue(forKey: ghostID)
+            speakerClusterMemory.removeValue(forKey: ghostID)
             speakerNames.removeValue(forKey: ghostID)
         }
 
@@ -418,6 +452,7 @@ class AudioDiarizer: ObservableObject {
 
         print("New Speaker Detected: Assigned ID \(newID)")
         self.speakerProfiles[newID] = vector
+        self.speakerClusterMemory[newID] = [vector]
         self.confidence            = "100%"
 
         // We specifically DO NOT seed the vote buffer here.
@@ -430,8 +465,25 @@ class AudioDiarizer: ObservableObject {
 
     private func updateProfile(id: Int, vector: [Float], score: Float, force: Bool = false) {
         if id == 0 && !force { return }
-        if force || score > learningThreshold, let oldProfile = speakerProfiles[id] {
-            speakerProfiles[id] = applyRollingAvg(old: oldProfile, new: vector)
+        
+        // Populate and evolve the topographic cluster network
+        if force || score > learningThreshold {
+            if speakerClusterMemory[id] == nil {
+                speakerClusterMemory[id] = []
+            }
+            speakerClusterMemory[id]?.append(vector)
+            
+            // Constrain maximum computational depth per cluster
+            if (speakerClusterMemory[id]?.count ?? 0) > maxClusterSize {
+                speakerClusterMemory[id]?.removeFirst()
+            }
+            
+            // Keep basic legacy centroid alive for potential downstream components/SwiftData
+            if let oldProfile = speakerProfiles[id] {
+                speakerProfiles[id] = applyRollingAvg(old: oldProfile, new: vector)
+            } else {
+                speakerProfiles[id] = vector
+            }
         }
     }
 
