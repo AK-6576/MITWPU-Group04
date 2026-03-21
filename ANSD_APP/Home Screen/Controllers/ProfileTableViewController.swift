@@ -156,9 +156,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
                 handleVocalProfileTap()
             }
         case 3: // Account
-            if indexPath.row == 0 {
-                handleClearAllDataTap()
-            } else if indexPath.row == 1 {
+            if indexPath.row == 1 { // Logout is Row 1
                 confirmSignOut()
             }
         default:
@@ -166,38 +164,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
     }
     
-    private func handleClearAllDataTap() {
-        let actionSheet = UIAlertController(title: "Clear All Data", message: "This will permanently delete ALL your conversation history and quick actions from both this device and the cloud. This action cannot be undone.", preferredStyle: .actionSheet)
-        
-        actionSheet.addAction(UIAlertAction(title: "Clear Everything", style: .destructive) { [weak self] _ in
-            self?.performGlobalDataWipe()
-        })
-        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        
-        present(actionSheet, animated: true)
-    }
     
-    private func performGlobalDataWipe() {
-        // 1. Wipe Firebase (Remote)
-        FirebaseManager.shared.clearAllUserData { [weak self] error in
-            if let error = error {
-                let errorAlert = UIAlertController(title: "Sync Error", message: "Could not wipe cloud data: \(error.localizedDescription). Local data will still be cleared.", preferredStyle: .alert)
-                errorAlert.addAction(UIAlertAction(title: "OK", style: .default))
-                self?.present(errorAlert, animated: true)
-            }
-            
-            // 2. Wipe Local SwiftData (DataManager)
-            DataManager.shared.clearAllLocalData()
-            
-            // 3. Wipe User Preferences & Quick Actions Disk Storage
-            FirebaseManager.shared.clearLocalUserDefaults()
-            
-            // 4. Feedback
-            let success = UIAlertController(title: "Data Cleared", message: "All your history and actions have been wiped.", preferredStyle: .alert)
-            success.addAction(UIAlertAction(title: "OK", style: .default))
-            self?.present(success, animated: true)
-        }
-    }
     
     private func handleVocalProfileTap() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -362,6 +329,24 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
                     self?.present(errorAlert, animated: true)
                 }
             }
+        }
+    }
+    
+    // MARK: - iOS Style UI Cleanup
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if indexPath.section == 3 && indexPath.row == 0 {
+            // Hide the "Clear All Data" cell if it exists in the storyboard
+            return 0.01
+        }
+        return super.tableView(tableView, heightForRowAt: indexPath)
+    }
+    
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if indexPath.section == 3 && indexPath.row == 1 {
+            // Style "Logout" as a standard iOS destructive action
+            cell.textLabel?.textColor = .systemRed
+            cell.textLabel?.textAlignment = .center
         }
     }
 }

@@ -165,19 +165,5 @@ class DataManager {
         }
     }
     
-    // 7. CLEAR ALL: Wipes all local SwiftData to prevent data leakage on logout
-    func clearAllLocalData() {
-        guard let context = context else { return }
-        do {
-            try context.delete(model: Conversation.self)
-            try context.delete(model: Message.self)
-            try context.delete(model: Participant.self)
-            try context.delete(model: VoiceProfile.self)
-            try context.save()
-            print("DataManager: Successfully wiped all local SwiftData.")
-            NotificationCenter.default.post(name: NSNotification.Name("ConversationHistoryUpdated"), object: nil)
-        } catch {
-            print("DataManager: Failed to wipe SwiftData. Error: \(error.localizedDescription)")
-        }
-    }
+    
 }

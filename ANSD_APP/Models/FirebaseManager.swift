@@ -179,44 +179,7 @@ class FirebaseManager {
         }
     }
     
-    /// NEW: Wipes all user-generated history and actions from Firebase.
-    func clearAllUserData(completion: @escaping (Error?) -> Void) {
-        guard let uid = currentUID else {
-            completion(NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "User not logged in"]))
-            return
-        }
-        let safeUID = sanitizeKey(uid)
-        
-        // Paths to clear
-        let conversationRef = databaseRef.child("users").child(safeUID).child("conversations")
-        let historyRef = databaseRef.child("users").child(safeUID).child("history")
-        let qaRef = databaseRef.child("users").child(safeUID).child("quick_actions")
-        
-        let group = DispatchGroup()
-        var lastError: Error?
-        
-        group.enter()
-        conversationRef.removeValue { error, _ in
-            if let error = error { lastError = error }
-            group.leave()
-        }
-        
-        group.enter()
-        historyRef.removeValue { error, _ in
-            if let error = error { lastError = error }
-            group.leave()
-        }
-        
-        group.enter()
-        qaRef.removeValue { error, _ in
-            if let error = error { lastError = error }
-            group.leave()
-        }
-        
-        group.notify(queue: .main) {
-            completion(lastError)
-        }
-    }
+    
     
     /// Saves a COMPLETE conversation including all messages and participants to history.
     func saveFullConversation(_ conversation: Conversation) {
@@ -649,19 +612,5 @@ class FirebaseManager {
         }
     }
     
-    /// Clears all local user-related data from UserDefaults and repositories.
-    /// This should only be called when the user explicitly chooses to "Clear All Data".
-    func clearLocalUserDefaults() {
-        let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: "user_first_name")
-        defaults.removeObject(forKey: "user_last_name")
-        defaults.removeObject(forKey: "user_gender")
-        defaults.removeObject(forKey: "user_dob")
-        defaults.removeObject(forKey: "profileImage")
-        
-        // Clear local repository
-        QuickActionsRepository.shared.clearAllActions()
-        
-        print("Local user data and repositories cleared")
-    }
+    
 }
