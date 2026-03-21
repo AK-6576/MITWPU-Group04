@@ -341,11 +341,20 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    // Route to Login Screen
+                    // Route to Login Screen by resetting the window root
                     let storyboard = UIStoryboard(name: "Onboarding", bundle: nil)
                     if let loginNav = storyboard.instantiateInitialViewController() {
-                        loginNav.modalPresentationStyle = .fullScreen
-                        self?.present(loginNav, animated: true, completion: nil)
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let window = windowScene.windows.first {
+                            window.rootViewController = loginNav
+                            window.makeKeyAndVisible()
+                            // Add a cross-dissolve animation for a smoother feel
+                            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil, completion: nil)
+                        } else {
+                            // Fallback if window lookup fails
+                            loginNav.modalPresentationStyle = .fullScreen
+                            self?.present(loginNav, animated: true, completion: nil)
+                        }
                     }
                 case .failure(let error):
                     let errorAlert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
