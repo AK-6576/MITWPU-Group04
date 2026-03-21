@@ -226,8 +226,12 @@ class QuickCaptioningViewController: UIViewController,
             self.consumedTranscriptOffset = fullText.count
             
             self.holdTimer?.invalidate()
+            self.holdTimer = nil
             
             if isFinal {
+                // Force the diarizer to lock in its best guess for short 1-word responses
+                self.diarizer.forceCommitLeadingVote()
+                
                 // Ensure everything is flushed
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
                 
@@ -241,6 +245,7 @@ class QuickCaptioningViewController: UIViewController,
                 // Hold and wait buffer: allow diarization to catch up
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
                     // Lock expires — release speaker lock and flush
+                    self?.holdTimer = nil
                     self?.lockedSpeakerID = nil
                     self?.processBuffer()
                 }
@@ -303,17 +308,16 @@ class QuickCaptioningViewController: UIViewController,
             let currentText = self.messages[lastIndex].text
             let combinedText = currentText + text
             
-            if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                // Seal the current bubble with the full text, then finalize it
-                self.updateBubbleUI(at: lastIndex, text: combinedText)
+            self.updateBubbleUI(at: lastIndex, text: combinedText)
+            
+            // Focus on semantic completion instead of arbitrary character limits
+            if combinedText.hasSuffix(".") || combinedText.hasSuffix("?") || combinedText.hasSuffix("!") || combinedText.hasSuffix(".\n") || combinedText.hasSuffix("?\n") || combinedText.hasSuffix("!\n") {
                 self.finalizeBubble(at: lastIndex)
                 
                 // Start a fresh bubble for the same speaker
                 if let speakerID = self.messages[lastIndex].speakerID {
                     self.flushBufferToNewBubble(text: "...", speakerID: speakerID)
                 }
-            } else {
-                self.updateBubbleUI(at: lastIndex, text: combinedText)
             }
         }
     }

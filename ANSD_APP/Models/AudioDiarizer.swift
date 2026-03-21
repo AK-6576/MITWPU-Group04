@@ -306,6 +306,16 @@ class AudioDiarizer: ObservableObject {
         }
     }
 
+    // MARK: - Semantic / Pause Forcing
+    
+    func forceCommitLeadingVote() {
+        if let leader = self.leadingVoteID, self.currentSpeakerID != leader {
+            print("Force Committing Leading Vote: Speaker \(leader) due to pause.")
+            self.currentSpeakerID = leader
+            self.voteCount[leader] = self.votingThreshold
+        }
+    }
+
     // MARK: - Adaptive History Management
 
     private func addToHistory(vector: [Float], id: Int, score: Float) {

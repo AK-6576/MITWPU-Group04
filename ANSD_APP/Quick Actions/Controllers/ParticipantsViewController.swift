@@ -12,7 +12,7 @@ protocol ParticipantsSelectionDelegate: AnyObject {
     func didSelectParticipants(_ contacts: [CNContact])
 }
 
-class ParticipantsViewController: UITableViewController {
+class ParticipantsViewController: UITableViewController, UISearchResultsUpdating {
     
     // MARK: - Contact Picker Mode Variables
     weak var delegate: ParticipantsSelectionDelegate?
@@ -23,6 +23,12 @@ class ParticipantsViewController: UITableViewController {
     
     // Changing this to hold contacts to match initially selected names
     var initialSelectedContacts: [CNContact] = []
+    
+    var filteredContacts = [CNContact]()
+    let searchController = UISearchController(searchResultsController: nil)
+    var isFiltering: Bool {
+        return searchController.isActive && !(searchController.searchBar.text?.isEmpty ?? true)
+    }
     
     // MARK: - Viewer Mode Variables
     /// Set to `true` to switch from "contact picker" to "session participants viewer"
@@ -70,7 +76,23 @@ class ParticipantsViewController: UITableViewController {
         
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ContactCell")
         
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Search Contacts"
+        navigationItem.searchController = searchController
+        definesPresentationContext = true
+
         fetchContacts()
+    }
+    
+    func updateSearchResults(for searchController: UISearchController) {
+        let searchBar = searchController.searchBar
+        let searchText = searchBar.text ?? ""
+        filteredContacts = contacts.filter { contact in
+            let fullName = "\(contact.givenName) \(contact.familyName)".lowercased()
+            return fullName.contains(searchText.lowercased())
+        }
+        tableView.reloadData()
     }
     
     // MARK: - Viewer Mode Setup (New Logic)
@@ -177,7 +199,7 @@ class ParticipantsViewController: UITableViewController {
         if viewerMode {
             return viewerParticipantNames.count
         }
-        return contacts.count
+        return isFiltering ? filteredContacts.count : contacts.count
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -191,7 +213,7 @@ class ParticipantsViewController: UITableViewController {
     // MARK: - Picker Cell (Original)
     private func configurePickerCell(for indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
-        let contact = contacts[indexPath.row]
+        let contact = isFiltering ? filteredContacts[indexPath.row] : contacts[indexPath.row]
         
         cell.textLabel?.text = "\(contact.givenName) \(contact.familyName)"
         
@@ -243,7 +265,7 @@ class ParticipantsViewController: UITableViewController {
         
         tableView.deselectRow(at: indexPath, animated: true)
         
-        let contact = contacts[indexPath.row]
+        let contact = isFiltering ? filteredContacts[indexPath.row] : contacts[indexPath.row]
         let id = contact.identifier
         
         if selectedContactIDs.contains(id) {

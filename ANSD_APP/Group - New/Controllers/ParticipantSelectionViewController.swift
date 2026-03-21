@@ -10,13 +10,18 @@ import UIKit
 import Contacts
 import MessageUI
 
-class ParticipantSelectionViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, MFMessageComposeViewControllerDelegate {
+class ParticipantSelectionViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, MFMessageComposeViewControllerDelegate, UISearchResultsUpdating {
 
     @IBOutlet weak var tableView: UITableView!
     
     var realContacts: [CNContact] = []
     var unavailableContacts: Set<String> = []
-    var selectedIndices: Set<Int> = []
+    var selectedIdentifiers: Set<String> = []
+    var filteredContacts: [CNContact] = []
+    let searchController = UISearchController(searchResultsController: nil)
+    var isFiltering: Bool {
+        return searchController.isActive && !(searchController.searchBar.text?.isEmpty ?? true)
+    }
     var onParticipantsSelected: (([String]) -> Void)?
     
     // The code you want to send
@@ -33,8 +38,25 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         tableView.delegate = self
         tableView.dataSource = self
         tableView.tableFooterView = UIView()
+        
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Search Contacts"
+        navigationItem.searchController = searchController
+        definesPresentationContext = true
+        
         setupNavigationBar()
         fetchRealContacts()
+    }
+    
+    func updateSearchResults(for searchController: UISearchController) {
+        let searchBar = searchController.searchBar
+        let searchText = searchBar.text ?? ""
+        filteredContacts = realContacts.filter { contact in
+            let fullName = "\(contact.givenName) \(contact.familyName)".lowercased()
+            return fullName.contains(searchText.lowercased())
+        }
+        tableView.reloadData()
     }
     
     // MARK: - Contacts Fetching
@@ -93,8 +115,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         var recipients: [String] = []
         var selectedNames: [String] = []
         
-        for index in selectedIndices {
-            let contact = realContacts[index]
+        for contact in realContacts where selectedIdentifiers.contains(contact.identifier) {
             let fullName = "\(contact.givenName) \(contact.familyName)"
             selectedNames.append(fullName)
             
@@ -137,8 +158,8 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
             case .sent:
                 print("Invites sent!")
                 // Once sent, we can close the selection screen and pass data back
-                let selectedNames = self.selectedIndices.map {
-                    "\(self.realContacts[$0].givenName) \(self.realContacts[$0].familyName)"
+                let selectedNames = self.realContacts.filter { self.selectedIdentifiers.contains($0.identifier) }.map {
+                    "\($0.givenName) \($0.familyName)"
                 }
                 self.finishSelection(names: selectedNames)
                 
@@ -174,12 +195,12 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
 
     // MARK: - TableView Data Source
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return realContacts.count
+        return isFiltering ? filteredContacts.count : realContacts.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath) as! ContactCell
-        let contact = realContacts[indexPath.row]
+        let contact = isFiltering ? filteredContacts[indexPath.row] : realContacts[indexPath.row]
         let fullName = "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces)
 
         cell.nameLabel.text = fullName
@@ -199,7 +220,7 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
         } else {
             cell.isUserInteractionEnabled = true
             cell.profileImageView.alpha = 1.0
-            if selectedIndices.contains(indexPath.row) {
+            if selectedIdentifiers.contains(contact.identifier) {
                 cell.nameLabel.textColor = .systemBlue
                 cell.accessoryType = .checkmark
             } else {
@@ -212,10 +233,12 @@ class ParticipantSelectionViewController: UIViewController, UITableViewDelegate,
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if selectedIndices.contains(indexPath.row) {
-            selectedIndices.remove(indexPath.row)
+        let contact = isFiltering ? filteredContacts[indexPath.row] : realContacts[indexPath.row]
+        let id = contact.identifier
+        if selectedIdentifiers.contains(id) {
+            selectedIdentifiers.remove(id)
         } else {
-            selectedIndices.insert(indexPath.row)
+            selectedIdentifiers.insert(id)
         }
         tableView.reloadRows(at: [indexPath], with: .automatic)
     }
