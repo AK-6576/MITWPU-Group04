@@ -51,7 +51,7 @@ class VoiceCalibrationViewController: UIViewController {
     // MARK: - ML Model
     private var model: VL1004?
     private let requiredSamples = 96000  // 6 seconds × 16kHz
-    private let similarityThreshold: Float = 0.90
+    private let similarityThreshold: Float = 0.75
 
     // MARK: - Voice Embeddings
     private var sentenceEmbeddings: [[Float]] = []
