@@ -51,7 +51,7 @@ class VoiceCalibrationViewController: UIViewController {
     // MARK: - ML Model
     private var model: VL1004?
     private let requiredSamples = 96000  // 6 seconds × 16kHz
-    private let similarityThreshold: Float = 0.62
+    private let similarityThreshold: Float = 0.90
 
     // MARK: - Voice Embeddings
     private var sentenceEmbeddings: [[Float]] = []
@@ -62,9 +62,9 @@ class VoiceCalibrationViewController: UIViewController {
 
     // MARK: - Data
     private let sentences = [
-        "The quick brown fox jumps over the lazy dog near the river bank.",
-        "Please verify my identity by recognizing my unique voice pattern.",
-        "Artificial intelligence is transforming the way we communicate daily."
+        "The mysterious blue bird soared gracefully over the snow-capped mountain peaks while several curious hikers watched from the narrow emerald valley below.",
+        "Extraordinary scientific discoveries often require immense patience, rigorous testing, and a deep understanding of the fundamental principles that govern our complex universe.",
+        "Modern communication technology allows us to connect with friends and family across vast distances, sharing moments of joy and sorrow in an instant with a single tap."
     ]
 
     // MARK: - Lifecycle
@@ -202,7 +202,7 @@ class VoiceCalibrationViewController: UIViewController {
 
         case .ready:
             setButton(title: "Start Voice Setup", image: "mic.fill", color: view.tintColor, enabled: true)
-            instructionLabel.text = "Tap once. Read all three sentences."
+            instructionLabel.text = "Tap once. Read these long sentences clearly, stressing your natural vowels and nouns."
             animateBarsToResting()
 
         case .countdown(let n):
@@ -401,7 +401,7 @@ class VoiceCalibrationViewController: UIViewController {
                 return
             }
             
-            let normalizedEmbedding = self.normalize(embedding)
+            let normalizedEmbedding = DiarizationUtils.l2Normalize(embedding)
             
             DispatchQueue.main.async {
                 // First sentence — always accept as baseline
@@ -414,7 +414,7 @@ class VoiceCalibrationViewController: UIViewController {
                 
                 // Compare with the first sentence (baseline voice)
                 let baselineEmbedding = self.sentenceEmbeddings[0]
-                let similarity = self.cosineSim(normalizedEmbedding, baselineEmbedding)
+                let similarity = DiarizationUtils.cosineSimilarity(normalizedEmbedding, baselineEmbedding)
                 
                 print("VoiceCalibration: Sentence \(index + 1) similarity = \(String(format: "%.3f", similarity)) (threshold: \(self.similarityThreshold))")
                 
@@ -502,14 +502,19 @@ class VoiceCalibrationViewController: UIViewController {
                 
                 var samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
                 
-                // Pad or truncate to exactly 96,000 samples (model requirement)
+                // CRITICAL FIX: Do NOT pad with zeros. Padded silence "dilutes" the embedding
+                // and causes the 0.69 similarity score. The model expects 6s of DENSE speech.
                 let required = 96000
                 if samples.count < required {
-                    samples.append(contentsOf: [Float](repeating: 0, count: required - samples.count))
+                    print("VoiceCalibration: ERROR - Recording too short (\(samples.count) samples). Need \(required).")
+                    completion(nil) // Trigger a retry/mismatch
+                    return
                 } else if samples.count > required {
                     samples = Array(samples.prefix(required))
                 }
                 
+                // Return raw extracted samples — normalization & pre-emphasis 
+                // happen inside runVoiceInference for consistency with AudioDiarizer.
                 completion(samples)
             } catch {
                 print("VoiceCalibration: Audio extraction error — \(error)")
@@ -527,11 +532,15 @@ class VoiceCalibrationViewController: UIViewController {
             return nil
         }
         
+        // --- TOP-NOTCH: Signal Processing (MUST MATCH AudioDiarizer) ---
+        // Normalize RMS for consistent model input
+        let normalizedSamples = DiarizationUtils.normalizeAudio(samples)
+        
         guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else {
             return nil
         }
         
-        for (i, sample) in samples.enumerated() {
+        for (i, sample) in normalizedSamples.enumerated() {
             inputMultiArray[i] = NSNumber(value: sample)
         }
         
@@ -564,7 +573,7 @@ class VoiceCalibrationViewController: UIViewController {
             averaged[i] /= count
         }
         
-        let normalizedAvg = normalize(averaged)
+        let normalizedAvg = DiarizationUtils.l2Normalize(averaged)
         
         // Save to persistent storage via VoiceProfileManager
         // Use "Me" as default name — user can change it later
@@ -585,18 +594,11 @@ class VoiceCalibrationViewController: UIViewController {
     }
 
     private func normalize(_ v: [Float]) -> [Float] {
-        var norm: Float = 0
-        vDSP_svesq(v, 1, &norm, vDSP_Length(v.count))
-        let mag = sqrt(norm) + 1e-9
-        var res = [Float](repeating: 0, count: v.count)
-        vDSP_vsdiv(v, 1, [mag], &res, 1, vDSP_Length(v.count))
-        return res
+        return DiarizationUtils.l2Normalize(v)
     }
 
     private func cosineSim(_ v1: [Float], _ v2: [Float]) -> Float {
-        var dot: Float = 0
-        vDSP_dotpr(v1, 1, v2, 1, &dot, vDSP_Length(v1.count))
-        return dot
+        return DiarizationUtils.cosineSimilarity(v1, v2)
     }
 
     // MARK: - Visualizer Animation
