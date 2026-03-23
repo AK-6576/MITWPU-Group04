@@ -1,0 +1,785 @@
+//
+//  QuickCaptioningViewController.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
+import UIKit
+import AVFoundation
+import Speech
+import Combine
+import CoreLocation
+import MapKit
+import FoundationModels
+import FirebaseAuth
+
+let MAX_BUBBLE_CHAR_LIMIT = 120
+
+class QuickCaptioningViewController: UIViewController,
+    UICollectionViewDelegate,
+    UICollectionViewDataSource,
+    UICollectionViewDelegateFlowLayout,
+    CLLocationManagerDelegate {
+
+    @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var endButton: UIBarButtonItem!
+
+    var messages: [QuickCaptionsChat] = []
+    
+    // MARK: - Buffering & Logic State
+    private var transcriptBuffer: String = ""
+    private var holdTimer: Timer?
+    /// While holdTimer is active, this holds the speaker ID of the in-progress bubble.
+    /// Diarizer updates to a DIFFERENT speaker are queued here instead of dropped.
+    private var lockedSpeakerID: Int? = nil
+    /// The next speaker waiting to be committed once the active hold timer fires.
+    private var pendingSpeakerID: Int? = nil
+    
+    let locationManager = CLLocationManager()
+    var currentLocationString: String = "Location Unknown"
+    
+    private let audioEngine = AVAudioEngine()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private var speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
+
+    private let diarizer = AudioDiarizer()
+    private var diarizerCancellables = Set<AnyCancellable>()
+    private var currentSpeakerID: Int?
+    private let cleanupManager = TextCleanupManager()
+
+    var isRecording = false
+    var currentMessageIndex: Int?
+    
+    var consumedTranscriptOffset = 0
+    var hasEnrolled = false
+    private var forceNewBubble = false
+    private var cleanupIDs: [UUID] = []
+
+    /// Holds the Firebase auth-state listener handle so we can remove it after first fire.
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
+
+    // MARK: - Lifecycle
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupCollectionView()
+        setupPermission()
+        setupAudioSession()
+        bindDiarizer()
+        setupLocation()
+        
+        checkCalibrationStatus()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+    }
+    
+    @objc private func handleLanguageChange() {
+        // Reinitialize the recognizer with the new language. Next recording session will pick it up.
+        speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
+    }
+            
+    // MARK: - Voice Profile Check
+    private func checkCalibrationStatus() {
+        // Auth.auth().currentUser is nil during viewDidLoad while Firebase is still
+        // restoring the session asynchronously. Using addStateDidChangeListener fires
+        // exactly once when auth state is fully resolved — which is when it's safe to
+        // query the local SwiftData store for the saved VoiceProfile.
+        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self = self else { return }
+
+            // Remove listener immediately — single-shot; we don't need further callbacks.
+            if let handle = self.authStateHandle {
+                Auth.auth().removeStateDidChangeListener(handle)
+                self.authStateHandle = nil
+            }
+
+            DispatchQueue.main.async {
+                if let uid = user?.uid,
+                   let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
+                    // Profile found — seed BOTH the centroid dict AND the cluster memory.
+                    // processEmbedding() does nearest-neighbour search in speakerClusterMemory;
+                    // if it is empty every frame triggers createNewSpeaker() → grey bubble.
+                    let embedding = self.diarizer.normalize(savedProfile.embedding)
+                    self.diarizer.speakerProfiles[0] = embedding
+                    self.diarizer.speakerClusterMemory[0] = [embedding]
+                    self.diarizer.speakerNames[0] = savedProfile.name
+                    self.hasEnrolled = true
+                    
+                    // FIX — Cold Start: Immediately assign the enrolled user as current speaker
+                    // so the very first spoken words appear in a blue bubble without waiting
+                    // 6 seconds for VL1004 to accumulate a full inference window.
+                    // The model will confirm/correct this as frames arrive.
+                    self.currentSpeakerID = 0
+                    
+                    self.startSession()
+                } else {
+                    // No profile saved — prompt for one-time voice calibration.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.promptForEnrollment()
+                    }
+                }
+            }
+        }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        cleanupManager.cancelAllPendingTasks()
+        stopRecording()
+        NotificationCenter.default.removeObserver(self, name: .languageDidChange, object: nil)
+    }
+    
+    // MARK: - Location Services
+    
+    func setupLocation() {
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let loc = locations.last else { return }
+        
+        if let request = MKReverseGeocodingRequest(location: loc) {
+            request.getMapItems { [weak self] mapItems, error in
+                guard let self = self else { return }
+                if let place = mapItems?.first {
+                    let city = place.addressRepresentations?.cityName ?? ""
+                    let country = place.addressRepresentations?.regionName ?? ""
+                    if !city.isEmpty {
+                        self.currentLocationString = "\(city), \(country)"
+                    }
+                }
+            }
+        }
+        manager.stopUpdatingLocation()
+    }
+    
+    // MARK: - Voice Enrollment
+    
+    private func promptForEnrollment() {
+        let longerPhrase = """
+        I am speaking to calibrate my voice profile. 
+        This will ensure accurate identification during the session.
+        """
+        let alert = UIAlertController(title: "Voice Calibration", message: "Tap 'Start Recording' and read clearly:\n\n\"\(longerPhrase)\"", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Start Recording", style: .default) { [weak self] _ in self?.runEnrollmentRecording() })
+        alert.addAction(UIAlertAction(title: "Skip", style: .cancel) { [weak self] _ in self?.hasEnrolled = true; self?.startSession() })
+        present(alert, animated: true)
+    }
+    
+    private func runEnrollmentRecording() {
+        diarizer.enrollUser { [weak self] success in
+            guard let self = self else { return }
+            DispatchQueue.main.async { self.stopRecording(); self.promptForUserName() }
+        }
+        try? startAudioEngine()
+    }
+    
+    private func promptForUserName() {
+        let alert = UIAlertController(title: "Voice Saved", message: "What is your name?", preferredStyle: .alert)
+        alert.addTextField { tf in tf.placeholder = "Your Name"; tf.autocapitalizationType = .words }
+        alert.addAction(UIAlertAction(title: "Save & Start", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            
+            let name = alert.textFields?.first?.text ?? "Me"
+            
+            // 1. Update the Diarizer locally
+            self.diarizer.setUserName(name)
+            
+            // 2. Extract the mathematical vector and Save Permanently to SwiftData!
+            if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
+                VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: name, embedding: userVector)
+            }
+            
+            self.hasEnrolled = true
+            self.startSession()
+        })
+        present(alert, animated: true)
+    }
+
+    // MARK: - Session Management
+    
+    private func startSession() {
+        if isRecording { return }
+        consumedTranscriptOffset = 0
+        transcriptBuffer = ""
+        forceNewBubble = false
+        
+        startSpeechRecognition()
+        try? startAudioEngine()
+        appendNewBubble(text: "Listening...", isBlue: false, name: "System", id: nil)
+        isRecording = true
+    }
+
+    private func stopRecording() {
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionRequest?.endAudio()
+        recognitionRequest = nil
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        isRecording = false
+    }
+
+    // MARK: - Speech Recognition
+    
+    private func startSpeechRecognition() {
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        recognitionRequest = request
+        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+            guard let self = self, let result = result else { return }
+            self.handleSpeechTranscript(fullText: result.bestTranscription.formattedString, isFinal: result.isFinal)
+        }
+    }
+
+    // MARK: - Transcript Handling (FIXED DUPLICATION)
+    
+    private func handleSpeechTranscript(fullText: String, isFinal: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // SAFETY CHECK: If offset > fullText, a correction happened (backspace).
+            if self.consumedTranscriptOffset > fullText.count {
+                return
+            }
+            
+            let startIndex = fullText.index(fullText.startIndex, offsetBy: self.consumedTranscriptOffset)
+            let newContent = String(fullText[startIndex...])
+            
+            guard !newContent.isEmpty else { return }
+            
+            // Add to Buffer
+            self.transcriptBuffer += newContent
+            self.consumedTranscriptOffset = fullText.count
+            
+            self.holdTimer?.invalidate()
+            self.holdTimer = nil
+            
+            if isFinal {
+                // Force the diarizer to lock in its best guess for short 1-word responses
+                self.diarizer.forceCommitLeadingVote()
+                
+                // Ensure everything is flushed
+                if !self.transcriptBuffer.isEmpty { self.processBuffer() }
+                
+                // Clean the last active bubble since the sentence is done
+                if !self.messages.isEmpty {
+                    self.finalizeBubble(at: self.messages.count - 1)
+                    self.forceNewBubble = true
+                }
+                
+                self.transcriptBuffer = ""
+            } else {
+                // Hold and wait buffer: allow diarization to catch up
+                self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+                    guard let self = self else { return }
+                    // Lock expires — release speaker lock and flush
+                    self.holdTimer = nil
+                    self.lockedSpeakerID = nil
+                    
+                    // FIX — Pending Speaker: if a different speaker was detected while
+                    // we were locked, commit them now instead of discarding their frames.
+                    // Previously this caused a 1.5s + 600ms = 2.1s dead-zone where the
+                    // second speaker's audio was completely invisible to the UI.
+                    if let pending = self.pendingSpeakerID {
+                        self.currentSpeakerID = pending
+                        self.pendingSpeakerID = nil
+                    }
+                    
+                    self.processBuffer()
+                    
+                    // Seal the bubble because of a long pause
+                    if !self.messages.isEmpty {
+                        self.finalizeBubble(at: self.messages.count - 1)
+                        self.forceNewBubble = true
+                    }
+                }
+            }
+        }
+    }
+    
+    private func processBuffer() {
+        guard !transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        // NEW FALLBACK: If diarizer hasn't identified anyone yet, default to Speaker 0 if enrolled, otherwise 1
+        let speakerID = currentSpeakerID ?? (hasEnrolled ? 0 : 1)
+        
+        let textToFlush = transcriptBuffer
+        
+        // Check LAST message
+        if let lastMsg = messages.last,
+           let lastID = lastMsg.speakerID,
+           lastID == speakerID,
+           !self.forceNewBubble {
+            
+            // SAME SPEAKER: Append
+            updateLastBubble(with: textToFlush)
+            
+        } else {
+            // DIFFERENT SPEAKER or FORCED BREAK: Split
+            self.forceNewBubble = false
+            
+            // Seal previous bubble
+            if !messages.isEmpty {
+                finalizeBubble(at: messages.count - 1)
+            }
+            
+            // Create new bubble
+            flushBufferToNewBubble(text: textToFlush, speakerID: speakerID)
+        }
+        
+        // Clear buffer strictly after processing
+        transcriptBuffer = ""
+    }
+    
+    private func flushBufferToNewBubble(text: String, speakerID: Int) {
+        let isBlue = (speakerID == 0) // ID 0 is enrolled user
+        
+        var name = "..."
+        if isBlue {
+            name = diarizer.speakerNames[0] ?? "Me"
+        } else {
+            name = diarizer.speakerNames[speakerID] ?? "Speaker \(speakerID)"
+        }
+        
+        // Execute synchronously to prevent state desyncs in loops
+        self.appendNewBubble(text: text, isBlue: isBlue, name: name, id: speakerID)
+    }
+    
+    private func updateLastBubble(with text: String) {
+        DispatchQueue.main.async {
+            guard !self.messages.isEmpty else { return }
+            
+            var textToProcess = text
+            
+            while true {
+                let activeIndex = self.messages.count - 1
+                let currentText = self.messages[activeIndex].text
+                let combinedText = currentText == "..." ? textToProcess : currentText + textToProcess
+                
+                var splitRange: Range<String.Index>? = nil
+                let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                
+                for boundary in boundaries {
+                    if let range = combinedText.range(of: boundary) {
+                        if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
+                            splitRange = range
+                        }
+                    }
+                }
+                
+                guard let range = splitRange else {
+                    self.updateBubbleUI(at: activeIndex, text: combinedText)
+                    break
+                }
+                
+                let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                var secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                self.updateBubbleUI(at: activeIndex, text: firstPart)
+                self.finalizeBubble(at: activeIndex)
+                
+                if let speakerID = self.messages[activeIndex].speakerID {
+                    self.flushBufferToNewBubble(text: "...", speakerID: speakerID)
+                }
+                
+                textToProcess = secondPart
+                if textToProcess.isEmpty { break }
+            }
+            
+            // Fallback: If it exactly ends with punctuation (no trailing space), seal for next iteration
+            let activeIndex = self.messages.count - 1
+            let finalCombinedText = self.messages[activeIndex].text
+            if finalCombinedText != "..." && (finalCombinedText.hasSuffix(".") || finalCombinedText.hasSuffix("?") || finalCombinedText.hasSuffix("!")) {
+                self.finalizeBubble(at: activeIndex)
+                self.forceNewBubble = true
+            }
+        }
+    }
+    
+    // MARK: - Cleanup & UI Updates
+    
+    private func finalizeBubble(at index: Int) {
+        guard index < messages.count, index < cleanupIDs.count else { return }
+        let text = messages[index].text
+        guard messages[index].sender != "Listening...", messages[index].sender != "System" else { return }
+        
+        // 1. Update UI with raw text immediately for 0ms perceived latency
+        self.updateBubbleUI(at: index, text: text)
+
+        let targetID = cleanupIDs[index]
+
+        // 2. Background cleanup starts
+        cleanupManager.scheduleCleanup(text: text, at: index) { [weak self] _, cleaned in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                guard let currentIndex = self.cleanupIDs.firstIndex(of: targetID) else { return }
+                
+                // Scan the AI-cleaned bubble and split any newly discovered sentences
+                var textToProcess = cleaned
+                var sentences: [String] = []
+                while true {
+                    var splitRange: Range<String.Index>? = nil
+                    let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                    for boundary in boundaries {
+                        if let range = textToProcess.range(of: boundary) {
+                            if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
+                                splitRange = range
+                            }
+                        }
+                    }
+                    guard let range = splitRange else {
+                        if !textToProcess.isEmpty && textToProcess != "..." { sentences.append(textToProcess) }
+                        break
+                    }
+                    let firstPart = String(textToProcess[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    sentences.append(firstPart)
+                    textToProcess = String(textToProcess[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if textToProcess.isEmpty { break }
+                }
+                
+                if sentences.isEmpty { return }
+                
+                // Replace the primary bubble with the first clean sentence
+                self.messages[currentIndex].text = sentences[0]
+                
+                // Safely spawn fresh bubbles for the remainder of the synthesized block
+                let originalMessage = self.messages[currentIndex]
+                var newMessages: [QuickCaptionsChat] = []
+                var newIDs: [UUID] = []
+                
+                for i in 1..<sentences.count {
+                    var newMsg = originalMessage
+                    newMsg.text = sentences[i]
+                    newMessages.append(newMsg)
+                    newIDs.append(UUID())
+                }
+                
+                if !newMessages.isEmpty {
+                    self.messages.insert(contentsOf: newMessages, at: currentIndex + 1)
+                    self.cleanupIDs.insert(contentsOf: newIDs, at: currentIndex + 1)
+                }
+                
+                UIView.performWithoutAnimation {
+                    self.collectionView.reloadData()
+                }
+                self.scrollToBottom()
+            }
+        }
+    }
+    
+    private func updateBubbleUI(at index: Int, text: String) {
+        DispatchQueue.main.async {
+            guard index < self.messages.count else { return }
+            
+            if self.messages[index].text != text {
+                self.messages[index].text = text
+                UIView.performWithoutAnimation {
+                    self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+                }
+                if index == self.messages.count - 1 {
+                    self.scrollToBottom()
+                }
+            }
+        }
+    }
+    
+    private func appendNewBubble(text: String, isBlue: Bool, name: String, id: Int?) {
+        if let last = messages.last, (last.sender == "Listening..." || last.sender == "System") {
+            messages.removeLast()
+            if !cleanupIDs.isEmpty { cleanupIDs.removeLast() }
+        }
+
+        let senderID = id != nil ? String(id!) : "system"
+        var newMessage = QuickCaptionsChat(sender: name, senderID: senderID, text: text, isIncoming: !isBlue)
+        newMessage.speakerID = id
+        if let currentEvent = diarizer.segmentHistory.last {
+            newMessage.eventId = currentEvent.id
+        }
+
+        messages.append(newMessage)
+        cleanupIDs.append(UUID())
+        currentMessageIndex = messages.count - 1
+        if let sid = id {
+            currentSpeakerID = sid
+            // Activate speaker lock so mid-sentence diarizer updates don't split this bubble
+            lockedSpeakerID  = sid
+        }
+        collectionView.reloadData()
+        scrollToBottom()
+    }
+
+    // MARK: - Diarizer Binding
+    
+    private func bindDiarizer() {
+        diarizer.$currentSpeakerID.receive(on: DispatchQueue.main).sink { [weak self] id in
+            guard let self = self else { return }
+
+            // SPEAKER LOCK: while the hold timer is active, queue speaker switches
+            // to a DIFFERENT speaker — prevents mid-sentence bleed-over but no
+            // longer silently discards the next speaker's identity.
+            if let newID = id,
+               let locked = self.lockedSpeakerID,
+               self.holdTimer != nil,
+               newID != locked {
+                // Diarizer detected a different speaker mid-sentence.
+                // Store them as pending; the timer callback will commit them.
+                self.pendingSpeakerID = newID
+                return
+            }
+
+            self.currentSpeakerID = id
+
+            // Trigger buffer processing immediately on speaker identification
+            if id != nil {
+                self.processBuffer()
+            }
+
+            // Check for name updates (renames)
+            if let validID = id, !self.messages.isEmpty {
+                let lastIdx = self.messages.count - 1
+                if self.messages[lastIdx].speakerID == validID {
+                    var newName = "..."
+                    if validID == 0 { newName = self.diarizer.speakerNames[0] ?? "Me" }
+                    else { newName = self.diarizer.speakerNames[validID] ?? "Speaker \(validID)" }
+
+                    if self.messages[lastIdx].sender != newName {
+                        self.messages[lastIdx].sender = newName
+                        UIView.performWithoutAnimation { self.collectionView.reloadItems(at: [IndexPath(item: lastIdx, section: 0)]) }
+                    }
+                }
+            }
+        }.store(in: &diarizerCancellables)
+    }
+
+    // MARK: - Audio Configuration
+    
+    private func startAudioEngine() throws {
+        let inputNode = audioEngine.inputNode
+
+        // Enable Apple's built-in Voice Processing I/O BEFORE installing any tap.
+        // This activates the OS-level DSP stack:
+        //   • Noise suppression   — attenuates non-speech environmental sounds
+        //   • Echo cancellation   — prevents speaker output bleeding into the mic
+        //   • Automatic gain ctrl — normalises mic level across devices & distances
+        // Best-effort: vpio can fail on certain Bluetooth profiles, the Simulator,
+        // or locked audio configurations (render err -1). In those cases we fall
+        // back silently — the .voiceChat audio session mode still provides basic
+        // noise reduction so diarization is not left completely unprotected.
+        if !inputNode.isVoiceProcessingEnabled {
+            do {
+                try inputNode.setVoiceProcessingEnabled(true)
+            } catch {
+                print("[AudioEngine] Voice Processing I/O unavailable on this config: \(error). Using voiceChat fallback.")
+            }
+        }
+
+        // Re-read the format after voice processing is enabled — it may change.
+        let inputFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
+            guard let self = self else { return }
+            if self.isRecording { self.recognitionRequest?.append(buffer) }
+            self.diarizer.handleAudio(buffer: buffer, targetFormat: AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!)
+        }
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+    
+    private func setupAudioSession() {
+        try? AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+    
+    // MARK: - UI Setup
+    
+    private func setupCollectionView() {
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout { layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize }
+        collectionView.keyboardDismissMode = .interactive
+    }
+    
+    // MARK: - End Session & Summary
+    
+    @IBAction func didTapStopButton(_ sender: UIBarButtonItem) {
+        let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
+        
+        let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Flush any remaining text in the buffer to a bubble
+            self.processBuffer()
+            
+            if !self.messages.isEmpty {
+                self.finalizeBubble(at: self.messages.count - 1)
+            }
+            
+            self.stopRecording()
+            
+            let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
+            
+            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
+               let summaryVC = summaryNav.topViewController as? SummaryViewController {
+                
+                let transcript = self.messages.toTranscriptString()
+                
+                summaryVC.rawTranscriptText = transcript
+                summaryVC.rawMessages = self.messages
+                summaryVC.conversationTitle = "Conversation 1"
+                
+                let now = Date()
+                let dateFormatter = DateFormatter()
+                
+                dateFormatter.dateFormat = "MMMM"
+                let month = dateFormatter.string(from: now)
+                
+                let calendar = Calendar.current
+                let day = calendar.component(.day, from: now)
+                let numberFormatter = NumberFormatter()
+                numberFormatter.numberStyle = .ordinal
+                let dayWithSuffix = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
+                
+                summaryVC.dateString = "\(month) \(dayWithSuffix)"
+                
+                dateFormatter.dateFormat = "h:mm a"
+                summaryVC.timeString = dateFormatter.string(from: now)
+                
+                summaryVC.locationString = self.currentLocationString
+                
+                var participants: [QuickCaptionsParticipantData] = []
+                var uniqueSenders = [String: String]() // senderID: name
+                var order = [String]()
+                
+                for msg in self.messages {
+                    if msg.senderID != "system" {
+                        if uniqueSenders[msg.senderID] == nil {
+                            uniqueSenders[msg.senderID] = msg.sender
+                            order.append(msg.senderID)
+                        }
+                    }
+                }
+                
+                for id in order {
+                    participants.append(QuickCaptionsParticipantData(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis..."))
+                }
+                
+                summaryVC.participantsData = participants
+                
+                summaryNav.modalPresentationStyle = .pageSheet
+                summaryNav.isModalInPresentation = true // Prevent swipe-to-dismiss so session isn't lost
+                self.present(summaryNav, animated: true, completion: nil)
+            }
+        }
+        
+        actionSheet.addAction(endAction)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        self.present(actionSheet, animated: true)
+    }
+    
+    // MARK: - CollectionView Delegate & DataSource
+    
+    private func scrollToBottom() {
+        guard messages.count > 0 else { return }
+        collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int { return messages.count }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let msg = messages[indexPath.row]
+        if msg.isIncoming {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCIncomingCell", for: indexPath) as! QuickCaptionsIncomingCell
+            cell.messageLabel.text = msg.text
+            cell.nameLabel.text = msg.sender
+            cell.onLabelTapped = { [weak self] in self?.showRenameAlert(for: indexPath.row) }
+            return cell
+        } else {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCOutgoingCell", for: indexPath) as! QuickCaptionsOutgoingCell
+            cell.QCmessageLabel.text = msg.text
+            return cell
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: collectionView.bounds.width, height: 50)
+    }
+    
+    // MARK: - Permissions
+    
+    private func setupPermission() {
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { allowed in }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { allowed in }
+        }
+        SFSpeechRecognizer.requestAuthorization { _ in }
+    }
+    
+    // MARK: - Rename & Time Machine
+    
+    private func showRenameAlert(for index: Int) {
+        let msg = messages[index]
+        let currentName = msg.sender
+        let alert = UIAlertController(title: "Rename \(currentName)", message: "This will update past and future bubbles.", preferredStyle: .alert)
+        alert.addTextField { tf in tf.text = currentName; tf.autocapitalizationType = .words }
+        
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            
+            if let eventId = msg.eventId {
+                self.diarizer.applyRetroactiveCorrection(forEventID: eventId, newName: newName)
+            } else if let bubbleSpeakerID = msg.speakerID {
+                self.diarizer.speakerNames[bubbleSpeakerID] = newName
+            } else {
+                if let key = self.diarizer.speakerNames.first(where: { $0.value == currentName })?.key {
+                    self.diarizer.speakerNames[key] = newName
+                }
+            }
+
+            for i in 0..<self.messages.count {
+                if let eid = self.messages[i].eventId, 
+                   let historyEvent = self.diarizer.segmentHistory.first(where: { $0.id == eid }) {
+                    
+                    let sid = historyEvent.assignedSpeakerID
+                    self.messages[i].speakerID = sid
+                    self.messages[i].isIncoming = (sid != 0)
+                    if sid == 0 {
+                        self.messages[i].sender = self.diarizer.speakerNames[0] ?? "Me"
+                    } else {
+                        self.messages[i].sender = self.diarizer.speakerNames[sid] ?? "Speaker \(sid)"
+                    }
+                } else {
+                    if self.messages[i].sender == currentName {
+                        self.messages[i].sender = newName
+                    }
+                    if let sid = self.messages[i].speakerID,
+                       let registeredName = self.diarizer.speakerNames[sid],
+                       registeredName == newName {
+                        self.messages[i].sender = newName
+                    }
+                }
+            }
+            
+            self.collectionView.reloadData()
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+}
+
+extension Array where Element == QuickCaptionsChat {
+    func toTranscriptString() -> String {
+        return self.map { "\($0.sender): \($0.text)" }.joined(separator: "\n\n")
+    }
+}
