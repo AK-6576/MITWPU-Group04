@@ -80,7 +80,11 @@ class VoiceCalibrationViewController: UIViewController {
         setupCard()
         setupVisualizer()
         setupSentenceStatusIndicators()
-        setupMLModel()
+        
+        Task {
+            await setupMLModel()
+        }
+        
         requestMicrophoneAccess()
         updatePromptText(index: 0)
         phase = .ready
@@ -88,14 +92,24 @@ class VoiceCalibrationViewController: UIViewController {
 
     // MARK: - ML Model Setup
 
-    private func setupMLModel() {
+    /// Asynchronously loads the VL1004 ML model to prevent UI freezes.
+    private func setupMLModel() async {
         let config = MLModelConfiguration()
         config.computeUnits = .all
+        
         do {
-            model = try VL1004(configuration: config)
-            print("VoiceCalibration: VL1004 model loaded successfully")
+            let loadedModel = try await Task.detached(priority: .userInitiated) {
+                try VL1004(configuration: config)
+            }.value
+            
+            await MainActor.run {
+                self.model = loadedModel
+                print("VoiceCalibration: VL1004 model loaded successfully (Async)")
+            }
         } catch {
-            print("VoiceCalibration: Failed to load VL1004 model — \(error)")
+            await MainActor.run {
+                print("VoiceCalibration: Failed to load VL1004 model — \(error)")
+            }
         }
     }
 
@@ -520,7 +534,8 @@ class VoiceCalibrationViewController: UIViewController {
     
     // MARK: - ML Inference
     
-    /// Run the VL1004 model on audio samples to extract a voice embedding vector
+    /// Run the VL1004 model on audio samples to extract a voice embedding vector.
+    /// Optimized with zero-copy memcpy for iPhone 16.
     private func runVoiceInference(on samples: [Float]) -> [Float]? {
         guard let model = model else {
             print("VoiceCalibration: Model not loaded")
@@ -531,8 +546,11 @@ class VoiceCalibrationViewController: UIViewController {
             return nil
         }
         
-        for (i, sample) in samples.enumerated() {
-            inputMultiArray[i] = NSNumber(value: sample)
+        // Zero-copy memory transfer
+        samples.withUnsafeBufferPointer { buffer in
+            if let address = buffer.baseAddress {
+                memcpy(inputMultiArray.dataPointer, address, requiredSamples * MemoryLayout<Float>.size)
+            }
         }
         
         do {

@@ -63,6 +63,7 @@ class AudioDiarizer: ObservableObject {
     @Published var currentStatus:   String = "Ready"
     @Published var confidence:      String = "--"
     @Published var isRunning               = false
+    @Published var isModelLoaded           = false
     @Published var currentSpeakerID: Int?  = nil
     @Published var segmentHistory: [DiarizationEvent] = []
     
@@ -81,13 +82,31 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Initialization
     
     init() {
+        // Model loading is now handled via async setup() to prevent UI freezes.
+    }
+    
+    /// Asynchronously loads the VL1004 CoreML model into memory and prepares the ANE.
+    func setup() async {
+        guard model == nil else { return }
+        
         let config = MLModelConfiguration()
         config.computeUnits = .all
+        
         do {
-            self.model = try VL1004(configuration: config)
-            print("VL1004 Model Loaded Successfully (ANE Optimized)")
+            let loadedModel = try await Task.detached(priority: .userInitiated) {
+                try VL1004(configuration: config)
+            }.value
+            
+            await MainActor.run {
+                self.model = loadedModel
+                self.isModelLoaded = true
+                print("VL1004 Model Loaded Successfully (Async/ANE Optimized)")
+            }
         } catch {
-            print("Model Load Error: \(error)")
+            await MainActor.run {
+                print("Model Load Error: \(error)")
+                self.currentStatus = "Model Error"
+            }
         }
     }
     
