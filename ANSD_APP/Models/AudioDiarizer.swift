@@ -35,15 +35,15 @@ class AudioDiarizer: ObservableObject {
 
     // MARK: - Accuracy Parameters
     // Reset to robust levels since we are now using Dense Speech Accumulation
-    private let similarityThreshold: Float = 0.90
-    private let learningThreshold:   Float = 0.92
+    private let similarityThreshold: Float = 0.75
+    private let learningThreshold:   Float = 0.82
     private let learningRate:        Float = 0.05
     
     // Switch Penalty removed for absolute discrimination accuracy
     private let switchingPenalty:    Float = 0.0
 
     // MARK: - Voice Activity Detection
-    private let vadThresholdDB: Float = -35.0
+    private let vadThresholdDB: Float = -45.0
     private var isSilent: Bool = true
 
     // MARK: - Pause-Aware Window Management
@@ -59,10 +59,10 @@ class AudioDiarizer: ObservableObject {
     // buffer entirely so the NEXT speech starts a fresh, clean window
     // rather than one contaminated by the preceding silence.
     private var consecutiveSilentFrames: Int = 0
-    private let pauseFlushThreshold:     Int = 5  // Fast flush (~0.15s) to separate speakers
+    private let pauseFlushThreshold:     Int = 30 // Increased to ~2.5s to prevent buffer clearing during natural pauses
 
     // MARK: - Frame Voting & Smoothing
-    private let votingThreshold = 3  // Increased from 2 for better stability
+    private let votingThreshold = 4  // Increased for better stability
     private var voteCount:    [Int: Int] = [:]
     private var leadingVoteID: Int?
     
