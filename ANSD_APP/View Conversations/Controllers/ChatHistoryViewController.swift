@@ -437,8 +437,8 @@ class ChatHistoryViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
             if let newText = alert.textFields?.first?.text {
-                self.histconversationData?.messages?[indexPath.row].text = newText
-                self.histconversationData?.messages?[indexPath.row].isEdited = true
+                message.text = newText
+                message.isEdited = true
                 self.collectionView.reloadItems(at: [indexPath])
                 self.notifyDataChanged()
             }
@@ -511,15 +511,18 @@ extension ChatHistoryViewController: UICollectionViewDelegate, UICollectionViewD
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let message = transcript[indexPath.row]
         
+        let attributes: [NSAttributedString.Key: Any] = message.isHighlighted ? [.underlineStyle: NSUnderlineStyle.single.rawValue] : [:]
+        let attributedText = NSAttributedString(string: message.text, attributes: attributes)
+        
         if message.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCIncomingCell", for: indexPath) as! ViewIncomingCell
-            cell.messageLabel.text = message.text
+            cell.messageLabel.attributedText = attributedText
             cell.nameLabel.text = message.senderName
             cell.editedLabel.isHidden = !message.isEdited
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PCOutCell", for: indexPath) as! ViewOutgoingCell
-            cell.PCmessageLabel.text = message.text
+            cell.PCmessageLabel.attributedText = attributedText
             cell.editedLabel.isHidden = !message.isEdited
             return cell
         }
@@ -528,16 +531,16 @@ extension ChatHistoryViewController: UICollectionViewDelegate, UICollectionViewD
 
     func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
-            let highlight = UIAction(title: "Highlight", image: UIImage(systemName: "highlighter")) { _ in
-                let currentStatus = self.histconversationData?.messages?[indexPath.row].isHighlighted ?? false
-                self.histconversationData?.messages?[indexPath.row].isHighlighted = !currentStatus
+            let underline = UIAction(title: "Underline", image: UIImage(systemName: "underline")) { _ in
+                let message = self.transcript[indexPath.row]
+                message.isHighlighted = !message.isHighlighted
                 collectionView.reloadItems(at: [indexPath])
                 self.notifyDataChanged()
             }
             let edit = UIAction(title: "Edit", image: UIImage(systemName: "pencil")) { _ in
                 self.showEditAlert(for: indexPath)
             }
-            return UIMenu(title: "", children: [highlight, edit])
+            return UIMenu(title: "", children: [underline, edit])
         }
     }
 
