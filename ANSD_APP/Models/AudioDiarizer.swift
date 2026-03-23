@@ -13,6 +13,7 @@ import Accelerate
 import SoundAnalysis
 import Combine
 
+/// A data model representing a specific voice segment identified by the diarizer.
 struct DiarizationEvent: Identifiable {
     let id = UUID()
     let timestamp: Date
@@ -22,96 +23,77 @@ struct DiarizationEvent: Identifiable {
     let locationTag: String?
 }
 
+/// The core engine responsible for real-time speaker diarization and embedding extraction on-device.
+/// Optimized for iPhone 16 (A18) using the Apple Neural Engine (ANE).
 class AudioDiarizer: ObservableObject {
+    
+    // MARK: - Core Components
     private let audioEngine = AVAudioEngine()
     private var audioConverter: AVAudioConverter?
-
     private var model: VL1004?
-
+    
     // MARK: - Sliding Window Configuration
-    //
-    // requiredSamples = 96000  →  6 seconds of audio at 16 kHz (model input size, unchanged)
-    // stride          = 4800   →  300 ms slide interval at 16 kHz (restored from bad 8000 value)
-    //
-    private let requiredSamples = 96000
-    private let stride          = 4800   // 300 ms — fine-grained sliding window for responsive detection
+    private let requiredSamples = 96000  // 6.0 seconds @ 16kHz
+    private let stride          = 4800   // 300 ms sliding window for real-time responsiveness
     private var collectedSamples: [Float] = []
-
-    // MARK: - Accuracy Parameters
-    //
-    // similarityThreshold: minimum cosine similarity to accept a known speaker match.
-    //   Raised from 0.62 → 0.72 to avoid false "new speaker" creation on brief noise.
-    //
-    // learningThreshold: minimum confidence required before updating a speaker's profile.
-    //   Raised from 0.88 → 0.90 so profile drift is gated on very confident frames only.
-    //
-    // learningRate: weight of new vector when rolling-averaging a profile.
-    //   Lowered from 0.05 → 0.03 for slower, more stable profile evolution.
-    //
-    private let similarityThreshold: Float = 0.60
-    private let learningThreshold:   Float = 0.85
-    private let learningRate:        Float = 0.05
-
-    // MARK: - Voice Activity Detection (VAD) Gatekeeper
-    // Decibel threshold for active human speech context vs silence.
-    private let vadThresholdDB: Float = -35.0
+    
+    // MARK: - Accuracy & Learning Parameters
+    private let similarityThreshold: Float = 0.72  // Minimum cosine similarity for matching
+    private let learningThreshold:   Float = 0.88  // Threshold for updating a speaker's memory bank
+    private let learningRate:        Float = 0.03  // Weight of new vectors in the rolling average
+    
+    // MARK: - Voice Activity Detection (VAD)
+    private var adaptiveVadThreshold: Float = -45.0 // Initial baseline (adapts to room noise)
+    private var noiseFloorBuffer: [Float] = []
+    private let noiseFloorLimit = 10
     private var isSilent: Bool = true
     
-    // MARK: - Frame Voting
-    //
-    // A speaker change only commits after votingThreshold consecutive frames agree
-    // on the same speaker ID. This prevents single noisy frames from flipping bubbles.
-    //
+    // MARK: - Diarization Logic & Voting
     private let votingThreshold = 3
-    private var voteCount:    [Int: Int] = [:]   // speakerID → consecutive frame count
-    private var leadingVoteID: Int?               // speaker currently accumulating votes
-
-    // MARK: - 3D Spectral Clustering (Online Memory Bank)
-    // Instead of a single drifting average, we maintain a robust topography of the speaker's voice.
+    private var voteCount: [Int: Int] = [:]       // Tracker for consecutive speaker detections
+    private var leadingVoteID: Int?               // Speaker ID currently accumulating votes
+    
+    // MARK: - Topographic Memory Bank (3D Clustering)
     private var speakerClusterMemory: [Int: [[Float]]] = [:]
-    private let maxClusterSize = 35
-
+    private let maxClusterSize = 35               // Max fingerprints stored per speaker profile
+    
+    // MARK: - Published State (UI Linked)
     @Published var speakerProfiles: [Int: [Float]] = [:]
     @Published var speakerNames:    [Int: String] = [:]
     @Published var currentStatus:   String = "Ready"
     @Published var confidence:      String = "--"
     @Published var isRunning               = false
     @Published var currentSpeakerID: Int?  = nil
-
-    public var currentLocation: String? = nil
     @Published var segmentHistory: [DiarizationEvent] = []
-
+    
+    public var currentLocation: String? = nil
+    
+    // MARK: - Concurrency Control
+    private let audioProcessingQueue = DispatchQueue(label: "com.mitwpu.audiodiarizer.processing", qos: .userInitiated)
+    private let inferenceQueue       = DispatchQueue(label: "com.mitwpu.audiodiarizer.inference", qos: .userInitiated)
+    private var pendingInferenceCount = 0
+    private let maxPendingInferences  = 1
+    private var cancellables = Set<AnyCancellable>()
+    
     private var isEnrolling = false
     private var enrollmentCompletion: ((Bool) -> Void)?
-
-    // MARK: - Serial Inference Queue
-    //
-    // Previous implementation used a simple boolean guard that silently dropped inferences.
-    // Now we use a serial DispatchQueue so inferences queue up (max depth 1) rather than
-    // being discarded entirely, ensuring every acoustic segment gets processed.
-    //
-    private let inferenceQueue = DispatchQueue(label: "com.ansd.audiodiarizer.inference",
-                                               qos: .userInitiated)
-    private var pendingInferenceCount = 0        // lightweight counter, accessed only on main
-    private let maxPendingInferences  = 1        // at most 1 queued inference at a time
-
-    private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Initialiser
-
+    
+    // MARK: - Initialization
+    
     init() {
         let config = MLModelConfiguration()
         config.computeUnits = .all
         do {
             self.model = try VL1004(configuration: config)
-            print("VL1004 Model Loaded Successfully (96k Input)")
+            print("VL1004 Model Loaded Successfully (ANE Optimized)")
         } catch {
             print("Model Load Error: \(error)")
         }
     }
-
-    // MARK: - Enrollment & Configuration
-
+    
+    // MARK: - Public API (Enrollment & Recording)
+    
+    /// Prepares the engine to record the primary user's voice profile (ID 0).
     func enrollUser(completion: @escaping (Bool) -> Void) {
         print("Starting Enrollment for User (ID: 0)")
         self.isEnrolling = true
@@ -121,98 +103,94 @@ class AudioDiarizer: ObservableObject {
         self.speakerClusterMemory.removeAll()
         self.speakerNames.removeAll()
     }
-
+    
     func setUserName(_ name: String) {
         speakerNames[0] = name
     }
-
-    // MARK: - Audio Ingestion
-
+    
+    // MARK: - Audio Pipeline (Ingestion)
+    
+    /// Entry point for incoming audio buffers. Handles format conversion and background dispatch.
     func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
         guard let converter = getConverter(from: buffer.format, to: targetFormat) else { return }
-
+        
         let ratio    = Float(targetFormat.sampleRate) / Float(buffer.format.sampleRate)
         let capacity = UInt32(Float(buffer.frameLength) * ratio)
-
+        
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: capacity) else { return }
-
+        
         var error: NSError? = nil
         let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
             outStatus.pointee = .haveData
             return buffer
         }
         converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
-
+        
         if let channelData = outputBuffer.floatChannelData {
-            let samples = Array(UnsafeBufferPointer(start: channelData[0],
-                                                    count: Int(outputBuffer.frameLength)))
-            DispatchQueue.main.async {
+            let samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
+            audioProcessingQueue.async {
                 self.processSamples(samples)
             }
         }
     }
-
+    
     private func getConverter(from input: AVAudioFormat, to output: AVAudioFormat) -> AVAudioConverter? {
         if audioConverter == nil || audioConverter?.inputFormat != input {
             audioConverter = AVAudioConverter(from: input, to: output)
         }
         return audioConverter
     }
-
-    // MARK: - Processing Logic
-
+    
+    // MARK: - Signal Processing (VAD & Chunking)
+    
     private func processSamples(_ samples: [Float]) {
-        // VAD processing on incoming micro-frame
+        // Calculate frame energy (RMS)
         var frameRms: Float = 0
         vDSP_rmsqv(samples, 1, &frameRms, vDSP_Length(samples.count))
         let frameDb = 20 * log10(max(frameRms, 1e-8))
         
+        // Adaptive Noise Floor Tracking
+        updateNoiseFloor(frameDb)
+        
         let wasSilent = self.isSilent
-        self.isSilent = (frameDb < vadThresholdDB)
-
+        self.isSilent = (frameDb < adaptiveVadThreshold + 8.0) // Audio must be 8dB above floor to be 'speech'
+        
         if collectedSamples.isEmpty {
             collectedSamples.reserveCapacity(requiredSamples + stride)
         }
-
+        
         collectedSamples.append(contentsOf: samples)
-
+        
+        // Window verification
         guard collectedSamples.count >= requiredSamples else { return }
-
+        
         let chunk = Array(collectedSamples.prefix(requiredSamples))
-
-        // Efficient sliding window array shift using memmove
+        
+        // Array shift optimization (sliding window)
         let removeCount    = stride
         let remainingCount = collectedSamples.count - removeCount
         if remainingCount > 0 {
             collectedSamples.withUnsafeMutableBufferPointer { ptr in
                 guard let base = ptr.baseAddress else { return }
-                memmove(base, base.advanced(by: removeCount),
-                        remainingCount * MemoryLayout<Float>.size)
+                memmove(base, base.advanced(by: removeCount), remainingCount * MemoryLayout<Float>.size)
             }
             collectedSamples.removeLast(removeCount)
         } else {
             collectedSamples.removeAll(keepingCapacity: true)
         }
-
-        // Only run the heavy inference if we are actively detecting voice activity.
-        if !isSilent {
-            scheduleInference(on: chunk)
-        } else if !wasSilent {
-            // Trailing edge: forced flush on utterance finish
+        
+        // Inference gatekeeper
+        if !isSilent || !wasSilent {
             scheduleInference(on: chunk)
         }
     }
-
-    // MARK: - Inference Scheduling
-    //
-    // Replaces the old `if isInferenceRunning { return }` drop-all guard.
-    // We allow at most maxPendingInferences in the queue so stale audio cannot pile up,
-    // but we never silently discard the current frame while the queue is idle.
-    //
+    
+    // MARK: - CoreML Inference Pipeline
+    
     private func scheduleInference(on samples: [Float]) {
         guard pendingInferenceCount <= maxPendingInferences else { return }
         pendingInferenceCount += 1
-
+        
         inferenceQueue.async { [weak self] in
             defer {
                 DispatchQueue.main.async { self?.pendingInferenceCount -= 1 }
@@ -220,136 +198,116 @@ class AudioDiarizer: ObservableObject {
             self?.runInference(on: samples)
         }
     }
-
+    
     private func runInference(on samples: [Float]) {
         guard let model = model else { return }
-
-        guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)],
-                                                      dataType: .float32) else { return }
-        for (i, sample) in samples.enumerated() {
-            inputMultiArray[i] = NSNumber(value: sample)
+        guard let inputBuffer = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else { return }
+        
+        // Zero-copy Raw Memory Transfer
+        samples.withUnsafeBufferPointer { buffer in
+            if let address = buffer.baseAddress {
+                memcpy(inputBuffer.dataPointer, address, requiredSamples * MemoryLayout<Float>.size)
+            }
         }
-
+        
         do {
             let startTime  = CFAbsoluteTimeGetCurrent()
-            let prediction = try model.prediction(audio: inputMultiArray)
+            let prediction = try model.prediction(audio: inputBuffer)
             let elapsed    = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-
+            
             let rawEmbedding = self.extractVector(from: prediction.embedding)
-            print("Inference: \(String(format: "%.1f", elapsed))ms")
-
-            DispatchQueue.main.async {
-                self.processEmbedding(rawEmbedding)
-            }
+            print("Diarization Inference: \(String(format: "%.1f", elapsed))ms")
+            
+            self.processEmbedding(rawEmbedding)
         } catch {
-            print("Error: Inference Error: \(error)")
+            print("Inference Error: \(error)")
         }
     }
-
-    // MARK: - Core Diarization
-
+    
+    // MARK: - Diarization Reasoning (The "Brain")
+    
     private func processEmbedding(_ vector: [Float]) {
         let normVector = normalize(vector)
-
+        
+        // Enrollment bypass
         if isEnrolling {
-            print("Enrollment Complete. ID 0 Saved.")
-            speakerProfiles[0] = normVector
-            speakerClusterMemory[0] = [normVector]
-            if speakerNames[0] == nil { speakerNames[0] = "Me" }
-            isEnrolling = false
-            enrollmentCompletion?(true)
-            enrollmentCompletion = nil
+            DispatchQueue.main.async {
+                self.speakerProfiles[0] = normVector
+                self.speakerClusterMemory[0] = [normVector]
+                if self.speakerNames[0] == nil { self.speakerNames[0] = "Me" }
+                self.isEnrolling = false
+                self.enrollmentCompletion?(true)
+                print("User Enrolled Successfully.")
+            }
             return
         }
-
+        
+        // Initialize first speaker if bank is empty
         if speakerClusterMemory.isEmpty {
-            createNewSpeaker(with: normVector)
+            DispatchQueue.main.async { self.createNewSpeaker(with: normVector) }
             return
         }
-
-        var bestID: Int   = -1
+        
+        // Vectorized Clustering Search (Topography Search)
+        var bestID: Int = -1
         var maxScore: Float = -1.0
         var debugString = "Scores: "
-
+        
         for (id, cluster) in speakerClusterMemory {
-            // Nearest Neighbor Topography (Search the entire mathematical footprint of the person's voice)
-            var bestClusterScore: Float = -1.0
-            for memVector in cluster {
-                let s = cosineSim(normVector, memVector)
-                if s > bestClusterScore { bestClusterScore = s }
-            }
-            let score = bestClusterScore
-            let name  = speakerNames[id] ?? "Spk\(id)"
+            let score = searchClusterVectorized(vector: normVector, cluster: cluster)
+            let name  = speakerNames[id] ?? "Speaker \(id)"
             debugString += "\(name): \(String(format: "%.3f", score)) | "
-
+            
             if score > maxScore {
                 maxScore = score
                 bestID   = id
             }
         }
-        print(debugString)
-
+        
+        // Consensus Logic
         if maxScore > similarityThreshold {
-            print("Match: Speaker \(bestID) (\(String(format: "%.0f%%", maxScore * 100)))")
-            self.confidence = String(format: "%.0f%%", maxScore * 100)
-
-            if bestID != 0 {
-                updateProfile(id: bestID, vector: normVector, score: maxScore)
+            updateProfile(id: bestID, vector: normVector, score: maxScore)
+            DispatchQueue.main.async {
+                self.confidence = String(format: "%.0f%%", maxScore * 100)
+                self.addToHistory(vector: normVector, id: bestID, score: maxScore)
+                self.commitVote(for: bestID)
             }
-
-            addToHistory(vector: normVector, id: bestID, score: maxScore)
-            commitVote(for: bestID)
-
         } else {
-            print("[UNKNOWN] (Best: \(String(format: "%.2f", maxScore))) -> Creating New Speaker")
-            let newID = createNewSpeaker(with: normVector)
-            addToHistory(vector: normVector, id: newID, score: 1.0)
-            commitVote(for: newID)
+            DispatchQueue.main.async {
+                let newID = self.createNewSpeaker(with: normVector)
+                self.addToHistory(vector: normVector, id: newID, score: 1.0)
+                self.commitVote(for: newID)
+            }
         }
     }
-
-    // MARK: - Frame Voting
-    //
-    // Accumulates consecutive-frame votes for a speaker ID.
-    // `currentSpeakerID` (the @Published property consumed by the VC) is only updated
-    // after votingThreshold frames in a row agree — preventing noisy single-frame flips.
-    //
+    
+    // MARK: - Voting & Commitment Architecture
+    
     private func commitVote(for speakerID: Int) {
         if speakerID == leadingVoteID {
             voteCount[speakerID, default: 0] += 1
         } else {
-            // New candidate — reset vote buffer
             voteCount.removeAll()
             leadingVoteID = speakerID
             voteCount[speakerID] = 1
         }
-
+        
         if let count = voteCount[speakerID], count >= votingThreshold {
-            if currentSpeakerID != speakerID {
-                print("Vote Threshold Met: Committing Speaker \(speakerID)")
-            }
-            // Unconditionally assign so the @Published property continuously emits,
-            // which tells the QuickCaptioningViewController to flush its transcript buffer.
             currentSpeakerID = speakerID
-            
-            // Reset so a continued run doesn't permanently lock; 
-            // next vote resets cleanly on speaker change.
-            voteCount[speakerID] = votingThreshold // hold at threshold
+            voteCount[speakerID] = votingThreshold // Cap at threshold for stability
         }
     }
-
-    // MARK: - Semantic / Pause Forcing
     
     func forceCommitLeadingVote() {
         if let leader = self.leadingVoteID, self.currentSpeakerID != leader {
-            print("Force Committing Leading Vote: Speaker \(leader) due to pause.")
+            print("Force-committing speaker \(leader) due to conversation pause.")
             self.currentSpeakerID = leader
             self.voteCount[leader] = self.votingThreshold
         }
     }
-
-    // MARK: - Adaptive History Management
-
+    
+    // MARK: - History Management
+    
     private func addToHistory(vector: [Float], id: Int, score: Float) {
         let event = DiarizationEvent(
             timestamp:       Date(),
@@ -363,147 +321,106 @@ class AudioDiarizer: ObservableObject {
             segmentHistory.removeFirst()
         }
     }
-
-    // MARK: - Retroactive Correction (Time Machine)
-
+    
+    // MARK: - "Time Machine" Historical Corrections
+    
+    /// Asynchronously corrects the speaker identity of a past event and propagates the correction.
     func applyRetroactiveCorrection(forEventID eventID: UUID, newName: String) {
-        guard let index = segmentHistory.firstIndex(where: { $0.id == eventID }) else { return }
-        let ghostID       = segmentHistory[index].assignedSpeakerID
-        let mistakeVector = segmentHistory[index].vector
-        let mistakeContext = segmentHistory[index].locationTag
-
-        print("Time Machine: User says Event \(eventID) (ID \(ghostID)) is actually '\(newName)'")
-
-        var targetID: Int = -1
-
-        if let existingID = speakerNames.first(where: { $0.value == newName })?.key {
-            targetID = existingID
-        } else {
-            if ghostID != 0 {
-                speakerNames[ghostID] = newName
-                print("Renamed ID \(ghostID) to \(newName). No merge needed.")
-                self.objectWillChange.send()
-                return
-            }
-            let newID = (speakerProfiles.keys.max() ?? 0) + 1
-            speakerProfiles[newID] = mistakeVector
-            speakerClusterMemory[newID] = [mistakeVector]
-            speakerNames[newID] = newName
-            targetID = newID
-        }
-
-        var mergeCount  = 0
-        var rippleCount = 0
-
-        updateProfile(id: targetID, vector: mistakeVector, score: 1.0, force: true)
-
-        guard let targetProfile = speakerProfiles[targetID] else { return }
-
-        for i in 0..<segmentHistory.count {
-            let event = segmentHistory[i]
-
-            // Pass 1: Hard Merge of Ghost ID
-            if event.assignedSpeakerID == ghostID && ghostID != targetID {
-                segmentHistory[i].assignedSpeakerID = targetID
-                segmentHistory[i].confidence        = 1.0
-                updateProfile(id: targetID, vector: event.vector, score: 1.0, force: true)
-                mergeCount += 1
-                continue
-            }
-
-            // Pass 2: Soft Ripple with Context Weighting
-            if event.assignedSpeakerID != 0
-                && event.assignedSpeakerID != targetID
-                && event.assignedSpeakerID != ghostID {
-
-                var score = cosineSim(event.vector, targetProfile)
-                if let evLoc = event.locationTag, let mistLoc = mistakeContext, evLoc == mistLoc {
-                    score += 0.10
-                }
-
-                if score > 0.75 && score > (event.confidence + 0.05) {
-                    print("Magic: Found a missed segment at index \(i) (Score: \(score))")
-                    segmentHistory[i].assignedSpeakerID = targetID
-                    segmentHistory[i].confidence        = score
-                    rippleCount += 1
-                }
-            }
-        }
-
-        if ghostID != targetID {
-            speakerProfiles.removeValue(forKey: ghostID)
-            speakerClusterMemory.removeValue(forKey: ghostID)
-            speakerNames.removeValue(forKey: ghostID)
-        }
-
-        self.objectWillChange.send()
-        print("Time Machine Report: Merged \(mergeCount) segments. Discovered \(rippleCount) context-verified matches.")
-    }
-
-    // MARK: - Profile Helpers
-
-    @discardableResult
-    private func createNewSpeaker(with vector: [Float]) -> Int {
-        var newID = 1
-        if let maxKey = speakerProfiles.keys.max() {
-            newID = maxKey + 1
-        }
-        if newID == 0 { newID = 1 }
-
-        print("New Speaker Detected: Assigned ID \(newID)")
-        self.speakerProfiles[newID] = vector
-        self.speakerClusterMemory[newID] = [vector]
-        self.confidence            = "100%"
-
-        // We specifically DO NOT seed the vote buffer here.
-        // Let the new speaker accumulate 3 consecutive votes naturally.
-        // This prevents 300ms of initial breathing/noise from instantly
-        // hijacking the currentSpeakerID and breaking the app's speaker lock.
-
-        return newID
-    }
-
-    private func updateProfile(id: Int, vector: [Float], score: Float, force: Bool = false) {
-        if id == 0 && !force { return }
-        
-        // Populate and evolve the topographic cluster network
-        if force || score > learningThreshold {
-            if speakerClusterMemory[id] == nil {
-                speakerClusterMemory[id] = []
-            }
-            speakerClusterMemory[id]?.append(vector)
+        Task {
+            guard let index = segmentHistory.firstIndex(where: { $0.id == eventID }) else { return }
+            let ghostID       = segmentHistory[index].assignedSpeakerID
+            let mistakeVector = segmentHistory[index].vector
+            let mistakeContext = segmentHistory[index].locationTag
             
-            // Constrain maximum computational depth per cluster
-            if (speakerClusterMemory[id]?.count ?? 0) > maxClusterSize {
-                speakerClusterMemory[id]?.removeFirst()
-            }
+            var targetID: Int = -1
             
-            // Keep basic legacy centroid alive for potential downstream components/SwiftData
-            if let oldProfile = speakerProfiles[id] {
-                speakerProfiles[id] = applyRollingAvg(old: oldProfile, new: vector)
+            if let existingID = speakerNames.first(where: { $0.value == newName })?.key {
+                targetID = existingID
             } else {
-                speakerProfiles[id] = vector
+                if ghostID != 0 {
+                    DispatchQueue.main.async {
+                        self.speakerNames[ghostID] = newName
+                        self.objectWillChange.send()
+                    }
+                    return
+                }
+                let newID = (speakerProfiles.keys.max() ?? 0) + 1
+                DispatchQueue.main.async {
+                    self.speakerProfiles[newID] = mistakeVector
+                    self.speakerClusterMemory[newID] = [mistakeVector]
+                    self.speakerNames[newID] = newName
+                }
+                targetID = newID
+            }
+            
+            updateProfile(id: targetID, vector: mistakeVector, score: 1.0, force: true)
+            guard let targetProfile = speakerProfiles[targetID] else { return }
+            
+            for i in 0..<segmentHistory.count {
+                let event = segmentHistory[i]
+                
+                // Pass 1: Direct Merge of Ghost Identity
+                if event.assignedSpeakerID == ghostID && ghostID != targetID {
+                    DispatchQueue.main.async {
+                        self.segmentHistory[i].assignedSpeakerID = targetID
+                        self.segmentHistory[i].confidence        = 1.0
+                    }
+                    updateProfile(id: targetID, vector: event.vector, score: 1.0, force: true)
+                    continue
+                }
+                
+                // Pass 2: Context-Aware Soft Matching
+                if event.assignedSpeakerID != 0 && event.assignedSpeakerID != targetID {
+                    var score = cosineSim(event.vector, targetProfile)
+                    if let evLoc = event.locationTag, let mistLoc = mistakeContext, evLoc == mistLoc { score += 0.10 }
+                    
+                    if score > 0.75 && score > (event.confidence + 0.05) {
+                        DispatchQueue.main.async {
+                            self.segmentHistory[i].assignedSpeakerID = targetID
+                            self.segmentHistory[i].confidence        = score
+                        }
+                    }
+                }
+            }
+            
+            if ghostID != targetID {
+                DispatchQueue.main.async {
+                    self.speakerProfiles.removeValue(forKey: ghostID)
+                    self.speakerClusterMemory.removeValue(forKey: ghostID)
+                    self.speakerNames.removeValue(forKey: ghostID)
+                    self.objectWillChange.send()
+                }
             }
         }
     }
-
-    // MARK: - Math Utilities
-
+    
+    // MARK: - Mathematical Utilities (Accelerate Optimization)
+    
+    private func searchClusterVectorized(vector: [Float], cluster: [[Float]]) -> Float {
+        var maxScore: Float = -1.0
+        for clusterVector in cluster {
+            var dot: Float = 0
+            vDSP_dotpr(vector, 1, clusterVector, 1, &dot, vDSP_Length(vector.count))
+            if dot > maxScore { maxScore = dot }
+        }
+        return maxScore
+    }
+    
     private func applyRollingAvg(old: [Float], new: [Float]) -> [Float] {
         var result = [Float](repeating: 0, count: old.count)
-        var fOld   = 1.0 - learningRate
-        var fNew   = learningRate
+        var fOld = 1.0 - learningRate
+        var fNew = learningRate
         vDSP_vsmul(old, 1, &fOld, &result, 1, vDSP_Length(old.count))
         vDSP_vsma (new, 1, &fNew, result, 1, &result, 1, vDSP_Length(old.count))
         return normalize(result)
     }
-
+    
     func cosineSim(_ v1: [Float], _ v2: [Float]) -> Float {
         var dot: Float = 0
         vDSP_dotpr(v1, 1, v2, 1, &dot, vDSP_Length(v1.count))
         return dot
     }
-
+    
     func normalize(_ v: [Float]) -> [Float] {
         var norm: Float = 0
         vDSP_svesq(v, 1, &norm, vDSP_Length(v.count))
@@ -512,10 +429,42 @@ class AudioDiarizer: ObservableObject {
         vDSP_vsdiv(v, 1, [mag], &res, 1, vDSP_Length(v.count))
         return res
     }
-
+    
+    /// Converts an MLMultiArray embedding into a standard Swift Float array.
     func extractVector(from multiArray: MLMultiArray) -> [Float] {
         let count = multiArray.count
         let ptr   = multiArray.dataPointer.bindMemory(to: Float.self, capacity: count)
         return Array(UnsafeBufferPointer(start: ptr, count: count))
+    }
+    
+    @discardableResult
+    private func createNewSpeaker(with vector: [Float]) -> Int {
+        let newID = (speakerProfiles.keys.max() ?? 0) + 1
+        speakerProfiles[newID] = vector
+        speakerClusterMemory[newID] = [vector]
+        self.confidence            = "100%"
+        return newID
+    }
+    
+    private func updateProfile(id: Int, vector: [Float], score: Float, force: Bool = false) {
+        if id == 0 && !force { return }
+        if force || score > learningThreshold {
+            if speakerClusterMemory[id] == nil { speakerClusterMemory[id] = [] }
+            speakerClusterMemory[id]?.append(vector)
+            if (speakerClusterMemory[id]?.count ?? 0) > maxClusterSize { speakerClusterMemory[id]?.removeFirst() }
+            
+            if let oldProfile = speakerProfiles[id] {
+                speakerProfiles[id] = applyRollingAvg(old: oldProfile, new: vector)
+            } else {
+                speakerProfiles[id] = vector
+            }
+        }
+    }
+    
+    private func updateNoiseFloor(_ currentDb: Float) {
+        noiseFloorBuffer.append(currentDb)
+        if noiseFloorBuffer.count > noiseFloorLimit { noiseFloorBuffer.removeFirst() }
+        let avgFloor = noiseFloorBuffer.reduce(0, +) / Float(noiseFloorBuffer.count)
+        adaptiveVadThreshold = (adaptiveVadThreshold * 0.95) + (avgFloor * 0.05)
     }
 }
