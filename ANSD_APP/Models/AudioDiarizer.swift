@@ -48,13 +48,17 @@ class AudioDiarizer: ObservableObject {
     // learningRate: weight of new vector when rolling-averaging a profile.
     //   Lowered from 0.05 → 0.03 for slower, more stable profile evolution.
     //
-    private let similarityThreshold: Float = 0.60
+    // Raised from 0.60 → 0.75: a wider gap means more frames fell into the "new speaker"
+    // zone, which is exactly what was fragmenting one voice into 3 cluster IDs.
+    private let similarityThreshold: Float = 0.75
     private let learningThreshold:   Float = 0.85
     private let learningRate:        Float = 0.05
 
     // MARK: - Voice Activity Detection (VAD) Gatekeeper
     // Decibel threshold for active human speech context vs silence.
-    private let vadThresholdDB: Float = -35.0
+    // Tightened from -35 dB → -30 dB: this filters out the softest room noise
+    // before SoundAnalysis even runs, reducing unnecessary analysis overhead.
+    private let vadThresholdDB: Float = -30.0
     private var isSilent: Bool = true
     
     // MARK: - Frame Voting
@@ -68,7 +72,7 @@ class AudioDiarizer: ObservableObject {
 
     // MARK: - 3D Spectral Clustering (Online Memory Bank)
     // Instead of a single drifting average, we maintain a robust topography of the speaker's voice.
-    private var speakerClusterMemory: [Int: [[Float]]] = [:]
+    var speakerClusterMemory: [Int: [[Float]]] = [:]
     private let maxClusterSize = 35
 
     @Published var speakerProfiles: [Int: [Float]] = [:]
@@ -94,6 +98,18 @@ class AudioDiarizer: ObservableObject {
                                                qos: .userInitiated)
     private var pendingInferenceCount = 0        // lightweight counter, accessed only on main
     private let maxPendingInferences  = 1        // at most 1 queued inference at a time
+
+    // MARK: - SoundAnalysis Speech Gate
+    //
+    // SNClassifySoundRequest (built-in classifier) continuously classifies each audio
+    // window. Only frames that the OS identifies as human speech pass through to the
+    // VL1004 embedder. Keyboard clicks, breathing, HVAC, and other non-speech events
+    // are discarded here — they are the root cause of spurious new-speaker creation.
+    //
+    private let speechGate     = SpeechActivityGate()
+    private var soundAnalyzer:  SNAudioStreamAnalyzer?
+    private let analysisQueue  = DispatchQueue(label: "com.ansd.soundanalysis", qos: .userInitiated)
+    private var analysisFrame:  AVAudioFramePosition = 0
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -129,6 +145,20 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Audio Ingestion
 
     func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
+        // ── SoundAnalysis speech gate ────────────────────────────────────────────
+        // Feed the RAW (pre-conversion) buffer into the SNAudioStreamAnalyzer.
+        // This uses the native mic format which the classifier was trained on.
+        // Results update speechGate.isActive asynchronously; the gate defaults to
+        // true so the very first frames are never missed.
+        if soundAnalyzer == nil { setupSoundAnalyzer(format: buffer.format) }
+        let framePos = analysisFrame
+        analysisFrame += AVAudioFramePosition(buffer.frameLength)
+        let bufferCopy = buffer  // capture for async block
+        analysisQueue.async { [weak self] in
+            self?.soundAnalyzer?.analyze(bufferCopy, atAudioFramePosition: framePos)
+        }
+        // ────────────────────────────────────────────────────────────────────────
+
         guard let converter = getConverter(from: buffer.format, to: targetFormat) else { return }
 
         let ratio    = Float(targetFormat.sampleRate) / Float(buffer.format.sampleRate)
@@ -194,11 +224,20 @@ class AudioDiarizer: ObservableObject {
             collectedSamples.removeAll(keepingCapacity: true)
         }
 
-        // Only run the heavy inference if we are actively detecting voice activity.
-        if !isSilent {
+        // DUAL GATE: inference only fires when BOTH gates agree.
+        //
+        //  Gate 1 — VAD (energy):      rejects silence / very quiet frames.
+        //  Gate 2 — SoundAnalysis:     rejects non-speech sounds (keyboard,
+        //                              breathing, HVAC, shuffling) that pass
+        //                              the energy threshold but are not human voice.
+        //
+        // Without Gate 2, quiet non-speech transients sail through and get embedded
+        // by VL1004, producing clusters that look like new speakers.
+        let speechActive = speechGate.isActive
+        if !isSilent && speechActive {
             scheduleInference(on: chunk)
-        } else if !wasSilent {
-            // Trailing edge: forced flush on utterance finish
+        } else if !wasSilent && speechActive {
+            // Trailing edge: flush the last chunk when an utterance ends.
             scheduleInference(on: chunk)
         }
     }
@@ -517,5 +556,71 @@ class AudioDiarizer: ObservableObject {
         let count = multiArray.count
         let ptr   = multiArray.dataPointer.bindMemory(to: Float.self, capacity: count)
         return Array(UnsafeBufferPointer(start: ptr, count: count))
+    }
+
+    // MARK: - SoundAnalysis Setup
+
+    private func setupSoundAnalyzer(format: AVAudioFormat) {
+        let analyzer = SNAudioStreamAnalyzer(format: format)
+        do {
+            let request = try SNClassifySoundRequest(classifierIdentifier: .version1)
+            // 0.5-second window, 50% overlap → new result every ~250 ms.
+            // Balances latency (fast gate response) vs. accuracy (enough context).
+            request.windowDuration = CMTimeMakeWithSeconds(0.5, preferredTimescale: 44_100)
+            request.overlapFactor  = 0.5
+            try analyzer.add(request, withObserver: speechGate)
+            soundAnalyzer = analyzer
+            print("[SoundAnalysis] Speech gate active (window=0.5s, overlap=50%)")
+        } catch {
+            print("[SoundAnalysis] Could not set up speech gate: \(error). Inference will run ungated.")
+        }
+    }
+}
+
+// MARK: - SpeechActivityGate
+///
+/// SNResultsObserving observer that tracks whether the current audio window
+/// contains human speech according to Apple's on-device sound classifier.
+/// Thread-safe via NSLock; read from any queue.
+///
+private class SpeechActivityGate: NSObject, SNResultsObserving {
+
+    // Human-vocal sound labels recognised by SNClassifierIdentifier.version1.
+    // Any top classification from this set is treated as valid speech input.
+    private let speechLabels: Set<String> = [
+        "speech", "singing", "shout", "laughter",
+        "crying_sobbing", "crowd"
+    ]
+
+    // Starts TRUE so the very first frames are never gated out while the
+    // classifier warms up (first result arrives ~250 ms after stream start).
+    private var _isActive: Bool = true
+    private let lock = NSLock()
+
+    var isActive: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return _isActive
+    }
+
+    func request(_ request: SNRequest, didProduce result: SNResult) {
+        guard let result = result as? SNClassificationResult,
+              let top    = result.classifications.first else { return }
+
+        // Accept the frame as speech if the best-matching label is a vocal
+        // sound AND the classifier is at least 35% confident.
+        let active = speechLabels.contains(top.identifier) && top.confidence > 0.35
+        lock.lock()
+        _isActive = active
+        lock.unlock()
+
+        if !active {
+            print("[SpeechGate] Blocked non-speech frame: \(top.identifier) (\(String(format: "%.0f%%", top.confidence * 100)))")
+        }
+    }
+
+    func request(_ request: SNRequest, didFailWithError error: Error) {
+        print("[SpeechGate] Analysis error: \(error)")
+        // On error, default to permissive (let frames through).
+        lock.lock(); _isActive = true; lock.unlock()
     }
 }

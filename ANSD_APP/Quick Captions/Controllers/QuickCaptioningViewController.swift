@@ -56,6 +56,9 @@ class QuickCaptioningViewController: UIViewController,
     private var forceNewBubble = false
     private var cleanupIDs: [UUID] = []
 
+    /// Holds the Firebase auth-state listener handle so we can remove it after first fire.
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
+
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -76,19 +79,39 @@ class QuickCaptioningViewController: UIViewController,
         speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
             
-            // MARK: - Voice Profile Check
+    // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
-        if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
-            // Profile exists! Load it into the Diarizer memory
-            diarizer.speakerProfiles[0] = savedProfile.embedding
-            diarizer.speakerNames[0] = savedProfile.name
-            hasEnrolled = true
-            
-            startSession()
-        } else {
-            // No profile exists. Trigger the Calibration Prompt
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.promptForEnrollment()
+        // Auth.auth().currentUser is nil during viewDidLoad while Firebase is still
+        // restoring the session asynchronously. Using addStateDidChangeListener fires
+        // exactly once when auth state is fully resolved — which is when it's safe to
+        // query the local SwiftData store for the saved VoiceProfile.
+        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self = self else { return }
+
+            // Remove listener immediately — single-shot; we don't need further callbacks.
+            if let handle = self.authStateHandle {
+                Auth.auth().removeStateDidChangeListener(handle)
+                self.authStateHandle = nil
+            }
+
+            DispatchQueue.main.async {
+                if let uid = user?.uid,
+                   let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
+                    // Profile found — seed BOTH the centroid dict AND the cluster memory.
+                    // processEmbedding() does nearest-neighbour search in speakerClusterMemory;
+                    // if it is empty every frame triggers createNewSpeaker() → grey bubble.
+                    let embedding = self.diarizer.normalize(savedProfile.embedding)
+                    self.diarizer.speakerProfiles[0] = embedding
+                    self.diarizer.speakerClusterMemory[0] = [embedding]
+                    self.diarizer.speakerNames[0] = savedProfile.name
+                    self.hasEnrolled = true
+                    self.startSession()
+                } else {
+                    // No profile saved — prompt for one-time voice calibration.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.promptForEnrollment()
+                    }
+                }
             }
         }
     }
@@ -519,6 +542,25 @@ class QuickCaptioningViewController: UIViewController,
     
     private func startAudioEngine() throws {
         let inputNode = audioEngine.inputNode
+
+        // Enable Apple's built-in Voice Processing I/O BEFORE installing any tap.
+        // This activates the OS-level DSP stack:
+        //   • Noise suppression   — attenuates non-speech environmental sounds
+        //   • Echo cancellation   — prevents speaker output bleeding into the mic
+        //   • Automatic gain ctrl — normalises mic level across devices & distances
+        // Best-effort: vpio can fail on certain Bluetooth profiles, the Simulator,
+        // or locked audio configurations (render err -1). In those cases we fall
+        // back silently — the .voiceChat audio session mode still provides basic
+        // noise reduction so diarization is not left completely unprotected.
+        if !inputNode.isVoiceProcessingEnabled {
+            do {
+                try inputNode.setVoiceProcessingEnabled(true)
+            } catch {
+                print("[AudioEngine] Voice Processing I/O unavailable on this config: \(error). Using voiceChat fallback.")
+            }
+        }
+
+        // Re-read the format after voice processing is enabled — it may change.
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in

@@ -40,6 +40,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         var otherPersonName = "Guest"
         var messages: [GroupNewChatMessage] = []
         var currentSessionID: String = ""
+    
+    /// Tracks the last text sent to Firebase per bubble index to prevent duplicate sends.
+    private var lastSentText: [Int: String] = [:]
         
     // --- FIXED PROPERTY DECLARATIONS ---
     var currentUserID: String {
@@ -245,35 +248,62 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         Task {
             do {
                 let prompt = """
-                Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
-                
-                Text: "\(text)"
+                Fix grammar and punctuation in the conversational text below. The text may be in any language.
+                Rules:
+                - Return the corrected text EXACTLY ONCE.
+                - Do NOT wrap the output in quotation marks of any kind.
+                - Do NOT repeat or duplicate the text.
+                - Do NOT add commentary, explanations, apologies, or any surrounding words.
+                - If the input is empty or unintelligible, return it unchanged — nothing else.
+
+                Text: \(text)
                 """
                 let session = LanguageModelSession(model: model)
                 let response = try await session.respond(to: prompt)
                 var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
                 
-                // Safety filter: If AI returns a commentary/apology, discard cleanup and use original text
-                let lowercaseResponse = cleanedText.lowercased()
-                if lowercaseResponse.contains("i'm sorry") || lowercaseResponse.contains("as an ai") || lowercaseResponse.contains("can't process") {
+                // Strip wrapping quotation marks (straight or curly) that AI may add
+                let quoteChars: Set<Character> = ["\"", "\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"]
+                if let first = cleanedText.first, let last = cleanedText.last,
+                   quoteChars.contains(first) && quoteChars.contains(last) && cleanedText.count > 2 {
+                    cleanedText = String(cleanedText.dropFirst().dropLast())
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                
+                // Safety filter 1: discard known boilerplate/apology responses
+                let lr = cleanedText.lowercased()
+                if lr.contains("i'm sorry") || lr.contains("as an ai") || lr.contains("can't process") {
+                    cleanedText = text
+                }
+                
+                // Safety filter 2: discard if AI response is >2x the input length (duplication signal)
+                if cleanedText.count > (text.count * 2 + 20) {
                     cleanedText = text
                 }
                 
                 await MainActor.run {
+                    guard index < self.messages.count else { return }
+                    
                     // Update Local UI
-                    if index < self.messages.count {
-                        self.messages[index].text = cleanedText
-                        self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-                        
-                        // Send to Firebase
+                    self.messages[index].text = cleanedText
+                    self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+                    
+                    // DEDUP GUARD: Only send to Firebase if this text wasn't already sent for this bubble.
+                    // This prevents duplicate bubbles caused by AI returning text identical to what was
+                    // already pushed (or by rapid double-calls during the restart cycle).
+                    if self.lastSentText[index] != cleanedText {
+                        self.lastSentText[index] = cleanedText
                         self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
                     }
                 }
             } catch {
                 print("Apple Intelligence Error: \(error)")
-                // Fallback: Send raw text if AI fails
+                // Fallback: Send raw text if AI fails — still deduped
                 await MainActor.run {
-                    self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
+                    if self.lastSentText[index] != text {
+                        self.lastSentText[index] = text
+                        self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
+                    }
                 }
             }
         }
