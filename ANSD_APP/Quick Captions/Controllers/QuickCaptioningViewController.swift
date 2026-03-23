@@ -66,11 +66,6 @@ class QuickCaptioningViewController: UIViewController,
         bindDiarizer()
         setupLocation()
         
-        // Async Model Loading to prevent UI freeze
-        Task {
-            await diarizer.setup()
-        }
-        
         checkCalibrationStatus()
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
