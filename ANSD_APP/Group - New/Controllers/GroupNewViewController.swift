@@ -109,7 +109,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("[AudioEngine] Failed to setup audio session: \(error)")
@@ -145,9 +145,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         let inputNode = audioEngine.inputNode
         
-        // 2. Enable Voice Processing (DSP) if available
-        if !inputNode.isVoiceProcessingEnabled {
-            try? inputNode.setVoiceProcessingEnabled(true)
+        // 2. Disable Voice Processing to fix -1 error
+        if #available(iOS 13.0, *) {
+            try? inputNode.setVoiceProcessingEnabled(false)
         }
 
         let recordingFormat = inputNode.outputFormat(forBus: 0)
@@ -441,7 +441,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     private func updateMicButtonVisuals(isActive: Bool) {
-        let imageName = isActive ? "mic.fill" : "mic.slash.fill"
+        let imageName = isActive ? "microphone.fill" : "microphone.slash.fill"
         micButton.setImage(UIImage(systemName: imageName), for: .normal)
     }
     

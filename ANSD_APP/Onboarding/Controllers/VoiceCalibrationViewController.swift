@@ -201,7 +201,7 @@ class VoiceCalibrationViewController: UIViewController {
         switch phase {
 
         case .ready:
-            setButton(title: "Start Voice Setup", image: "mic.fill", color: view.tintColor, enabled: true)
+            setButton(title: "Start Voice Setup", image: "microphone.fill", color: view.tintColor, enabled: true)
             instructionLabel.text = "Tap once. Read these long sentences clearly, stressing your natural vowels and nouns."
             animateBarsToResting()
 

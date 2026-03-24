@@ -570,13 +570,12 @@ class QuickCaptioningViewController: UIViewController,
 
         let inputNode = audioEngine.inputNode
 
-        // 2. Enable Apple's built-in Voice Processing I/O
-        // Toggle this BEFORE installing any tap to prevent "render err: -1"
-        if !inputNode.isVoiceProcessingEnabled {
+        // 2. Disable Voice Processing to fix -1 error
+        if #available(iOS 13.0, *) {
             do {
-                try inputNode.setVoiceProcessingEnabled(true)
+                try inputNode.setVoiceProcessingEnabled(false)
             } catch {
-                print("[AudioEngine] Voice Processing I/O unavailable: \(error). Using standard mode.")
+                print("[AudioEngine] Could not disable voice processing: \(error)")
             }
         }
 
@@ -595,7 +594,7 @@ class QuickCaptioningViewController: UIViewController,
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("[AudioEngine] Failed to setup audio session: \(error)")
