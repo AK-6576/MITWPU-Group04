@@ -309,7 +309,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
             
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: "HeaderCell", for: indexPath) as! SummarySectionHeaderCell
-            cell.headerLabel.text = "Participant Summary"
+            cell.headerLabel.text = "Participants Summary"
             cell.headerIcon.image = UIImage(systemName: "person.2.fill")
             cell.selectionStyle = .none
             return cell
