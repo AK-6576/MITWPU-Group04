@@ -219,7 +219,6 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"
         guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else { return nil }
         header.titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
-        header.subtitleLabel?.text = (section == 0) ? "Upcoming" : ""
         return header.contentView
     }
     

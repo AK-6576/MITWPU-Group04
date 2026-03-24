@@ -197,18 +197,12 @@
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="KCD-xc-nta">
-                                                    <rect key="frame" x="16" y="4" width="325" height="43"/>
+                                                    <rect key="frame" x="16" y="13.666666666666664" width="325" height="24"/>
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Quick Actions" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="te3-W2-f7O">
                                                             <rect key="frame" x="0.0" y="0.0" width="325" height="24"/>
                                                             <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
                                                             <nil key="textColor"/>
-                                                            <nil key="highlightedColor"/>
-                                                        </label>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Upcoming" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jQy-tB-aNd">
-                                                            <rect key="frame" x="0.0" y="26" width="325" height="17"/>
-                                                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                            <color key="textColor" systemColor="secondaryLabelColor"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                     </subviews>
@@ -242,7 +236,6 @@
                                         </userDefinedRuntimeAttributes>
                                         <connections>
                                             <outlet property="chevronButton" destination="KLs-me-jDc" id="Nj4-hx-nDz"/>
-                                            <outlet property="subtitleLabel" destination="jQy-tB-aNd" id="3Yi-Lg-j82"/>
                                             <outlet property="titleLabel" destination="te3-W2-f7O" id="CpY-kw-2CY"/>
                                         </connections>
                                     </tableViewCell>
