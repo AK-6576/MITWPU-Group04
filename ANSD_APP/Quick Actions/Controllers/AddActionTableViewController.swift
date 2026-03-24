@@ -33,7 +33,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     private var dayPopupButton: UIButton?
     private var categoryPopupButton: UIButton?
     
-    var selectedCategory: String = "Office"
+    var selectedCategory: String? = nil
     var selectedDays: Set<String> = ["Monday"]
     var selectedParticipants: [CNContact] = []
     
@@ -45,11 +45,18 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardDismissal()
-        participantsLabel.text = "None"
+        participantsLabel.text = "Add"
         saveButton.isEnabled = false
         setupDayCell()
         setupCategoryCell()
         nameTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
+        updateSaveButtonState()
+    }
+
+    private func updateSaveButtonState() {
+        let hasName = !(nameTextField.text?.isEmpty ?? true)
+        let hasCategory = selectedCategory != nil
+        saveButton.isEnabled = hasName && hasCategory
     }
 
     // MARK: - Day Selection Setup
@@ -100,7 +107,18 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         categoryPopupButton = createPopupButton()
         setupCategoryMenu()
         categoryCell.accessoryView = categoryPopupButton
-        updateCategory(selectedCategory)
+        
+        if let category = selectedCategory {
+            updateCategory(category)
+        } else {
+            if var config = categoryPopupButton?.configuration {
+                config.title = "Select"
+                config.image = UIImage(systemName: "chevron.up.chevron.down")
+                config.imagePlacement = .trailing
+                config.baseForegroundColor = .label
+                categoryPopupButton?.configuration = config
+            }
+        }
     }
     
     private func setupCategoryMenu() {
@@ -119,7 +137,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         }
         
         let plusImage = UIImage(systemName: "plus")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
-        let createOwnAction = UIAction(title: "Create Own...", image: plusImage) { [weak self] _ in
+        let createOwnAction = UIAction(title: "Create", image: plusImage) { [weak self] _ in
             self?.showCustomCategoryAlert()
         }
         
@@ -139,15 +157,19 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             let coloredImage = UIImage(systemName: iconName, withConfiguration: symbolConfig)?
                 .withTintColor(color, renderingMode: .alwaysOriginal)
             config.image = coloredImage
+            config.imagePlacement = .leading
             config.imagePadding = 8
             categoryPopupButton?.configuration = config
         }
+        setupCategoryMenu() // Rebuild menu so the checkmark moves to the new selection
+        updateSaveButtonState()
     }
     
     // MARK: - Save Action (Notification & Data)
     
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
-        guard let name = nameTextField.text, !name.isEmpty else { return }
+        guard let name = nameTextField.text, !name.isEmpty,
+              let selectedCategory = self.selectedCategory else { return }
         
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
@@ -214,11 +236,16 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             let composeVC = MFMessageComposeViewController()
             composeVC.messageComposeDelegate = self
             
-            // Extract phone numbers
+            // Extract phone numbers or explicitly fallback to name
             var phoneNumbers: [String] = []
             for contact in selectedParticipants {
-                if let phoneNumber = contact.phoneNumbers.first?.value.stringValue {
+                if let phoneNumber = contact.phoneNumbers.first?.value.stringValue, !phoneNumber.isEmpty {
                     phoneNumbers.append(phoneNumber)
+                } else {
+                    let fullName = "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces)
+                    if !fullName.isEmpty {
+                        phoneNumbers.append(fullName)
+                    }
                 }
             }
             
@@ -257,7 +284,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     func didSelectParticipants(_ contacts: [CNContact]) {
         self.selectedParticipants = contacts
         let names = contacts.map { "\($0.givenName) \($0.familyName)" }
-        participantsLabel.text = names.isEmpty ? "None" : names.joined(separator: ", ")
+        participantsLabel.text = names.isEmpty ? "Add" : names.joined(separator: ", ")
         participantsLabel.textColor = names.isEmpty ? .secondaryLabel : .label
     }
     
@@ -269,6 +296,11 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         config.imagePlacement = .trailing
         config.imagePadding = 8
         config.titleLineBreakMode = .byTruncatingTail
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 17)
+            return outgoing
+        }
         let button = UIButton(configuration: config)
         button.showsMenuAsPrimaryAction = true
         button.frame = CGRect(x: 0, y: 0, width: 160, height: 35)
@@ -314,6 +346,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     }
 
     @objc private func textDidChange(_ sender: UITextField) {
-        saveButton.isEnabled = !(sender.text?.isEmpty ?? true)
+        updateSaveButtonState()
     }
 }

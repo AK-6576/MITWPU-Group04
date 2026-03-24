@@ -18,6 +18,7 @@ class QuickActionsViewController: UITableViewController {
         self.title = "Quick Actions"
         tableView.tableHeaderView = UIView()
         tableView.sectionHeaderTopPadding = 0
+        tableView.separatorStyle = .none
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -35,6 +36,20 @@ class QuickActionsViewController: UITableViewController {
             filteredSection.items = activeItems
             return filteredSection
         }
+        
+        if self.sections.isEmpty {
+            let emptyLabel = UILabel()
+            emptyLabel.text = "No Quick Actions"
+            emptyLabel.textColor = .secondaryLabel
+            emptyLabel.textAlignment = .center
+            emptyLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+            tableView.backgroundView = emptyLabel
+            tableView.separatorStyle = .none
+        } else {
+            tableView.backgroundView = nil
+            tableView.separatorStyle = .none
+        }
+        
         tableView.reloadData()
     }
     
@@ -161,6 +176,17 @@ class QuickActionsViewController: UITableViewController {
             } else {
                 tableView.deleteRows(at: [indexPath], with: .fade)
             }
+            
+            if self.sections.isEmpty {
+                let emptyLabel = UILabel()
+                emptyLabel.text = "No Quick Actions"
+                emptyLabel.textColor = .secondaryLabel
+                emptyLabel.textAlignment = .center
+                emptyLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+                tableView.backgroundView = emptyLabel
+                tableView.separatorStyle = .none
+            }
+            
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed

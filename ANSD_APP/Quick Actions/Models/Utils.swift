@@ -19,7 +19,7 @@ func getColorForCategory(_ name: String) -> UIColor {
     case "friends", "gaming", "party":        return .systemGreen
     case "gym", "health", "medical":          return .systemOrange
     case "finance", "money", "bank":          return .systemMint
-    case "create own...":                     return .systemBlue
+    case "create":                     return .systemBlue
         
     default:
         let palette: [UIColor] = [
