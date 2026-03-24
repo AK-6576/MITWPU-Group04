@@ -37,40 +37,23 @@ class AudioDiarizer: ObservableObject {
     private let stride          = 4800   // 300 ms — fine-grained sliding window for responsive detection
     private var collectedSamples: [Float] = []
 
-    // MARK: - Accuracy Parameters
-    //
-    // similarityThreshold: minimum cosine similarity to accept a known speaker match.
-    //   Raised from 0.62 → 0.72 to avoid false "new speaker" creation on brief noise.
-    //
-    // learningThreshold: minimum confidence required before updating a speaker's profile.
-    //   Raised from 0.88 → 0.90 so profile drift is gated on very confident frames only.
-    //
-    // learningRate: weight of new vector when rolling-averaging a profile.
-    //   Lowered from 0.05 → 0.03 for slower, more stable profile evolution.
-    //
-    private let similarityThreshold: Float = 0.60
-    private let learningThreshold:   Float = 0.85
+    // MARK: - Parameters
+    private let similarityThreshold: Float = 0.75
     private let learningRate:        Float = 0.05
-
-    // MARK: - Voice Activity Detection (VAD) Gatekeeper
-    // Decibel threshold for active human speech context vs silence.
-    private let vadThresholdDB: Float = -35.0
-    private var isSilent: Bool = true
+    private var isSilent: Bool = false
     
+    // MARK: - SoundAnalysis Speech Gate
+    private let speechGate     = SpeechActivityGate()
+    private var soundAnalyzer:  SNAudioStreamAnalyzer?
+    private let analysisQueue  = DispatchQueue(label: "com.ansd.soundanalysis", qos: .userInitiated)
+    private var analysisFrame:  AVAudioFramePosition = 0
+
     // MARK: - Frame Voting
-    //
-    // A speaker change only commits after votingThreshold consecutive frames agree
-    // on the same speaker ID. This prevents single noisy frames from flipping bubbles.
-    //
     private let votingThreshold = 3
-    private var voteCount:    [Int: Int] = [:]   // speakerID → consecutive frame count
-    private var leadingVoteID: Int?               // speaker currently accumulating votes
+    private var voteCount:    [Int: Int] = [:]
+    private var leadingVoteID: Int?
 
-    // MARK: - 3D Spectral Clustering (Online Memory Bank)
-    // Instead of a single drifting average, we maintain a robust topography of the speaker's voice.
-    private var speakerClusterMemory: [Int: [[Float]]] = [:]
-    private let maxClusterSize = 35
-
+    // MARK: - Speaker Memory
     @Published var speakerProfiles: [Int: [Float]] = [:]
     @Published var speakerNames:    [Int: String] = [:]
     @Published var currentStatus:   String = "Ready"
@@ -118,7 +101,6 @@ class AudioDiarizer: ObservableObject {
         self.enrollmentCompletion = completion
         self.collectedSamples.removeAll()
         self.speakerProfiles.removeAll()
-        self.speakerClusterMemory.removeAll()
         self.speakerNames.removeAll()
     }
 
@@ -129,6 +111,14 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Audio Ingestion
 
     func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
+        if soundAnalyzer == nil { setupSoundAnalyzer(format: buffer.format) }
+        let framePos = analysisFrame
+        analysisFrame += AVAudioFramePosition(buffer.frameLength)
+        let bufferCopy = buffer
+        analysisQueue.async { [weak self] in
+            self?.soundAnalyzer?.analyze(bufferCopy, atAudioFramePosition: framePos)
+        }
+
         guard let converter = getConverter(from: buffer.format, to: targetFormat) else { return }
 
         let ratio    = Float(targetFormat.sampleRate) / Float(buffer.format.sampleRate)
@@ -162,45 +152,18 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Processing Logic
 
     private func processSamples(_ samples: [Float]) {
-        // VAD processing on incoming micro-frame
-        var frameRms: Float = 0
-        vDSP_rmsqv(samples, 1, &frameRms, vDSP_Length(samples.count))
-        let frameDb = 20 * log10(max(frameRms, 1e-8))
-        
-        let wasSilent = self.isSilent
-        self.isSilent = (frameDb < vadThresholdDB)
-
-        if collectedSamples.isEmpty {
-            collectedSamples.reserveCapacity(requiredSamples + stride)
+        // Only store samples if they are active speech (voice-active).
+        // This prevents background noise from polluting the 6s window.
+        if speechGate.isActive {
+            collectedSamples.append(contentsOf: samples)
         }
-
-        collectedSamples.append(contentsOf: samples)
-
+        
         guard collectedSamples.count >= requiredSamples else { return }
 
         let chunk = Array(collectedSamples.prefix(requiredSamples))
+        collectedSamples.removeFirst(stride)
 
-        // Efficient sliding window array shift using memmove
-        let removeCount    = stride
-        let remainingCount = collectedSamples.count - removeCount
-        if remainingCount > 0 {
-            collectedSamples.withUnsafeMutableBufferPointer { ptr in
-                guard let base = ptr.baseAddress else { return }
-                memmove(base, base.advanced(by: removeCount),
-                        remainingCount * MemoryLayout<Float>.size)
-            }
-            collectedSamples.removeLast(removeCount)
-        } else {
-            collectedSamples.removeAll(keepingCapacity: true)
-        }
-
-        // Only run the heavy inference if we are actively detecting voice activity.
-        if !isSilent {
-            scheduleInference(on: chunk)
-        } else if !wasSilent {
-            // Trailing edge: forced flush on utterance finish
-            scheduleInference(on: chunk)
-        }
+        scheduleInference(on: chunk)
     }
 
     // MARK: - Inference Scheduling
@@ -254,7 +217,6 @@ class AudioDiarizer: ObservableObject {
         if isEnrolling {
             print("Enrollment Complete. ID 0 Saved.")
             speakerProfiles[0] = normVector
-            speakerClusterMemory[0] = [normVector]
             if speakerNames[0] == nil { speakerNames[0] = "Me" }
             isEnrolling = false
             enrollmentCompletion?(true)
@@ -262,46 +224,35 @@ class AudioDiarizer: ObservableObject {
             return
         }
 
-        if speakerClusterMemory.isEmpty {
+        if speakerProfiles.isEmpty {
             createNewSpeaker(with: normVector)
             return
         }
 
-        var bestID: Int   = -1
-        var maxScore: Float = -1.0
-        var debugString = "Scores: "
-
-        for (id, cluster) in speakerClusterMemory {
-            // Nearest Neighbor Topography (Search the entire mathematical footprint of the person's voice)
-            var bestClusterScore: Float = -1.0
-            for memVector in cluster {
-                let s = cosineSim(normVector, memVector)
-                if s > bestClusterScore { bestClusterScore = s }
-            }
-            let score = bestClusterScore
-            let name  = speakerNames[id] ?? "Spk\(id)"
-            debugString += "\(name): \(String(format: "%.3f", score)) | "
-
-            if score > maxScore {
-                maxScore = score
-                bestID   = id
-            }
+        var scoredSpeakers: [(id: Int, score: Float)] = []
+        for (id, profile) in speakerProfiles {
+            let score = cosineSim(normVector, profile)
+            scoredSpeakers.append((id: id, score: score))
         }
-        print(debugString)
+
+        scoredSpeakers.sort { $0.score > $1.score }
+
+        let bestID   = scoredSpeakers[0].id
+        let maxScore = scoredSpeakers[0].score
 
         if maxScore > similarityThreshold {
             print("Match: Speaker \(bestID) (\(String(format: "%.0f%%", maxScore * 100)))")
             self.confidence = String(format: "%.0f%%", maxScore * 100)
-
+            
+            // Lock Speaker 0 (Me) as a permanent anchor. Only update profiles for discovered speakers.
             if bestID != 0 {
-                updateProfile(id: bestID, vector: normVector, score: maxScore)
+                updateProfile(id: bestID, vector: normVector)
             }
-
+            
             addToHistory(vector: normVector, id: bestID, score: maxScore)
             commitVote(for: bestID)
-
         } else {
-            print("[UNKNOWN] (Best: \(String(format: "%.2f", maxScore))) -> Creating New Speaker")
+            print("[UNKNOWN] (Best: \(String(format: "%.2f", maxScore))) -> New Speaker")
             let newID = createNewSpeaker(with: normVector)
             addToHistory(vector: normVector, id: newID, score: 1.0)
             commitVote(for: newID)
@@ -340,13 +291,7 @@ class AudioDiarizer: ObservableObject {
 
     // MARK: - Semantic / Pause Forcing
     
-    func forceCommitLeadingVote() {
-        if let leader = self.leadingVoteID, self.currentSpeakerID != leader {
-            print("Force Committing Leading Vote: Speaker \(leader) due to pause.")
-            self.currentSpeakerID = leader
-            self.voteCount[leader] = self.votingThreshold
-        }
-    }
+    // MARK: - Legacy Reversion: Removed Semantic Pause Forcing
 
     // MARK: - Adaptive History Management
 
@@ -387,7 +332,6 @@ class AudioDiarizer: ObservableObject {
             }
             let newID = (speakerProfiles.keys.max() ?? 0) + 1
             speakerProfiles[newID] = mistakeVector
-            speakerClusterMemory[newID] = [mistakeVector]
             speakerNames[newID] = newName
             targetID = newID
         }
@@ -395,7 +339,7 @@ class AudioDiarizer: ObservableObject {
         var mergeCount  = 0
         var rippleCount = 0
 
-        updateProfile(id: targetID, vector: mistakeVector, score: 1.0, force: true)
+        updateProfile(id: targetID, vector: mistakeVector)
 
         guard let targetProfile = speakerProfiles[targetID] else { return }
 
@@ -406,7 +350,7 @@ class AudioDiarizer: ObservableObject {
             if event.assignedSpeakerID == ghostID && ghostID != targetID {
                 segmentHistory[i].assignedSpeakerID = targetID
                 segmentHistory[i].confidence        = 1.0
-                updateProfile(id: targetID, vector: event.vector, score: 1.0, force: true)
+                updateProfile(id: targetID, vector: event.vector)
                 mergeCount += 1
                 continue
             }
@@ -432,7 +376,6 @@ class AudioDiarizer: ObservableObject {
 
         if ghostID != targetID {
             speakerProfiles.removeValue(forKey: ghostID)
-            speakerClusterMemory.removeValue(forKey: ghostID)
             speakerNames.removeValue(forKey: ghostID)
         }
 
@@ -452,38 +395,15 @@ class AudioDiarizer: ObservableObject {
 
         print("New Speaker Detected: Assigned ID \(newID)")
         self.speakerProfiles[newID] = vector
-        self.speakerClusterMemory[newID] = [vector]
         self.confidence            = "100%"
-
-        // We specifically DO NOT seed the vote buffer here.
-        // Let the new speaker accumulate 3 consecutive votes naturally.
-        // This prevents 300ms of initial breathing/noise from instantly
-        // hijacking the currentSpeakerID and breaking the app's speaker lock.
-
         return newID
     }
 
-    private func updateProfile(id: Int, vector: [Float], score: Float, force: Bool = false) {
-        if id == 0 && !force { return }
-        
-        // Populate and evolve the topographic cluster network
-        if force || score > learningThreshold {
-            if speakerClusterMemory[id] == nil {
-                speakerClusterMemory[id] = []
-            }
-            speakerClusterMemory[id]?.append(vector)
-            
-            // Constrain maximum computational depth per cluster
-            if (speakerClusterMemory[id]?.count ?? 0) > maxClusterSize {
-                speakerClusterMemory[id]?.removeFirst()
-            }
-            
-            // Keep basic legacy centroid alive for potential downstream components/SwiftData
-            if let oldProfile = speakerProfiles[id] {
-                speakerProfiles[id] = applyRollingAvg(old: oldProfile, new: vector)
-            } else {
-                speakerProfiles[id] = vector
-            }
+    private func updateProfile(id: Int, vector: [Float]) {
+        if let oldProfile = speakerProfiles[id] {
+            speakerProfiles[id] = applyRollingAvg(old: oldProfile, new: vector)
+        } else {
+            speakerProfiles[id] = vector
         }
     }
 
@@ -517,5 +437,58 @@ class AudioDiarizer: ObservableObject {
         let count = multiArray.count
         let ptr   = multiArray.dataPointer.bindMemory(to: Float.self, capacity: count)
         return Array(UnsafeBufferPointer(start: ptr, count: count))
+    }
+
+    // MARK: - SoundAnalysis Setup
+
+    private func setupSoundAnalyzer(format: AVAudioFormat) {
+        let analyzer = SNAudioStreamAnalyzer(format: format)
+        do {
+            let request = try SNClassifySoundRequest(classifierIdentifier: .version1)
+            request.windowDuration = CMTimeMakeWithSeconds(0.5, preferredTimescale: 44_100)
+            request.overlapFactor  = 0.75
+            try analyzer.add(request, withObserver: speechGate)
+            soundAnalyzer = analyzer
+            print("[SoundAnalysis] Speech gate active (window=0.5s, overlap=75%)")
+        } catch {
+            print("[SoundAnalysis] Could not set up speech gate: \(error). Inference will run ungated.")
+        }
+    }
+}
+
+// MARK: - SpeechActivityGate
+
+private class SpeechActivityGate: NSObject, SNResultsObserving {
+
+    private let speechLabels: Set<String> = [
+        "speech", "singing", "shout", "laughter",
+        "crying_sobbing", "crowd"
+    ]
+
+    private var _isActive: Bool = true
+    private let lock = NSLock()
+
+    var isActive: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return _isActive
+    }
+
+    func request(_ request: SNRequest, didProduce result: SNResult) {
+        guard let result = result as? SNClassificationResult,
+              let top    = result.classifications.first else { return }
+
+        let active = speechLabels.contains(top.identifier) && top.confidence > 0.15
+        lock.lock()
+        _isActive = active
+        lock.unlock()
+
+        if !active {
+            print("[SpeechGate] Blocked non-speech frame: \(top.identifier) (\(String(format: "%.0f%%", top.confidence * 100)))")
+        }
+    }
+
+    func request(_ request: SNRequest, didFailWithError error: Error) {
+        print("[SpeechGate] Analysis error: \(error)")
+        lock.lock(); _isActive = true; lock.unlock()
     }
 }

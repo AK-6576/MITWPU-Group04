@@ -31,9 +31,6 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Buffering & Logic State
     private var transcriptBuffer: String = ""
     private var holdTimer: Timer?
-    /// While holdTimer is active, this holds the speaker ID of the in-progress bubble.
-    /// Diarizer updates to a DIFFERENT speaker are suppressed until the timer fires.
-    private var lockedSpeakerID: Int? = nil
     
     let locationManager = CLLocationManager()
     var currentLocationString: String = "Location Unknown"
@@ -232,9 +229,6 @@ class QuickCaptioningViewController: UIViewController,
             self.holdTimer = nil
             
             if isFinal {
-                // Force the diarizer to lock in its best guess for short 1-word responses
-                self.diarizer.forceCommitLeadingVote()
-                
                 // Ensure everything is flushed
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
                 
@@ -248,9 +242,7 @@ class QuickCaptioningViewController: UIViewController,
             } else {
                 // Hold and wait buffer: allow diarization to catch up
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
-                    // Lock expires — release speaker lock and flush
                     self?.holdTimer = nil
-                    self?.lockedSpeakerID = nil
                     self?.processBuffer()
                     
                     // Seal the bubble because of a long pause
@@ -467,8 +459,6 @@ class QuickCaptioningViewController: UIViewController,
         currentMessageIndex = messages.count - 1
         if let sid = id {
             currentSpeakerID = sid
-            // Activate speaker lock so mid-sentence diarizer updates don't split this bubble
-            lockedSpeakerID  = sid
         }
         collectionView.reloadData()
         scrollToBottom()
@@ -479,17 +469,6 @@ class QuickCaptioningViewController: UIViewController,
     private func bindDiarizer() {
         diarizer.$currentSpeakerID.receive(on: DispatchQueue.main).sink { [weak self] id in
             guard let self = self else { return }
-
-            // SPEAKER LOCK: while the hold timer is active, ignore speaker switches
-            // to a DIFFERENT speaker — this prevents mid-sentence bleed-over.
-            if let newID = id,
-               let locked = self.lockedSpeakerID,
-               self.holdTimer != nil,
-               newID != locked {
-                // Diarizer thinks someone else is talking, but we are locked mid-sentence.
-                // Update internal tracking quietly without flushing a new bubble.
-                return
-            }
 
             self.currentSpeakerID = id
 
