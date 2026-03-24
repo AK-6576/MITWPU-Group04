@@ -161,8 +161,19 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         DataManager.shared.deleteConversation(convoToDelete)
         
         collectionView.performBatchUpdates({
+            let deletedSectionTitle = self.conversationSections[indexPath.section].title
             self.conversationSections[indexPath.section].conversations.remove(at: indexPath.row)
+            
+            // Safe removal from allConversationSections
+            if let targetSectionIndex = self.allConversationSections.firstIndex(where: { $0.title == deletedSectionTitle }) {
+                self.allConversationSections[targetSectionIndex].conversations.removeAll(where: { $0.id == convoToDelete.id })
+                if self.allConversationSections[targetSectionIndex].conversations.isEmpty {
+                    self.allConversationSections.remove(at: targetSectionIndex)
+                }
+            }
+            
             self.collectionView.deleteItems(at: [indexPath])
+            
             if self.conversationSections[indexPath.section].conversations.isEmpty {
                 self.conversationSections.remove(at: indexPath.section)
                 self.collectionView.deleteSections(IndexSet(integer: indexPath.section))

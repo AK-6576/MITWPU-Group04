@@ -99,12 +99,11 @@ class QuickCaptioningViewController: UIViewController,
             DispatchQueue.main.async {
                 if let uid = user?.uid,
                    let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
+                    let embedding = savedProfile.embedding
                     // Profile found — seed BOTH the centroid dict AND the cluster memory.
                     // processEmbedding() does nearest-neighbour search in speakerClusterMemory;
                     // if it is empty every frame triggers createNewSpeaker() → grey bubble.
-                    let embedding = self.diarizer.normalize(savedProfile.embedding)
                     self.diarizer.speakerProfiles[0] = embedding
-                    self.diarizer.speakerClusterMemory[0] = [embedding]
                     self.diarizer.speakerNames[0] = savedProfile.name
                     self.hasEnrolled = true
                     
@@ -189,7 +188,7 @@ class QuickCaptioningViewController: UIViewController,
             let name = alert.textFields?.first?.text ?? "Me"
             
             // 1. Update the Diarizer locally
-            self.diarizer.setUserName(name)
+            self.diarizer.speakerNames[0] = name
             
             // 2. Extract the mathematical vector and Save Permanently to SwiftData!
             if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
@@ -265,7 +264,7 @@ class QuickCaptioningViewController: UIViewController,
             
             if isFinal {
                 // Force the diarizer to lock in its best guess for short 1-word responses
-                self.diarizer.forceCommitLeadingVote()
+                // self.diarizer.forceCommitLeadingVote() // Removed in favor of stable inference
                 
                 // Ensure everything is flushed
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
@@ -382,7 +381,7 @@ class QuickCaptioningViewController: UIViewController,
                 }
                 
                 let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                var secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
                 
                 self.updateBubbleUI(at: activeIndex, text: firstPart)
                 self.finalizeBubble(at: activeIndex)
@@ -563,26 +562,25 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Audio Configuration
     
     private func startAudioEngine() throws {
+        // 1. Ensure Audio Session is active and settles for a split second
+        // VPIO (VoiceProcessingIO) initialization is hardware-sensitive and can throw -1
+        // if the hardware hasn't fully registered the session mode change.
+        setupAudioSession()
+        Thread.sleep(forTimeInterval: 0.1)
+
         let inputNode = audioEngine.inputNode
 
-        // Enable Apple's built-in Voice Processing I/O BEFORE installing any tap.
-        // This activates the OS-level DSP stack:
-        //   • Noise suppression   — attenuates non-speech environmental sounds
-        //   • Echo cancellation   — prevents speaker output bleeding into the mic
-        //   • Automatic gain ctrl — normalises mic level across devices & distances
-        // Best-effort: vpio can fail on certain Bluetooth profiles, the Simulator,
-        // or locked audio configurations (render err -1). In those cases we fall
-        // back silently — the .voiceChat audio session mode still provides basic
-        // noise reduction so diarization is not left completely unprotected.
+        // 2. Enable Apple's built-in Voice Processing I/O
+        // Toggle this BEFORE installing any tap to prevent "render err: -1"
         if !inputNode.isVoiceProcessingEnabled {
             do {
                 try inputNode.setVoiceProcessingEnabled(true)
             } catch {
-                print("[AudioEngine] Voice Processing I/O unavailable on this config: \(error). Using voiceChat fallback.")
+                print("[AudioEngine] Voice Processing I/O unavailable: \(error). Using standard mode.")
             }
         }
 
-        // Re-read the format after voice processing is enabled — it may change.
+        // 3. Configure and start the engine
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
@@ -593,10 +591,15 @@ class QuickCaptioningViewController: UIViewController,
         audioEngine.prepare()
         try audioEngine.start()
     }
-    
+
     private func setupAudioSession() {
-        try? AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
-        try? AVAudioSession.sharedInstance().setActive(true)
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("[AudioEngine] Failed to setup audio session: \(error)")
+        }
     }
     
     // MARK: - UI Setup
@@ -736,9 +739,7 @@ class QuickCaptioningViewController: UIViewController,
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
             
-            if let eventId = msg.eventId {
-                self.diarizer.applyRetroactiveCorrection(forEventID: eventId, newName: newName)
-            } else if let bubbleSpeakerID = msg.speakerID {
+            if let bubbleSpeakerID = msg.speakerID {
                 self.diarizer.speakerNames[bubbleSpeakerID] = newName
             } else {
                 if let key = self.diarizer.speakerNames.first(where: { $0.value == currentName })?.key {

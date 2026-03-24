@@ -22,7 +22,7 @@ class FirebaseManager {
     private init() {}
     
     // Helper to get current authenticated user's ID
-    private var currentUID: String? {
+    var currentUID: String? {
         return Auth.auth().currentUser?.uid
     }
     
@@ -151,9 +151,24 @@ class FirebaseManager {
         guard let uid = currentUID else { return }
         let safeUID = sanitizeKey(uid)
         let safeConvID = sanitizeKey(convoID)
-        databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID).removeValue()
-        // Also remove from the "history" node used for full transcripts
-        databaseRef.child("users").child(safeUID).child("history").child(safeConvID).removeValue()
+        
+        let metaRef = databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID)
+        let histRef = databaseRef.child("users").child(safeUID).child("history").child(safeConvID)
+        
+        metaRef.removeValue { error, _ in
+            if let error = error {
+                print("Firebase ERROR deleting conversation metadata: \(error.localizedDescription)")
+            } else {
+                print("Firebase: Successfully deleted conversation metadata for \(safeConvID)")
+            }
+        }
+        histRef.removeValue { error, _ in
+            if let error = error {
+                print("Firebase ERROR deleting conversation history: \(error.localizedDescription)")
+            } else {
+                print("Firebase: Successfully deleted conversation history for \(safeConvID)")
+            }
+        }
     }
     
     /// NEW: Deletes a Quick Action from Firebase.
@@ -163,17 +178,31 @@ class FirebaseManager {
         let safeCode = sanitizeKey(actionID)
         
         // 1. Remove from global registry
-        databaseRef.child("quick_actions").child(safeCode).removeValue()
+        databaseRef.child("quick_actions").child(safeCode).removeValue { error, _ in
+            if let error = error {
+                print("Firebase ERROR deleting global quick action \(safeCode): \(error.localizedDescription)")
+            }
+        }
         
         // 2. Remove from Host's Personal Folder
-        databaseRef.child("users").child(safeUID).child("quick_actions").child(safeCode).removeValue()
+        databaseRef.child("users").child(safeUID).child("quick_actions").child(safeCode).removeValue { error, _ in
+            if let error = error {
+                print("Firebase ERROR deleting personal quick action \(safeCode): \(error.localizedDescription)")
+            } else {
+                print("Firebase: Successfully deleted personal quick action \(safeCode)")
+            }
+        }
         
         // 3. Remove from participant nodes (shared_quick_actions)
         databaseRef.child("shared_quick_actions").observeSingleEvent(of: .value) { snapshot in
             guard let allParticipants = snapshot.value as? [String: [String: Any]] else { return }
             for (participantName, actions) in allParticipants {
                 if actions[safeCode] != nil {
-                    self.databaseRef.child("shared_quick_actions").child(participantName).child(safeCode).removeValue()
+                    self.databaseRef.child("shared_quick_actions").child(participantName).child(safeCode).removeValue { error, _ in
+                        if let error = error {
+                            print("Firebase ERROR deleting shared quick action from \(participantName): \(error.localizedDescription)")
+                        }
+                    }
                 }
             }
         }
@@ -358,7 +387,11 @@ class FirebaseManager {
     func removePresence(roomCode: String, userName: String) {
         let safeCode = sanitizeKey(roomCode)
         let safeName = sanitizeKey(userName)
-        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeName).removeValue()
+        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeName).removeValue { error, _ in
+            if let error = error {
+                print("Firebase ERROR removing presence for \(safeName): \(error.localizedDescription)")
+            }
+        }
     }
     
     /// Observe presence in real time — returns a Set of online sanitized user names

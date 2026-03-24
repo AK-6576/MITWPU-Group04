@@ -401,7 +401,7 @@ class VoiceCalibrationViewController: UIViewController {
                 return
             }
             
-            let normalizedEmbedding = DiarizationUtils.l2Normalize(embedding)
+            let normalizedEmbedding = self.normalize(embedding)
             
             DispatchQueue.main.async {
                 // First sentence — always accept as baseline
@@ -414,7 +414,7 @@ class VoiceCalibrationViewController: UIViewController {
                 
                 // Compare with the first sentence (baseline voice)
                 let baselineEmbedding = self.sentenceEmbeddings[0]
-                let similarity = DiarizationUtils.cosineSimilarity(normalizedEmbedding, baselineEmbedding)
+                let similarity = self.cosineSim(normalizedEmbedding, baselineEmbedding)
                 
                 print("VoiceCalibration: Sentence \(index + 1) similarity = \(String(format: "%.3f", similarity)) (threshold: \(self.similarityThreshold))")
                 
@@ -532,9 +532,14 @@ class VoiceCalibrationViewController: UIViewController {
             return nil
         }
         
-        // --- TOP-NOTCH: Signal Processing (MUST MATCH AudioDiarizer) ---
-        // Normalize RMS for consistent model input
-        let normalizedSamples = DiarizationUtils.normalizeAudio(samples)
+        // Normalize audio signal (RMS/MaxAmp)
+        var normalizedSamples = samples
+        var maxAmp: Float = 0
+        vDSP_maxv(normalizedSamples, 1, &maxAmp, vDSP_Length(normalizedSamples.count))
+        if maxAmp > 0 {
+            var factor = 1.0 / maxAmp
+            vDSP_vsmul(normalizedSamples, 1, &factor, &normalizedSamples, 1, vDSP_Length(normalizedSamples.count))
+        }
         
         guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else {
             return nil
@@ -573,13 +578,13 @@ class VoiceCalibrationViewController: UIViewController {
             averaged[i] /= count
         }
         
-        let normalizedAvg = DiarizationUtils.l2Normalize(averaged)
+        let normalizedAvg = self.normalize(averaged)
         
         // Save to persistent storage via VoiceProfileManager
-        // Use "Me" as default name — user can change it later
         if let uid = Auth.auth().currentUser?.uid {
-            VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: "Me", embedding: normalizedAvg)
-            print("VoiceCalibration: Voice profile successfully saved for user \(uid)")
+            let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "Me"
+            VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: name, embedding: normalizedAvg)
+            print("VoiceCalibration: Voice profile successfully saved for user \(uid) with name \(name)")
         } else {
             print("VoiceCalibration: Error - No logged-in user to save voice profile.")
         }
@@ -594,11 +599,18 @@ class VoiceCalibrationViewController: UIViewController {
     }
 
     private func normalize(_ v: [Float]) -> [Float] {
-        return DiarizationUtils.l2Normalize(v)
+        var norm: Float = 0
+        vDSP_svesq(v, 1, &norm, vDSP_Length(v.count))
+        let mag = sqrt(norm) + 1e-9
+        var res = [Float](repeating: 0, count: v.count)
+        vDSP_vsdiv(v, 1, [mag], &res, 1, vDSP_Length(v.count))
+        return res
     }
 
     private func cosineSim(_ v1: [Float], _ v2: [Float]) -> Float {
-        return DiarizationUtils.cosineSimilarity(v1, v2)
+        var dot: Float = 0
+        vDSP_dotpr(v1, 1, v2, 1, &dot, vDSP_Length(v1.count))
+        return dot
     }
 
     // MARK: - Visualizer Animation

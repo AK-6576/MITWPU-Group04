@@ -119,9 +119,9 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
-            try session.setActive(true)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
-            print("Audio Session Error: \(error)")
+            print("[AudioEngine] Failed to setup audio session: \(error)")
         }
     }
     
@@ -141,6 +141,10 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             recognitionTask = nil
         }
         
+        // 1. Ensure Session is active and settles
+        setupAudioSession()
+        Thread.sleep(forTimeInterval: 0.1)
+
         consumedTranscriptOffset = 0
         addListeningBubble()
         
@@ -149,6 +153,12 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
+
+        // 2. Enable Voice Processing (DSP) if available
+        if !inputNode.isVoiceProcessingEnabled {
+            try? inputNode.setVoiceProcessingEnabled(true)
+        }
+
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
@@ -162,7 +172,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             isRecording = true
             updateMicButtonVisuals(isActive: true)
         } catch {
-            print("Audio Engine Start Error: \(error)")
+            print("[AudioEngine] Start Error: \(error)")
             isRecording = false
             updateMicButtonVisuals(isActive: false)
         }

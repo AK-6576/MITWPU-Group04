@@ -106,9 +106,9 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
-            try session.setActive(true)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
-            print("Audio Session Error: \(error)")
+            print("[AudioEngine] Failed to setup audio session: \(error)")
         }
     }
     
@@ -305,6 +305,10 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             recognitionTask = nil
         }
         
+        // 1. Ensure Session is active and settles
+        setupAudioSession()
+        Thread.sleep(forTimeInterval: 0.1)
+
         consumedTranscriptOffset = 0
         addListeningBubble()
         
@@ -316,6 +320,12 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
+
+        // 2. Enable Voice Processing (DSP) if available
+        if !inputNode.isVoiceProcessingEnabled {
+            try? inputNode.setVoiceProcessingEnabled(true)
+        }
+
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, _) in
@@ -329,7 +339,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
             micButton.tintColor = .systemRed
         } catch {
-            print("Audio Engine Error: \(error)")
+            print("[AudioEngine] Error: \(error)")
             isRecording = false
             micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
             micButton.tintColor = .label
