@@ -31,11 +31,6 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Buffering & Logic State
     private var transcriptBuffer: String = ""
     private var holdTimer: Timer?
-    /// While holdTimer is active, this holds the speaker ID of the in-progress bubble.
-    /// Diarizer updates to a DIFFERENT speaker are queued here instead of dropped.
-    private var lockedSpeakerID: Int? = nil
-    /// The next speaker waiting to be committed once the active hold timer fires.
-    private var pendingSpeakerID: Int? = nil
     
     let locationManager = CLLocationManager()
     var currentLocationString: String = "Location Unknown"
@@ -58,9 +53,6 @@ class QuickCaptioningViewController: UIViewController,
     private var forceNewBubble = false
     private var cleanupIDs: [UUID] = []
 
-    /// Holds the Firebase auth-state listener handle so we can remove it after first fire.
-    private var authStateHandle: AuthStateDidChangeListenerHandle?
-
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -81,45 +73,19 @@ class QuickCaptioningViewController: UIViewController,
         speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
             
-    // MARK: - Voice Profile Check
+            // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
-        // Auth.auth().currentUser is nil during viewDidLoad while Firebase is still
-        // restoring the session asynchronously. Using addStateDidChangeListener fires
-        // exactly once when auth state is fully resolved — which is when it's safe to
-        // query the local SwiftData store for the saved VoiceProfile.
-        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            guard let self = self else { return }
-
-            // Remove listener immediately — single-shot; we don't need further callbacks.
-            if let handle = self.authStateHandle {
-                Auth.auth().removeStateDidChangeListener(handle)
-                self.authStateHandle = nil
-            }
-
-            DispatchQueue.main.async {
-                if let uid = user?.uid,
-                   let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
-                    let embedding = savedProfile.embedding
-                    // Profile found — seed BOTH the centroid dict AND the cluster memory.
-                    // processEmbedding() does nearest-neighbour search in speakerClusterMemory;
-                    // if it is empty every frame triggers createNewSpeaker() → grey bubble.
-                    self.diarizer.speakerProfiles[0] = embedding
-                    self.diarizer.speakerNames[0] = savedProfile.name
-                    self.hasEnrolled = true
-                    
-                    // FIX — Cold Start: Immediately assign the enrolled user as current speaker
-                    // so the very first spoken words appear in a blue bubble without waiting
-                    // 6 seconds for VL1004 to accumulate a full inference window.
-                    // The model will confirm/correct this as frames arrive.
-                    self.currentSpeakerID = 0
-                    
-                    self.startSession()
-                } else {
-                    // No profile saved — prompt for one-time voice calibration.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self.promptForEnrollment()
-                    }
-                }
+        if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
+            // Profile exists! Load it into the Diarizer memory
+            diarizer.speakerProfiles[0] = savedProfile.embedding
+            diarizer.speakerNames[0] = savedProfile.name
+            hasEnrolled = true
+            
+            startSession()
+        } else {
+            // No profile exists. Trigger the Calibration Prompt
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.promptForEnrollment()
             }
         }
     }
@@ -188,7 +154,7 @@ class QuickCaptioningViewController: UIViewController,
             let name = alert.textFields?.first?.text ?? "Me"
             
             // 1. Update the Diarizer locally
-            self.diarizer.speakerNames[0] = name
+            self.diarizer.setUserName(name)
             
             // 2. Extract the mathematical vector and Save Permanently to SwiftData!
             if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
@@ -263,9 +229,6 @@ class QuickCaptioningViewController: UIViewController,
             self.holdTimer = nil
             
             if isFinal {
-                // Force the diarizer to lock in its best guess for short 1-word responses
-                // self.diarizer.forceCommitLeadingVote() // Removed in favor of stable inference
-                
                 // Ensure everything is flushed
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
                 
@@ -279,26 +242,13 @@ class QuickCaptioningViewController: UIViewController,
             } else {
                 // Hold and wait buffer: allow diarization to catch up
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
-                    guard let self = self else { return }
-                    // Lock expires — release speaker lock and flush
-                    self.holdTimer = nil
-                    self.lockedSpeakerID = nil
-                    
-                    // FIX — Pending Speaker: if a different speaker was detected while
-                    // we were locked, commit them now instead of discarding their frames.
-                    // Previously this caused a 1.5s + 600ms = 2.1s dead-zone where the
-                    // second speaker's audio was completely invisible to the UI.
-                    if let pending = self.pendingSpeakerID {
-                        self.currentSpeakerID = pending
-                        self.pendingSpeakerID = nil
-                    }
-                    
-                    self.processBuffer()
+                    self?.holdTimer = nil
+                    self?.processBuffer()
                     
                     // Seal the bubble because of a long pause
-                    if !self.messages.isEmpty {
-                        self.finalizeBubble(at: self.messages.count - 1)
-                        self.forceNewBubble = true
+                    if let messages = self?.messages, !messages.isEmpty {
+                        self?.finalizeBubble(at: messages.count - 1)
+                        self?.forceNewBubble = true
                     }
                 }
             }
@@ -381,7 +331,7 @@ class QuickCaptioningViewController: UIViewController,
                 }
                 
                 let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                let secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                var secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
                 
                 self.updateBubbleUI(at: activeIndex, text: firstPart)
                 self.finalizeBubble(at: activeIndex)
@@ -509,8 +459,6 @@ class QuickCaptioningViewController: UIViewController,
         currentMessageIndex = messages.count - 1
         if let sid = id {
             currentSpeakerID = sid
-            // Activate speaker lock so mid-sentence diarizer updates don't split this bubble
-            lockedSpeakerID  = sid
         }
         collectionView.reloadData()
         scrollToBottom()
@@ -521,19 +469,6 @@ class QuickCaptioningViewController: UIViewController,
     private func bindDiarizer() {
         diarizer.$currentSpeakerID.receive(on: DispatchQueue.main).sink { [weak self] id in
             guard let self = self else { return }
-
-            // SPEAKER LOCK: while the hold timer is active, queue speaker switches
-            // to a DIFFERENT speaker — prevents mid-sentence bleed-over but no
-            // longer silently discards the next speaker's identity.
-            if let newID = id,
-               let locked = self.lockedSpeakerID,
-               self.holdTimer != nil,
-               newID != locked {
-                // Diarizer detected a different speaker mid-sentence.
-                // Store them as pending; the timer callback will commit them.
-                self.pendingSpeakerID = newID
-                return
-            }
 
             self.currentSpeakerID = id
 
@@ -562,24 +497,7 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Audio Configuration
     
     private func startAudioEngine() throws {
-        // 1. Ensure Audio Session is active and settles for a split second
-        // VPIO (VoiceProcessingIO) initialization is hardware-sensitive and can throw -1
-        // if the hardware hasn't fully registered the session mode change.
-        setupAudioSession()
-        Thread.sleep(forTimeInterval: 0.1)
-
         let inputNode = audioEngine.inputNode
-
-        // 2. Disable Voice Processing to fix -1 error
-        if #available(iOS 13.0, *) {
-            do {
-                try inputNode.setVoiceProcessingEnabled(false)
-            } catch {
-                print("[AudioEngine] Could not disable voice processing: \(error)")
-            }
-        }
-
-        // 3. Configure and start the engine
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
@@ -590,15 +508,10 @@ class QuickCaptioningViewController: UIViewController,
         audioEngine.prepare()
         try audioEngine.start()
     }
-
+    
     private func setupAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("[AudioEngine] Failed to setup audio session: \(error)")
-        }
+        try? AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+        try? AVAudioSession.sharedInstance().setActive(true)
     }
     
     // MARK: - UI Setup
@@ -738,7 +651,9 @@ class QuickCaptioningViewController: UIViewController,
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
             
-            if let bubbleSpeakerID = msg.speakerID {
+            if let eventId = msg.eventId {
+                self.diarizer.applyRetroactiveCorrection(forEventID: eventId, newName: newName)
+            } else if let bubbleSpeakerID = msg.speakerID {
                 self.diarizer.speakerNames[bubbleSpeakerID] = newName
             } else {
                 if let key = self.diarizer.speakerNames.first(where: { $0.value == currentName })?.key {

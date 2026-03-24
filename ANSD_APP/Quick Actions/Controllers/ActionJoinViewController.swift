@@ -105,10 +105,10 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setActive(true)
         } catch {
-            print("[AudioEngine] Failed to setup audio session: \(error)")
+            print("Audio Session Error: \(error)")
         }
     }
     
@@ -305,14 +305,10 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
             recognitionTask = nil
         }
         
-        // 1. Ensure Session is active and settles
-        setupAudioSession()
-        Thread.sleep(forTimeInterval: 0.1)
-
         consumedTranscriptOffset = 0
         addListeningBubble()
         
-        micButton.setImage(UIImage(systemName: "microphone.fill"), for: .normal)
+        micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
         micButton.tintColor = .systemRed
         
         let request = SFSpeechAudioBufferRecognitionRequest()
@@ -320,12 +316,6 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
-
-        // 2. Enable Voice Processing (DSP) if available
-        if #available(iOS 13.0, *) {
-            try? inputNode.setVoiceProcessingEnabled(false)
-        }
-
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, _) in
@@ -336,12 +326,12 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         do {
             try audioEngine.start()
             isRecording = true
-            micButton.setImage(UIImage(systemName: "microphone.fill"), for: .normal)
+            micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
             micButton.tintColor = .systemRed
         } catch {
-            print("[AudioEngine] Error: \(error)")
+            print("Audio Engine Error: \(error)")
             isRecording = false
-            micButton.setImage(UIImage(systemName: "microphone.slash.fill"), for: .normal)
+            micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
             micButton.tintColor = .label
         }
         
@@ -447,7 +437,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         
         removeListeningBubble()
         
-        micButton.setImage(UIImage(systemName: "microphone.slash.fill"), for: .normal)
+        micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
         micButton.tintColor = .label
     }
     

@@ -91,79 +91,6 @@ class AudioDiarizer: ObservableObject {
         }
     }
 
-    // MARK: - Engine Lifecycle & Setup (RESTORED & FIXED)
-    func startRecording() {
-        AVAudioApplication.requestRecordPermission { [weak self] granted in
-            guard granted else {
-                print("❌ Microphone permission denied by user.")
-                DispatchQueue.main.async { self?.currentStatus = "Mic Permission Denied" }
-                return
-            }
-            self?.setupAndStartEngine()
-        }
-    }
-
-    private func setupAndStartEngine() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            // 🚨 THE FIXES:
-            // 1. Switched to .record (If you MUST play audio while diarizing, use .playAndRecord but REMOVE .defaultToSpeaker)
-            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
-            
-            // 2. 50ms is generally much safer for CoreML mic taps than 100ms
-            try session.setPreferredIOBufferDuration(0.05)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            print("✅ AVAudioSession activated in .record / .measurement mode")
-        } catch {
-            print("❌ Failed to set up audio session: \(error)")
-            return
-        }
-
-        let inputNode = audioEngine.inputNode
-        
-        // 🚨 3. THE SILVER BULLET: Explicitly tell the engine to keep Voice Processing OFF
-        if #available(iOS 13.0, *) {
-            do {
-                try inputNode.setVoiceProcessingEnabled(false)
-                print("✅ Voice Processing explicitly disabled.")
-            } catch {
-                print("⚠️ Could not disable voice processing: \(error)")
-            }
-        }
-
-        let hardwareFormat = inputNode.outputFormat(forBus: 0)
-        let targetFormat = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1)!
-
-        inputNode.removeTap(onBus: 0)
-        
-        // 🚨 4. Use 1024 or 8192. VPIO hates 4096 and often throws boundary mismatches.
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: hardwareFormat) { [weak self] (buffer, time) in
-            self?.handleAudio(buffer: buffer, targetFormat: targetFormat)
-        }
-
-        audioEngine.prepare()
-        do {
-            try audioEngine.start()
-            DispatchQueue.main.async {
-                self.isRunning = true
-                self.currentStatus = "Listening..."
-            }
-            print("✅ AVAudioEngine Started Successfully")
-        } catch {
-            print("❌ Engine start error: \(error)")
-        }
-    }
-
-    func stopRecording() {
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
-        DispatchQueue.main.async {
-            self.isRunning = false
-            self.currentStatus = "Ready"
-        }
-        print("🛑 AVAudioEngine Stopped")
-    }
-
     // MARK: - Enrollment & Configuration
     func enrollUser(completion: @escaping (Bool) -> Void) {
         print("Starting Enrollment for User (ID: 0)")
@@ -181,7 +108,7 @@ class AudioDiarizer: ObservableObject {
     }
 
     // MARK: - Audio Ingestion
-    public func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
+    func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
         if soundAnalyzer == nil { setupSoundAnalyzer(format: buffer.format) }
         let framePos = analysisFrame
         analysisFrame += AVAudioFramePosition(buffer.frameLength)
@@ -270,7 +197,7 @@ class AudioDiarizer: ObservableObject {
         do {
             let startTime  = CFAbsoluteTimeGetCurrent()
             let prediction = try model.prediction(audio: inputMultiArray)
-            let _ = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            let elapsed    = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
 
             let rawEmbedding = self.extractVector(from: prediction.embedding)
             // print("⚡️ Inference: \(String(format: "%.1f", elapsed))ms") // Uncomment to debug inference speed

@@ -40,9 +40,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         var otherPersonName = "Guest"
         var messages: [GroupNewChatMessage] = []
         var currentSessionID: String = ""
-    
-    /// Tracks the last text sent to Firebase per bubble index to prevent duplicate sends.
-    private var lastSentText: [Int: String] = [:]
         
     // --- FIXED PROPERTY DECLARATIONS ---
     var currentUserID: String {
@@ -109,10 +106,10 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setActive(true)
         } catch {
-            print("[AudioEngine] Failed to setup audio session: \(error)")
+            print("Audio Session Error: \(error)")
         }
     }
     
@@ -132,10 +129,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             recognitionTask = nil
         }
         
-        // 1. Ensure Session is active and settles
-        setupAudioSession()
-        Thread.sleep(forTimeInterval: 0.1)
-
+        // Reset offset for new session
         consumedTranscriptOffset = 0
         addListeningBubble()
         
@@ -144,12 +138,6 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
-        
-        // 2. Disable Voice Processing to fix -1 error
-        if #available(iOS 13.0, *) {
-            try? inputNode.setVoiceProcessingEnabled(false)
-        }
-
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
@@ -163,7 +151,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
             isRecording = true
             updateMicButtonVisuals(isActive: true)
         } catch {
-            print("[AudioEngine] Start Error: \(error)")
+            print("Audio Engine Start Error: \(error)")
             isRecording = false
             updateMicButtonVisuals(isActive: false)
         }
@@ -257,62 +245,35 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         Task {
             do {
                 let prompt = """
-                Fix grammar and punctuation in the conversational text below. The text may be in any language.
-                Rules:
-                - Return the corrected text EXACTLY ONCE.
-                - Do NOT wrap the output in quotation marks of any kind.
-                - Do NOT repeat or duplicate the text.
-                - Do NOT add commentary, explanations, apologies, or any surrounding words.
-                - If the input is empty or unintelligible, return it unchanged — nothing else.
-
-                Text: \(text)
+                Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+                
+                Text: "\(text)"
                 """
                 let session = LanguageModelSession(model: model)
                 let response = try await session.respond(to: prompt)
                 var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
                 
-                // Strip wrapping quotation marks (straight or curly) that AI may add
-                let quoteChars: Set<Character> = ["\"", "\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"]
-                if let first = cleanedText.first, let last = cleanedText.last,
-                   quoteChars.contains(first) && quoteChars.contains(last) && cleanedText.count > 2 {
-                    cleanedText = String(cleanedText.dropFirst().dropLast())
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                
-                // Safety filter 1: discard known boilerplate/apology responses
-                let lr = cleanedText.lowercased()
-                if lr.contains("i'm sorry") || lr.contains("as an ai") || lr.contains("can't process") {
-                    cleanedText = text
-                }
-                
-                // Safety filter 2: discard if AI response is >2x the input length (duplication signal)
-                if cleanedText.count > (text.count * 2 + 20) {
+                // Safety filter: If AI returns a commentary/apology, discard cleanup and use original text
+                let lowercaseResponse = cleanedText.lowercased()
+                if lowercaseResponse.contains("i'm sorry") || lowercaseResponse.contains("as an ai") || lowercaseResponse.contains("can't process") {
                     cleanedText = text
                 }
                 
                 await MainActor.run {
-                    guard index < self.messages.count else { return }
-                    
                     // Update Local UI
-                    self.messages[index].text = cleanedText
-                    self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-                    
-                    // DEDUP GUARD: Only send to Firebase if this text wasn't already sent for this bubble.
-                    // This prevents duplicate bubbles caused by AI returning text identical to what was
-                    // already pushed (or by rapid double-calls during the restart cycle).
-                    if self.lastSentText[index] != cleanedText {
-                        self.lastSentText[index] = cleanedText
+                    if index < self.messages.count {
+                        self.messages[index].text = cleanedText
+                        self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+                        
+                        // Send to Firebase
                         self.firebase.send(text: cleanedText, sender: self.myName, senderID: self.currentUserID)
                     }
                 }
             } catch {
                 print("Apple Intelligence Error: \(error)")
-                // Fallback: Send raw text if AI fails — still deduped
+                // Fallback: Send raw text if AI fails
                 await MainActor.run {
-                    if self.lastSentText[index] != text {
-                        self.lastSentText[index] = text
-                        self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
-                    }
+                    self.firebase.send(text: text, sender: self.myName, senderID: self.currentUserID)
                 }
             }
         }
@@ -441,7 +402,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     private func updateMicButtonVisuals(isActive: Bool) {
-        let imageName = isActive ? "microphone.fill" : "microphone.slash.fill"
+        let imageName = isActive ? "mic.fill" : "mic.slash.fill"
         micButton.setImage(UIImage(systemName: imageName), for: .normal)
     }
     

@@ -47,15 +47,9 @@ class TextCleanupManager {
         guard model.isAvailable else { return }
         
         let prompt = """
-        Fix grammar and punctuation in the conversational text below. The text may be in any language.
-        Rules:
-        - Return the corrected text EXACTLY ONCE.
-        - Do NOT wrap the output in quotation marks of any kind.
-        - Do NOT repeat or duplicate the text.
-        - Do NOT add commentary, explanations, apologies, or any surrounding words.
-        - If the input is empty or unintelligible, return it unchanged — nothing else.
-
-        Text: \(text)
+        Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+        
+        Text: "\(text)"
         """
         
         let session = LanguageModelSession(model: model)
@@ -64,25 +58,14 @@ class TextCleanupManager {
             let response = try await session.respond(to: prompt)
             var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Strip wrapping quotation marks (straight, curly, or double) that AI may add
-            let quoteChars: Set<Character> = ["\"", "\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"]
-            if let first = cleanedText.first, let last = cleanedText.last,
-               quoteChars.contains(first) && quoteChars.contains(last) && cleanedText.count > 2 {
-                cleanedText = String(cleanedText.dropFirst().dropLast())
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            
-            // Safety filter 1: Reject known AI boilerplate
+            // Safety filter: Only discard if the response matches known AI boilerplate prefixes or is suspiciously short/generic
             let boilerplatePrefixes = ["i'm sorry", "as a language model", "as an ai", "i cannot process"]
             let lowercaseResponse = cleanedText.lowercased()
             let isBoilerplate = boilerplatePrefixes.contains { prefix in
                 lowercaseResponse.hasPrefix(prefix) || (lowercaseResponse.contains(prefix) && cleanedText.count < 30)
             }
             
-            // Safety filter 2: Reject if response is more than 2x the length of the input (likely a duplication)
-            let isDuplicated = cleanedText.count > (text.count * 2 + 20)
-            
-            if isBoilerplate || isDuplicated {
+            if isBoilerplate {
                 cleanedText = text
             }
             

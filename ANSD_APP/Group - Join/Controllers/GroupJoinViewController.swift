@@ -118,10 +118,10 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+            try session.setActive(true)
         } catch {
-            print("[AudioEngine] Failed to setup audio session: \(error)")
+            print("Audio Session Error: \(error)")
         }
     }
     
@@ -141,10 +141,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             recognitionTask = nil
         }
         
-        // 1. Ensure Session is active and settles
-        setupAudioSession()
-        Thread.sleep(forTimeInterval: 0.1)
-
         consumedTranscriptOffset = 0
         addListeningBubble()
         
@@ -153,12 +149,6 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         recognitionRequest = request
         
         let inputNode = audioEngine.inputNode
-
-        // 2. Enable Voice Processing (DSP) if available
-        if #available(iOS 13.0, *) {
-            try? inputNode.setVoiceProcessingEnabled(false)
-        }
-
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
@@ -172,7 +162,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
             isRecording = true
             updateMicButtonVisuals(isActive: true)
         } catch {
-            print("[AudioEngine] Start Error: \(error)")
+            print("Audio Engine Start Error: \(error)")
             isRecording = false
             updateMicButtonVisuals(isActive: false)
         }
@@ -428,7 +418,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     // MARK: - Helpers
     private func updateMicButtonVisuals(isActive: Bool) {
-        let imageName = isActive ? "microphone.fill" : "microphone.slash.fill"
+        let imageName = isActive ? "mic.fill" : "mic.slash.fill"
         GroupJoinMicButton.setImage(UIImage(systemName: imageName), for: .normal)
     }
     

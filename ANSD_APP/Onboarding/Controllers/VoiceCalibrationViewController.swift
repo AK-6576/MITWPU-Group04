@@ -51,7 +51,7 @@ class VoiceCalibrationViewController: UIViewController {
     // MARK: - ML Model
     private var model: VL1004?
     private let requiredSamples = 96000  // 6 seconds × 16kHz
-    private let similarityThreshold: Float = 0.75
+    private let similarityThreshold: Float = 0.62
 
     // MARK: - Voice Embeddings
     private var sentenceEmbeddings: [[Float]] = []
@@ -62,9 +62,9 @@ class VoiceCalibrationViewController: UIViewController {
 
     // MARK: - Data
     private let sentences = [
-        "The mysterious blue bird soared gracefully over the snow-capped mountain peaks while several curious hikers watched from the narrow emerald valley below.",
-        "Extraordinary scientific discoveries often require immense patience, rigorous testing, and a deep understanding of the fundamental principles that govern our complex universe.",
-        "Modern communication technology allows us to connect with friends and family across vast distances, sharing moments of joy and sorrow in an instant with a single tap."
+        "The quick brown fox jumps over the lazy dog near the river bank.",
+        "Please verify my identity by recognizing my unique voice pattern.",
+        "Artificial intelligence is transforming the way we communicate daily."
     ]
 
     // MARK: - Lifecycle
@@ -201,8 +201,8 @@ class VoiceCalibrationViewController: UIViewController {
         switch phase {
 
         case .ready:
-            setButton(title: "Start Voice Setup", image: "microphone.fill", color: view.tintColor, enabled: true)
-            instructionLabel.text = "Tap once. Read these long sentences clearly, stressing your natural vowels and nouns."
+            setButton(title: "Start Voice Setup", image: "mic.fill", color: view.tintColor, enabled: true)
+            instructionLabel.text = "Tap once. Read all three sentences."
             animateBarsToResting()
 
         case .countdown(let n):
@@ -502,19 +502,14 @@ class VoiceCalibrationViewController: UIViewController {
                 
                 var samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
                 
-                // CRITICAL FIX: Do NOT pad with zeros. Padded silence "dilutes" the embedding
-                // and causes the 0.69 similarity score. The model expects 6s of DENSE speech.
+                // Pad or truncate to exactly 96,000 samples (model requirement)
                 let required = 96000
                 if samples.count < required {
-                    print("VoiceCalibration: ERROR - Recording too short (\(samples.count) samples). Need \(required).")
-                    completion(nil) // Trigger a retry/mismatch
-                    return
+                    samples.append(contentsOf: [Float](repeating: 0, count: required - samples.count))
                 } else if samples.count > required {
                     samples = Array(samples.prefix(required))
                 }
                 
-                // Return raw extracted samples — normalization & pre-emphasis 
-                // happen inside runVoiceInference for consistency with AudioDiarizer.
                 completion(samples)
             } catch {
                 print("VoiceCalibration: Audio extraction error — \(error)")
@@ -532,20 +527,11 @@ class VoiceCalibrationViewController: UIViewController {
             return nil
         }
         
-        // Normalize audio signal (RMS/MaxAmp)
-        var normalizedSamples = samples
-        var maxAmp: Float = 0
-        vDSP_maxv(normalizedSamples, 1, &maxAmp, vDSP_Length(normalizedSamples.count))
-        if maxAmp > 0 {
-            var factor = 1.0 / maxAmp
-            vDSP_vsmul(normalizedSamples, 1, &factor, &normalizedSamples, 1, vDSP_Length(normalizedSamples.count))
-        }
-        
         guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else {
             return nil
         }
         
-        for (i, sample) in normalizedSamples.enumerated() {
+        for (i, sample) in samples.enumerated() {
             inputMultiArray[i] = NSNumber(value: sample)
         }
         
@@ -578,13 +564,13 @@ class VoiceCalibrationViewController: UIViewController {
             averaged[i] /= count
         }
         
-        let normalizedAvg = self.normalize(averaged)
+        let normalizedAvg = normalize(averaged)
         
         // Save to persistent storage via VoiceProfileManager
+        // Use "Me" as default name — user can change it later
         if let uid = Auth.auth().currentUser?.uid {
-            let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "Me"
-            VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: name, embedding: normalizedAvg)
-            print("VoiceCalibration: Voice profile successfully saved for user \(uid) with name \(name)")
+            VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: "Me", embedding: normalizedAvg)
+            print("VoiceCalibration: Voice profile successfully saved for user \(uid)")
         } else {
             print("VoiceCalibration: Error - No logged-in user to save voice profile.")
         }

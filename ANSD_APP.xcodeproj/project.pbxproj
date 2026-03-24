@@ -42,7 +42,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		02AE995D2ED5711D0079EA2B /* Exceptions for "ANSD_APP" folder in "ANSD_APP" target */ = {
+		198E52442F72830D00FC9313 /* Exceptions for "ANSD_APP" folder in "ANSD_APP" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -55,7 +55,7 @@
 		02AE994D2ED5711C0079EA2B /* ANSD_APP */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				02AE995D2ED5711D0079EA2B /* Exceptions for "ANSD_APP" folder in "ANSD_APP" target */,
+				198E52442F72830D00FC9313 /* Exceptions for "ANSD_APP" folder in "ANSD_APP" target */,
 			);
 			path = ANSD_APP;
 			sourceTree = "<group>";
