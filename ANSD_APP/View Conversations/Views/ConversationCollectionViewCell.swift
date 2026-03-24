@@ -27,48 +27,52 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         super.awakeFromNib()
 
         backgroundColor = .secondarySystemGroupedBackground
-        layer.cornerRadius = 20
-        layer.masksToBounds = false
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.15
-        layer.shadowOffset = CGSize(width: 0, height: 4)
-        layer.shadowRadius = 8
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.systemGray5.cgColor
+        contentView.backgroundColor = .secondarySystemGroupedBackground
+        layer.cornerRadius = 16
+        layer.masksToBounds = true
+        layer.shadowOpacity = 0
+        layer.borderWidth = 0
+        
+        // HIG: Truncate summary to exactly one line to keep cards compact and uniform.
+        descriptionLabel.numberOfLines = 1
+        
+        // HIG: Enforce strong typographic hierarchy and spacing.
+        titleLabel.font = UIFont.preferredFont(forTextStyle: .headline)
+        // Shrunk text size to '.footnote' to perfectly fit deep hierarchy requested
+        descriptionLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+        descriptionLabel.textColor = .secondaryLabel
+        
+        // We will unhide and creatively repurpose these perfectly-spaced icons dynamically.
+        calendarIcon.isHidden = false
+        clockIcon.isHidden = false
     }
     
     func configure(with conversation: Conversation) {
         titleLabel.text = conversation.title
         descriptionLabel.text = conversation.details
         
-        if let date = conversation.calendarDate {
-            let calendar = Calendar.current
-            let day = calendar.component(.day, from: date)
-            
-            let monthFormatter = DateFormatter()
-            monthFormatter.dateFormat = "MMMM"
-            let month = monthFormatter.string(from: date)
-            
-            let numberFormatter = NumberFormatter()
-            numberFormatter.numberStyle = .ordinal
-            let dayString = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
-            
-            dateLabel.text = "\(month) \(dayString)"
-        } else {
-            dateLabel.text = conversation.date
-        }
+        // HIG: Removed repetitive Date & Time. Repurposing these slots based on user priority (Participants, Duration, Category)
+        
+        // Slot 1 (Left): Participants
+        let paxCount = conversation.participants?.count ?? 0
+        dateLabel.text = "\(paxCount) People"
+        calendarIcon.image = UIImage(systemName: "person.2.fill")
+        calendarIcon.tintColor = .secondaryLabel // Increased emphasis slightly
+        
+        // Slot 2 (Middle): Duration
+        let durationStr = calculateDuration(start: conversation.startTime, end: conversation.endTime)
+        timeLabel.text = durationStr
+        clockIcon.image = UIImage(systemName: "timer")
+        clockIcon.tintColor = .secondaryLabel
         
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
-        // dateLabel.text = conversation.date // REDUNDANT OVERWRITE REMOVED
-        timeLabel.text = "\(conversation.startTime)"
-        
-        calendarIcon.image = UIImage(systemName: "calendar")
-        clockIcon.image = UIImage(systemName: "clock")
-        calendarIcon.tintColor = .systemGray
-        clockIcon.tintColor = .systemGray
+        // Enforcing proper scale down for metadata
+        dateLabel.font = UIFont.preferredFont(forTextStyle: .caption1)
+        timeLabel.font = UIFont.preferredFont(forTextStyle: .caption1)
+        categoryLabel.font = UIFont.preferredFont(forTextStyle: .footnote) // slightly larger for category to stand out
         
         let iconName: String
         let tintColor: UIColor
@@ -116,12 +120,42 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         categoryIcon.tintColor = tintColor
         
         calendarIcon.isAccessibilityElement = true
-        calendarIcon.accessibilityLabel = "Date: \(conversation.date)"
+        calendarIcon.accessibilityLabel = "\(paxCount) Participants"
         
         clockIcon.isAccessibilityElement = true
-        clockIcon.accessibilityLabel = " \(conversation.startTime) to \(conversation.endTime)"
+        clockIcon.accessibilityLabel = "Duration: \(durationStr)"
         
         categoryIcon.isAccessibilityElement = true
         categoryIcon.accessibilityLabel = "Category: \(categoryAccessibilityName)"
+    }
+    
+    // HIG: Helper to calculate accurate duration
+    private func calculateDuration(start: String, end: String) -> String {
+        guard !start.isEmpty, !end.isEmpty else { return "Unknown" }
+        
+        let formatters = ["h:mm a", "HH:mm", "hh:mm a", "H:mm"]
+        var sDate: Date?
+        var eDate: Date?
+        
+        for format in formatters {
+            let df = DateFormatter()
+            df.dateFormat = format
+            if sDate == nil { sDate = df.date(from: start) }
+            if eDate == nil { eDate = df.date(from: end) }
+            if sDate != nil && eDate != nil { break }
+        }
+        
+        if let sDate = sDate, let eDate = eDate {
+            var diffOptions = eDate.timeIntervalSince(sDate)
+            if diffOptions < 0 { diffOptions += 24 * 3600 } // Handles crossing midnight
+            let totalMins = Int(diffOptions) / 60
+            if totalMins >= 60 {
+                let hours = totalMins / 60
+                let mins = totalMins % 60
+                return mins > 0 ? "\(hours)h \(mins)m" : "\(hours)h"
+            }
+            return "\(totalMins)m"
+        }
+        return "\(start) - \(end)" // Fallback if format misses
     }
 }
