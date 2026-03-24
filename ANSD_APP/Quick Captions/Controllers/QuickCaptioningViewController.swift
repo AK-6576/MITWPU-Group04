@@ -69,21 +69,17 @@ class QuickCaptioningViewController: UIViewController,
     }
     
     @objc private func handleLanguageChange() {
-        // Reinitialize the recognizer with the new language. Next recording session will pick it up.
         speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
             
-            // MARK: - Voice Profile Check
+    // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
         if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
-            // Profile exists! Load it into the Diarizer memory
             diarizer.speakerProfiles[0] = savedProfile.embedding
             diarizer.speakerNames[0] = savedProfile.name
             hasEnrolled = true
-            
             startSession()
         } else {
-            // No profile exists. Trigger the Calibration Prompt
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.promptForEnrollment()
             }
@@ -153,10 +149,8 @@ class QuickCaptioningViewController: UIViewController,
             
             let name = alert.textFields?.first?.text ?? "Me"
             
-            // 1. Update the Diarizer locally
             self.diarizer.setUserName(name)
             
-            // 2. Extract the mathematical vector and Save Permanently to SwiftData!
             if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
                 VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: name, embedding: userVector)
             }
@@ -205,13 +199,12 @@ class QuickCaptioningViewController: UIViewController,
         }
     }
 
-    // MARK: - Transcript Handling (FIXED DUPLICATION)
+    // MARK: - Transcript Handling
     
     private func handleSpeechTranscript(fullText: String, isFinal: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // SAFETY CHECK: If offset > fullText, a correction happened (backspace).
             if self.consumedTranscriptOffset > fullText.count {
                 return
             }
@@ -221,7 +214,6 @@ class QuickCaptioningViewController: UIViewController,
             
             guard !newContent.isEmpty else { return }
             
-            // Add to Buffer
             self.transcriptBuffer += newContent
             self.consumedTranscriptOffset = fullText.count
             
@@ -229,23 +221,17 @@ class QuickCaptioningViewController: UIViewController,
             self.holdTimer = nil
             
             if isFinal {
-                // Ensure everything is flushed
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
-                
-                // Clean the last active bubble since the sentence is done
                 if !self.messages.isEmpty {
                     self.finalizeBubble(at: self.messages.count - 1)
                     self.forceNewBubble = true
                 }
-                
                 self.transcriptBuffer = ""
             } else {
-                // Hold and wait buffer: allow diarization to catch up
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
                     self?.holdTimer = nil
                     self?.processBuffer()
                     
-                    // Seal the bubble because of a long pause
                     if let messages = self?.messages, !messages.isEmpty {
                         self?.finalizeBubble(at: messages.count - 1)
                         self?.forceNewBubble = true
@@ -258,34 +244,26 @@ class QuickCaptioningViewController: UIViewController,
     private func processBuffer() {
         guard !transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
-        // NEW FALLBACK: If diarizer hasn't identified anyone yet, default to Speaker 0 if enrolled, otherwise 1
         let speakerID = currentSpeakerID ?? (hasEnrolled ? 0 : 1)
-        
         let textToFlush = transcriptBuffer
         
-        // Check LAST message
         if let lastMsg = messages.last,
            let lastID = lastMsg.speakerID,
            lastID == speakerID,
            !self.forceNewBubble {
             
-            // SAME SPEAKER: Append
             updateLastBubble(with: textToFlush)
             
         } else {
-            // DIFFERENT SPEAKER or FORCED BREAK: Split
             self.forceNewBubble = false
             
-            // Seal previous bubble
             if !messages.isEmpty {
                 finalizeBubble(at: messages.count - 1)
             }
             
-            // Create new bubble
             flushBufferToNewBubble(text: textToFlush, speakerID: speakerID)
         }
         
-        // Clear buffer strictly after processing
         transcriptBuffer = ""
     }
     
@@ -299,7 +277,6 @@ class QuickCaptioningViewController: UIViewController,
             name = diarizer.speakerNames[speakerID] ?? "Speaker \(speakerID)"
         }
         
-        // Execute synchronously to prevent state desyncs in loops
         self.appendNewBubble(text: text, isBlue: isBlue, name: name, id: speakerID)
     }
     
@@ -344,7 +321,6 @@ class QuickCaptioningViewController: UIViewController,
                 if textToProcess.isEmpty { break }
             }
             
-            // Fallback: If it exactly ends with punctuation (no trailing space), seal for next iteration
             let activeIndex = self.messages.count - 1
             let finalCombinedText = self.messages[activeIndex].text
             if finalCombinedText != "..." && (finalCombinedText.hasSuffix(".") || finalCombinedText.hasSuffix("?") || finalCombinedText.hasSuffix("!")) {
@@ -361,18 +337,15 @@ class QuickCaptioningViewController: UIViewController,
         let text = messages[index].text
         guard messages[index].sender != "Listening...", messages[index].sender != "System" else { return }
         
-        // 1. Update UI with raw text immediately for 0ms perceived latency
         self.updateBubbleUI(at: index, text: text)
 
         let targetID = cleanupIDs[index]
 
-        // 2. Background cleanup starts
         cleanupManager.scheduleCleanup(text: text, at: index) { [weak self] _, cleaned in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 guard let currentIndex = self.cleanupIDs.firstIndex(of: targetID) else { return }
                 
-                // Scan the AI-cleaned bubble and split any newly discovered sentences
                 var textToProcess = cleaned
                 var sentences: [String] = []
                 while true {
@@ -397,10 +370,8 @@ class QuickCaptioningViewController: UIViewController,
                 
                 if sentences.isEmpty { return }
                 
-                // Replace the primary bubble with the first clean sentence
                 self.messages[currentIndex].text = sentences[0]
                 
-                // Safely spawn fresh bubbles for the remainder of the synthesized block
                 let originalMessage = self.messages[currentIndex]
                 var newMessages: [QuickCaptionsChat] = []
                 var newIDs: [UUID] = []
@@ -472,12 +443,10 @@ class QuickCaptioningViewController: UIViewController,
 
             self.currentSpeakerID = id
 
-            // Trigger buffer processing immediately on speaker identification
             if id != nil {
                 self.processBuffer()
             }
 
-            // Check for name updates (renames)
             if let validID = id, !self.messages.isEmpty {
                 let lastIdx = self.messages.count - 1
                 if self.messages[lastIdx].speakerID == validID {
@@ -494,24 +463,39 @@ class QuickCaptioningViewController: UIViewController,
         }.store(in: &diarizerCancellables)
     }
 
-    // MARK: - Audio Configuration
+    // MARK: - Audio Configuration (🚨 FIXED VPIO ERRORS HERE)
+    
+    private func setupAudioSession() {
+        do {
+            // Use .record and .measurement to kill VPIO echo cancellation
+            try AVAudioSession.sharedInstance().setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
+            try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.05)
+            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("❌ Session error: \(error)")
+        }
+    }
     
     private func startAudioEngine() throws {
         let inputNode = audioEngine.inputNode
+        
+        // Explicitly block Voice Processing hardware
+        if #available(iOS 13.0, *) {
+            try? inputNode.setVoiceProcessingEnabled(false)
+        }
+        
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
+        
+        // Using 1024 buffer size to prevent memory boundary issues
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
             if self.isRecording { self.recognitionRequest?.append(buffer) }
             self.diarizer.handleAudio(buffer: buffer, targetFormat: AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!)
         }
+        
         audioEngine.prepare()
         try audioEngine.start()
-    }
-    
-    private func setupAudioSession() {
-        try? AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
-        try? AVAudioSession.sharedInstance().setActive(true)
     }
     
     // MARK: - UI Setup
@@ -531,7 +515,6 @@ class QuickCaptioningViewController: UIViewController,
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             
-            // Flush any remaining text in the buffer to a bubble
             self.processBuffer()
             
             if !self.messages.isEmpty {
@@ -571,7 +554,7 @@ class QuickCaptioningViewController: UIViewController,
                 summaryVC.locationString = self.currentLocationString
                 
                 var participants: [QuickCaptionsParticipantData] = []
-                var uniqueSenders = [String: String]() // senderID: name
+                var uniqueSenders = [String: String]()
                 var order = [String]()
                 
                 for msg in self.messages {
@@ -590,7 +573,7 @@ class QuickCaptioningViewController: UIViewController,
                 summaryVC.participantsData = participants
                 
                 summaryNav.modalPresentationStyle = .pageSheet
-                summaryNav.isModalInPresentation = true // Prevent swipe-to-dismiss so session isn't lost
+                summaryNav.isModalInPresentation = true
                 self.present(summaryNav, animated: true, completion: nil)
             }
         }
@@ -662,7 +645,7 @@ class QuickCaptioningViewController: UIViewController,
             }
 
             for i in 0..<self.messages.count {
-                if let eid = self.messages[i].eventId, 
+                if let eid = self.messages[i].eventId,
                    let historyEvent = self.diarizer.segmentHistory.first(where: { $0.id == eid }) {
                     
                     let sid = historyEvent.assignedSpeakerID
