@@ -36,11 +36,10 @@ class AudioDiarizer: ObservableObject {
     private let matchThreshold: Float = 0.60
     private let deadzoneThreshold: Float = 0.48
     private let learningThreshold: Float = 0.85 // Strict: only learn from high-quality audio
-    private let learningRate: Float = 0.05
     
     // MARK: - Temporal Continuity & Probation
     private var unknownFrameCount = 0
-    private let probationLimit = 4 // Increased to 1.2s to completely ride out transitions
+    private let probationLimit = 4 // 1.2s to completely ride out transitions
     private var lastMatchedSpeakerID: Int? = nil
     
     // MARK: - SoundAnalysis Speech Gate
@@ -49,8 +48,12 @@ class AudioDiarizer: ObservableObject {
     private let analysisQueue  = DispatchQueue(label: "com.ansd.soundanalysis", qos: .userInitiated)
     private var analysisFrame:  AVAudioFramePosition = 0
 
-    // MARK: - Published State
-    @Published var speakerProfiles: [Int: [Float]] = [:]
+    // MARK: - Published State (60/40 Centroid Architecture)
+    @Published var speakerProfiles: [Int: [Float]] = [:] // The Active Scoring Profile
+    var baseAnchors: [Int: [Float]] = [:]                // ⭐️ 60% Permanent Anchor (Never changes)
+    private var activeClusters: [Int: [[Float]]] = [:]   // ⭐️ 40% Recent Adaptation (Last 15 clean frames)
+    private let maxClusterSize = 15                      // ~4.5 seconds of memory
+
     @Published var speakerNames:    [Int: String] = [:]
     @Published var currentStatus:   String = "Ready"
     @Published var confidence:      String = "--"
@@ -78,15 +81,29 @@ class AudioDiarizer: ObservableObject {
         }
     }
 
-    // MARK: - Enrollment
+    // MARK: - Enrollment & Profile Injection
     func enrollUser(completion: @escaping (Bool) -> Void) {
+        print("Starting Enrollment for User (ID: 0)...")
         self.isEnrolling = true
         self.enrollmentCompletion = completion
         self.collectedSamples.removeAll()
+        
         self.speakerProfiles.removeAll()
+        self.baseAnchors.removeAll()
+        self.activeClusters.removeAll()
+        
         self.speakerNames.removeAll()
         self.lastMatchedSpeakerID = nil
         self.unknownFrameCount = 0
+    }
+    
+    // Helper for the VC to inject profiles cleanly into all 3 dictionaries
+    func setPreEnrolledProfile(vector: [Float], name: String) {
+        self.speakerProfiles[0] = vector
+        self.baseAnchors[0] = vector
+        self.activeClusters[0] = [vector]
+        self.speakerNames[0] = name
+        print("✅ Pre-Enrolled Profile Loaded and Anchored for: \(name)")
     }
     
     func setUserName(_ name: String) {
@@ -152,9 +169,16 @@ class AudioDiarizer: ObservableObject {
         for (i, s) in samples.enumerated() { input[i] = NSNumber(value: s) }
         
         do {
+            let startTime  = CFAbsoluteTimeGetCurrent()
             let prediction = try model.prediction(audio: input)
+            let elapsed    = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            
             let vector = extractVector(from: prediction.embedding)
-            DispatchQueue.main.async { self.processEmbedding(vector) }
+            
+            DispatchQueue.main.async {
+                print("⚡️ Inference: \(String(format: "%.1f", elapsed))ms")
+                self.processEmbedding(vector)
+            }
         } catch {
             print("❌ Inference Error: \(error)")
         }
@@ -165,8 +189,10 @@ class AudioDiarizer: ObservableObject {
         let normVector = normalize(vector)
 
         if isEnrolling {
-            print("✅ User Enrolled (ID 0). Anchor Set.")
+            print("✅ User Enrolled (ID 0). Absolute Anchor Set.")
             speakerProfiles[0] = normVector
+            baseAnchors[0] = normVector
+            activeClusters[0] = [normVector]
             speakerNames[0] = "Me"
             isEnrolling = false
             enrollmentCompletion?(true)
@@ -179,13 +205,18 @@ class AudioDiarizer: ObservableObject {
         }
 
         var scoredSpeakers: [(id: Int, score: Float, raw: Float)] = []
-        for (id, profile) in speakerProfiles {
-            let raw = cosineSim(normVector, profile)
+        for id in speakerProfiles.keys {
+            guard let dynamicProfile = speakerProfiles[id], let anchorProfile = baseAnchors[id] else { continue }
+            
+            // Score against BOTH the adaptive profile and the permanent anchor
+            let dynScore = cosineSim(normVector, dynamicProfile)
+            let anchorScore = cosineSim(normVector, anchorProfile)
+            
+            let raw = max(dynScore, anchorScore)
             var score = raw
             
-            // ⭐️ THE SUPER-MAGNET: ID 0 gets a massive advantage to reclaim identity
+            // Super-Magnet for ID 0
             if id == 0 { score += 0.08 }
-            
             // Continuity boost
             if id == lastMatchedSpeakerID { score += 0.04 }
             
@@ -202,8 +233,11 @@ class AudioDiarizer: ObservableObject {
             lastMatchedSpeakerID = bestMatch.id
             self.confidence = String(format: "%.0f%%", bestMatch.score * 100)
             
-            // ⭐️ ID 0 IS ALLOWED TO LEARN: If the raw score is very high (>0.85), allow ID 0 to adapt to the room!
+            print("🎯 Match: Speaker \(bestMatch.id) (\(String(format: "%.0f%%", bestMatch.score * 100))) [Raw: \(String(format: "%.2f", bestMatch.raw))]")
+            
+            // Only update the room-adaptation cluster if the audio is exceedingly clean
             if bestMatch.raw > learningThreshold {
+                print("🧠 Clean audio detected. Updating Centroid for Speaker \(bestMatch.id).")
                 updateProfile(id: bestMatch.id, vector: normVector)
             }
             
@@ -214,25 +248,64 @@ class AudioDiarizer: ObservableObject {
             // POTENTIAL NEW SPEAKER (Probation Phase)
             unknownFrameCount += 1
             if unknownFrameCount >= probationLimit {
+                print("👽 [NEW VOICE] Persistent unknown signature. Creating New Speaker!")
                 lastMatchedSpeakerID = createNewSpeaker(with: normVector)
                 unknownFrameCount = 0
+            } else {
+                print("🚧 Unknown voice detected. Probation: \(unknownFrameCount)/\(probationLimit) [Score: \(String(format: "%.2f", bestMatch.score))]")
             }
+        } else {
+            // THE DEADZONE
+            unknownFrameCount = 0
+            print("🌫 Noisy/Transition Frame (Score \(String(format: "%.2f", bestMatch.score))). Ignored.")
         }
     }
 
-    // MARK: - Profile Management
+    // MARK: - 60/40 Profile Centroid Engine
     private func createNewSpeaker(with vector: [Float]) -> Int {
         let newID = (speakerProfiles.keys.max() ?? 0) + 1
         speakerProfiles[newID] = vector
+        baseAnchors[newID] = vector
+        activeClusters[newID] = [vector]
         currentSpeakerID = newID
         print("👤 New Speaker Identified: ID \(newID)")
         return newID
     }
 
     private func updateProfile(id: Int, vector: [Float]) {
-        if let old = speakerProfiles[id] {
-            speakerProfiles[id] = applyRollingAvg(old: old, new: vector)
+        guard let anchor = baseAnchors[id] else { return }
+        
+        if activeClusters[id] == nil { activeClusters[id] = [] }
+        activeClusters[id]?.append(vector)
+        
+        // Keep only the most recent N clean frames
+        if activeClusters[id]!.count > maxClusterSize {
+            activeClusters[id]?.removeFirst()
         }
+        
+        guard let cluster = activeClusters[id], !cluster.isEmpty else { return }
+        
+        // 1. Calculate the average of the recent clean frames (The 40% Room Adapter)
+        var clusterSum = [Float](repeating: 0, count: vector.count)
+        for v in cluster {
+            vDSP_vadd(clusterSum, 1, v, 1, &clusterSum, 1, vDSP_Length(vector.count))
+        }
+        
+        var clusterAvg = [Float](repeating: 0, count: vector.count)
+        let countFloat = Float(cluster.count)
+        vDSP_vsdiv(clusterSum, 1, [countFloat], &clusterAvg, 1, vDSP_Length(vector.count))
+        clusterAvg = normalize(clusterAvg)
+        
+        // 2. Combine with the Anchor (The 60% Permanent Identity)
+        var combined = [Float](repeating: 0, count: vector.count)
+        var wAnchor: Float = 0.60
+        var wCluster: Float = 0.40
+        
+        vDSP_vsmul(anchor, 1, &wAnchor, &combined, 1, vDSP_Length(vector.count))
+        vDSP_vsma(clusterAvg, 1, &wCluster, combined, 1, &combined, 1, vDSP_Length(vector.count))
+        
+        // 3. Save as the active scoring profile
+        speakerProfiles[id] = normalize(combined)
     }
 
     // MARK: - Math & Audio Helpers
@@ -243,14 +316,6 @@ class AudioDiarizer: ObservableObject {
             var factor = 1.0 / maxAmp
             vDSP_vsmul(samples, 1, &factor, &samples, 1, vDSP_Length(samples.count))
         }
-    }
-
-    private func applyRollingAvg(old: [Float], new: [Float]) -> [Float] {
-        var result = [Float](repeating: 0, count: old.count)
-        var fOld = 1.0 - learningRate, fNew = learningRate
-        vDSP_vsmul(old, 1, &fOld, &result, 1, vDSP_Length(old.count))
-        vDSP_vsma(new, 1, &fNew, result, 1, &result, 1, vDSP_Length(old.count))
-        return normalize(result)
     }
 
     func cosineSim(_ v1: [Float], _ v2: [Float]) -> Float {
@@ -287,7 +352,10 @@ class AudioDiarizer: ObservableObject {
             request.overlapFactor = 0.75
             try analyzer.add(request, withObserver: speechGate)
             soundAnalyzer = analyzer
-        } catch { print("Speech gate error: \(error)") }
+            print("🔊 [SoundAnalysis] Speech gate active (window=0.5s, overlap=75%)")
+        } catch {
+            print("⚠️ Speech gate error: \(error)")
+        }
     }
 
     // MARK: - Time Machine
@@ -312,6 +380,8 @@ class AudioDiarizer: ObservableObject {
             }
             let newID = (speakerProfiles.keys.max() ?? 0) + 1
             speakerProfiles[newID] = mistakeVector
+            baseAnchors[newID] = mistakeVector
+            activeClusters[newID] = [mistakeVector]
             speakerNames[newID] = newName
             targetID = newID
         }
@@ -354,6 +424,8 @@ class AudioDiarizer: ObservableObject {
 
         if ghostID != targetID {
             speakerProfiles.removeValue(forKey: ghostID)
+            baseAnchors.removeValue(forKey: ghostID)
+            activeClusters.removeValue(forKey: ghostID)
             speakerNames.removeValue(forKey: ghostID)
         }
 

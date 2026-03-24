@@ -75,8 +75,10 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
         if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
-            diarizer.speakerProfiles[0] = savedProfile.embedding
-            diarizer.speakerNames[0] = savedProfile.name
+            
+            // ⭐️ Uses the new helper to lock your absolute anchor into the Diarizer
+            diarizer.setPreEnrolledProfile(vector: savedProfile.embedding, name: savedProfile.name)
+            
             hasEnrolled = true
             startSession()
         } else {
