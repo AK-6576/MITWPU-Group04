@@ -33,17 +33,15 @@ class AudioDiarizer: ObservableObject {
     private var collectedSamples: [Float] = []
 
     // MARK: - Core Diarization Parameters
-    private let matchThreshold: Float = 0.60
-    private let deadzoneThreshold: Float = 0.48
-    private let userMatchThreshold: Float = 0.45
-    private let learningThreshold: Float = 0.85
-    private let minVolumeThreshold: Float = 0.015
+    private let matchThreshold: Float = 0.65 // Strictly identify new speakers
+    private let deadzoneThreshold: Float = 0.45 // Noise floor
+    private let userMatchThreshold: Float = 0.48 // More lenient for enrolled user (compensation for VPIO)
+    private let learningThreshold: Float = 0.82 // Only learn from high-quality audio
     
-    // MARK: - Temporal Continuity & Turn Taking
+    // MARK: - Temporal Continuity & Probation
     private var unknownFrameCount = 0
-    private let probationLimit = 5
+    private let probationLimit = 3 // 0.9s to completely ride out transitions
     private var lastMatchedSpeakerID: Int? = nil
-    private var silenceFrameCount = 0
     
     // MARK: - SoundAnalysis Speech Gate
     private let speechGate     = SpeechActivityGate()
@@ -51,11 +49,11 @@ class AudioDiarizer: ObservableObject {
     private let analysisQueue  = DispatchQueue(label: "com.ansd.soundanalysis", qos: .userInitiated)
     private var analysisFrame:  AVAudioFramePosition = 0
 
-    // MARK: - Published State
-    @Published var speakerProfiles: [Int: [Float]] = [:]
-    var baseAnchors: [Int: [Float]] = [:]
-    private var activeClusters: [Int: [[Float]]] = [:]
-    private let maxClusterSize = 15
+    // MARK: - Published State (60/40 Centroid Architecture)
+    @Published var speakerProfiles: [Int: [Float]] = [:] // The Active Scoring Profile
+    var baseAnchors: [Int: [Float]] = [:]                // ⭐️ 60% Permanent Anchor (Never changes)
+    private var activeClusters: [Int: [[Float]]] = [:]   // ⭐️ 40% Recent Adaptation (Last 15 clean frames)
+    private let maxClusterSize = 15                      // ~4.5 seconds of memory
 
     @Published var speakerNames:    [Int: String] = [:]
     @Published var currentStatus:   String = "Ready"
@@ -82,13 +80,6 @@ class AudioDiarizer: ObservableObject {
         } catch {
             print("❌ Model Load Error: \(error)")
         }
-        // ⭐️ THE FIX: Pad the initial buffer so it doesn't wait 6 seconds to start!
-        resetAudioBuffer()
-    }
-    
-    // ⭐️ THE FIX: Instantly fills the buffer with silence so the first 300ms triggers a prediction.
-    private func resetAudioBuffer() {
-        collectedSamples = Array(repeating: 0.0, count: requiredSamples - stride)
     }
 
     // MARK: - Enrollment & Profile Injection
@@ -97,21 +88,23 @@ class AudioDiarizer: ObservableObject {
         self.isEnrolling = true
         self.enrollmentCompletion = completion
         self.collectedSamples.removeAll()
+        
         self.speakerProfiles.removeAll()
         self.baseAnchors.removeAll()
         self.activeClusters.removeAll()
+        
         self.speakerNames.removeAll()
         self.lastMatchedSpeakerID = nil
         self.unknownFrameCount = 0
     }
     
+    // Helper for the VC to inject profiles cleanly into all 3 dictionaries
     func setPreEnrolledProfile(vector: [Float], name: String) {
         self.speakerProfiles[0] = vector
         self.baseAnchors[0] = vector
         self.activeClusters[0] = [vector]
         self.speakerNames[0] = name
         print("✅ Pre-Enrolled Profile Loaded and Anchored for: \(name)")
-        resetAudioBuffer() // Ready for instant inference
     }
     
     func setUserName(_ name: String) {
@@ -144,43 +137,41 @@ class AudioDiarizer: ObservableObject {
 
         if let channelData = outputBuffer.floatChannelData {
             var samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
-            let peakVolume = normalizeAudioSignal(&samples)
-            DispatchQueue.main.async { self.processSamples(samples, peakVolume: peakVolume) }
+            // VPIO hardware NR (voiceChat mode) already handles noise suppression.
+            // Peak-normalise whatever survived, then let the gate decide.
+            normalizeAudioSignal(&samples)
+            DispatchQueue.main.async { self.processSamples(samples) }
         }
     }
 
-    private func processSamples(_ samples: [Float], peakVolume: Float) {
-        let isActivelySpeaking = speechGate.isActive && (peakVolume > minVolumeThreshold)
-
+    private func processSamples(_ samples: [Float]) {
         if isEnrolling {
-            if isActivelySpeaking {
+            // ONLY collect samples for enrollment if the speech gate is active.
+            // This prevents silence or background noise from being saved as the user's profile.
+            if speechGate.isActive {
                 collectedSamples.append(contentsOf: samples)
                 if collectedSamples.count % 16000 == 0 {
                     print("🎙 Enrolling: Captured \(collectedSamples.count)/\(requiredSamples) speech samples...")
                 }
             }
         } else {
-            if !isActivelySpeaking {
-                silenceFrameCount += 1
-                if silenceFrameCount == 3 {
-                    print("🛑 Turn boundary detected! Wiping acoustic buffer to prevent speaker bleed.")
-                    // ⭐️ THE FIX: Don't use zero count, retain the padded size so the NEXT speaker is instant too!
-                    resetAudioBuffer()
-                    lastMatchedSpeakerID = nil
-                }
-            } else {
-                silenceFrameCount = 0
-            }
-            
+            // ALWAYS append samples during normal session to ensure continuous inference.
             collectedSamples.append(contentsOf: samples)
+            
+            if collectedSamples.count % 16000 == 0 {
+                print("🎤 Collected \(collectedSamples.count)/\(requiredSamples) samples...")
+            }
         }
         
         guard collectedSamples.count >= requiredSamples else { return }
         let chunk = Array(collectedSamples.prefix(requiredSamples))
         collectedSamples.removeFirst(stride)
         
-        if isActivelySpeaking {
+        if speechGate.isActive {
             scheduleInference(on: chunk)
+        } else {
+            // Optional: You can still run inference but ignore "New Speaker" results.
+            // But skipping it is cleaner and saves battery.
         }
     }
 
@@ -195,19 +186,20 @@ class AudioDiarizer: ObservableObject {
     }
 
     private func runInference(on samples: [Float]) {
-        guard let model = model else { return }
+        guard let model = model,
+              let input = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else { return }
+        
+        for (i, s) in samples.enumerated() { input[i] = NSNumber(value: s) }
         
         do {
-            // ⭐️ FAST INFERENCE: Using the Apple MLShapedArray natively!
-            let shapedInput = MLShapedArray<Float>(scalars: samples, shape: [1, requiredSamples])
             let startTime  = CFAbsoluteTimeGetCurrent()
-            let prediction = try model.prediction(audio: shapedInput)
+            let prediction = try model.prediction(audio: input)
             let elapsed    = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             
-            // Extract safely using the auto-generated property
-            let vector = prediction.embeddingShapedArray.scalars
+            let vector = extractVector(from: prediction.embedding)
             
             DispatchQueue.main.async {
+                print("⚡️ Inference: \(String(format: "%.1f", elapsed))ms")
                 self.processEmbedding(vector)
             }
         } catch {
@@ -215,7 +207,7 @@ class AudioDiarizer: ObservableObject {
         }
     }
 
-    // MARK: - The Match Logic
+    // MARK: - The "Identity-Lock" Match Logic
     private func processEmbedding(_ vector: [Float]) {
         let normVector = normalize(vector)
 
@@ -239,13 +231,17 @@ class AudioDiarizer: ObservableObject {
         for id in speakerProfiles.keys {
             guard let dynamicProfile = speakerProfiles[id], let anchorProfile = baseAnchors[id] else { continue }
             
+            // Score against BOTH the adaptive profile and the permanent anchor
             let dynScore = cosineSim(normVector, dynamicProfile)
             let anchorScore = cosineSim(normVector, anchorProfile)
+            
             let raw = max(dynScore, anchorScore)
             var score = raw
             
-            if id == 0 { score += 0.04 }
-            if id == lastMatchedSpeakerID { score += 0.02 }
+            // Magnet for ID 0 (User's Voice) - Increased to 0.15 to account for mic mode drift.
+            if id == 0 { score += 0.15 }
+            // Continuity boost
+            if id == lastMatchedSpeakerID { score += 0.05 }
             
             score = min(score, 1.0)
             scoredSpeakers.append((id: id, score: score, raw: raw))
@@ -257,53 +253,43 @@ class AudioDiarizer: ObservableObject {
         let threshold = (bestMatch.id == 0) ? userMatchThreshold : matchThreshold
 
         if bestMatch.score >= threshold {
-            matchConfirmed(bestMatch, normVector: normVector)
-        } else {
+            // CONFIRMED MATCH
+            unknownFrameCount = 0
+            lastMatchedSpeakerID = bestMatch.id
+            self.confidence = String(format: "%.0f%%", bestMatch.score * 100)
+            
+            print("🎯 Match: Speaker \(bestMatch.id) (\(String(format: "%.0f%%", bestMatch.score * 100))) [Raw: \(String(format: "%.2f", bestMatch.raw))]")
+            
+            // Only update the room-adaptation cluster if the audio is exceedingly clean
+            if bestMatch.raw > learningThreshold && speechGate.isActive {
+                print("🧠 Clean speech detected. Updating Centroid for Speaker \(bestMatch.id).")
+                updateProfile(id: bestMatch.id, vector: normVector)
+            } else if bestMatch.raw > learningThreshold {
+                print("🧠 Match confirmed, but gate rejected learning (VAD low).")
+            }
+            
+            currentSpeakerID = bestMatch.id
+            addToHistory(vector: normVector, id: bestMatch.id, score: bestMatch.score)
+            
+            // Periodically run background refinement
+            if segmentHistory.count % 10 == 0 {
+                performRetroactiveRefinement()
+            }
+            
+        } else if bestMatch.score < deadzoneThreshold {
+            // POTENTIAL NEW SPEAKER (Probation Phase)
             unknownFrameCount += 1
             if unknownFrameCount >= probationLimit {
-                
-                if bestMatch.id == 0 && bestMatch.raw >= 0.25 {
-                    print("♻️ Identity Recovery: Plausible user signature detected. Force-snapping to ID 0.")
-                    matchConfirmed(bestMatch, normVector: normVector)
-                }
-                else if bestMatch.id != 0 && bestMatch.raw >= 0.35 {
-                    print("♻️ Guest Recovery: Plausible guest signature detected. Force-snapping to ID \(bestMatch.id).")
-                    matchConfirmed(bestMatch, normVector: normVector)
-                }
-                else if speechGate.currentConfidence < 0.60 {
-                    print("🛡 VAD Confidence (\(String(format: "%.2f", speechGate.currentConfidence))) too low. Rejecting noise frame.")
-                    unknownFrameCount -= 1
-                }
-                else {
-                    print("👽 [NEW VOICE] Distinct acoustic signature detected. Creating New Speaker!")
-                    lastMatchedSpeakerID = createNewSpeaker(with: normVector)
-                    unknownFrameCount = 0
-                }
+                print("👽 [NEW VOICE] Persistent unknown signature. Creating New Speaker!")
+                lastMatchedSpeakerID = createNewSpeaker(with: normVector)
+                unknownFrameCount = 0
             } else {
-                print("🚧 Ambiguous frame (Score \(String(format: "%.2f", bestMatch.score))). Probation: \(unknownFrameCount)/\(probationLimit)")
+                print("🚧 Unknown voice detected. Probation: \(unknownFrameCount)/\(probationLimit) [Score: \(String(format: "%.2f", bestMatch.score))]")
             }
-        }
-    }
-    
-    private func matchConfirmed(_ match: (id: Int, score: Float, raw: Float), normVector: [Float]) {
-        unknownFrameCount = 0
-        lastMatchedSpeakerID = match.id
-        self.confidence = String(format: "%.0f%%", match.score * 100)
-        
-        print("🎯 Match: Speaker \(match.id) (\(String(format: "%.0f%%", match.score * 100))) [Raw: \(String(format: "%.2f", match.raw))]")
-        
-        let thresholdForLearning: Float = (match.id == 0) ? userMatchThreshold : matchThreshold
-        
-        if match.raw > thresholdForLearning && speechGate.isActive {
-            print("🧠 Clean speech detected. Updating Centroid for Speaker \(match.id).")
-            updateProfile(id: match.id, vector: normVector)
-        }
-        
-        currentSpeakerID = match.id
-        addToHistory(vector: normVector, id: match.id, score: match.score)
-        
-        if segmentHistory.count % 10 == 0 {
-            performRetroactiveRefinement()
+        } else {
+            // THE DEADZONE
+            unknownFrameCount = 0
+            print("🌫 Noisy/Transition Frame (Score \(String(format: "%.2f", bestMatch.score))). Ignored.")
         }
     }
 
@@ -324,12 +310,14 @@ class AudioDiarizer: ObservableObject {
         if activeClusters[id] == nil { activeClusters[id] = [] }
         activeClusters[id]?.append(vector)
         
+        // Keep only the most recent N clean frames
         if activeClusters[id]!.count > maxClusterSize {
             activeClusters[id]?.removeFirst()
         }
         
         guard let cluster = activeClusters[id], !cluster.isEmpty else { return }
         
+        // 1. Calculate the average of the recent clean frames (The 40% Room Adapter)
         var clusterSum = [Float](repeating: 0, count: vector.count)
         for v in cluster {
             vDSP_vadd(clusterSum, 1, v, 1, &clusterSum, 1, vDSP_Length(vector.count))
@@ -340,34 +328,26 @@ class AudioDiarizer: ObservableObject {
         vDSP_vsdiv(clusterSum, 1, [countFloat], &clusterAvg, 1, vDSP_Length(vector.count))
         clusterAvg = normalize(clusterAvg)
         
+        // 2. Combine with the Anchor (The 60% Permanent Identity)
         var combined = [Float](repeating: 0, count: vector.count)
-        var wAnchor: Float = (id == 0) ? 0.85 : 0.60
-        var wCluster: Float = (id == 0) ? 0.15 : 0.40
+        var wAnchor: Float = 0.60
+        var wCluster: Float = 0.40
         
         vDSP_vsmul(anchor, 1, &wAnchor, &combined, 1, vDSP_Length(vector.count))
         vDSP_vsma(clusterAvg, 1, &wCluster, combined, 1, &combined, 1, vDSP_Length(vector.count))
         
-        let newProfile = normalize(combined)
-        
-        if id == 0 {
-            if cosineSim(newProfile, anchor) < 0.70 {
-                return
-            }
-        }
-        
-        speakerProfiles[id] = newProfile
+        // 3. Save as the active scoring profile
+        speakerProfiles[id] = normalize(combined)
     }
 
     // MARK: - Math & Audio Helpers
-    @discardableResult
-    private func normalizeAudioSignal(_ samples: inout [Float]) -> Float {
+    private func normalizeAudioSignal(_ samples: inout [Float]) {
         var maxAmp: Float = 0
         vDSP_maxv(samples, 1, &maxAmp, vDSP_Length(samples.count))
         if maxAmp > 0 {
             var factor = 1.0 / maxAmp
             vDSP_vsmul(samples, 1, &factor, &samples, 1, vDSP_Length(samples.count))
         }
-        return maxAmp
     }
 
     func cosineSim(_ v1: [Float], _ v2: [Float]) -> Float {
@@ -383,6 +363,12 @@ class AudioDiarizer: ObservableObject {
         var res = [Float](repeating: 0, count: v.count)
         vDSP_vsdiv(v, 1, [mag], &res, 1, vDSP_Length(v.count))
         return res
+    }
+
+    func extractVector(from multiArray: MLMultiArray) -> [Float] {
+        let count = multiArray.count
+        let ptr = multiArray.dataPointer.bindMemory(to: Float.self, capacity: count)
+        return Array(UnsafeBufferPointer(start: ptr, count: count))
     }
 
     private func getConverter(from i: AVAudioFormat, to o: AVAudioFormat) -> AVAudioConverter? {
@@ -411,6 +397,8 @@ class AudioDiarizer: ObservableObject {
         let mistakeVector = segmentHistory[index].vector
         let mistakeContext = segmentHistory[index].locationTag
 
+        print("⏳ Time Machine: User says Event \(eventID) (ID \(ghostID)) is actually '\(newName)'")
+
         var targetID: Int = -1
 
         if let existingID = speakerNames.first(where: { $0.value == newName })?.key {
@@ -418,6 +406,7 @@ class AudioDiarizer: ObservableObject {
         } else {
             if ghostID != 0 {
                 speakerNames[ghostID] = newName
+                print("Renamed ID \(ghostID) to \(newName). No merge needed.")
                 self.objectWillChange.send()
                 return
             }
@@ -429,7 +418,11 @@ class AudioDiarizer: ObservableObject {
             targetID = newID
         }
 
+        var mergeCount  = 0
+        var rippleCount = 0
+
         updateProfile(id: targetID, vector: mistakeVector)
+
         guard let targetProfile = speakerProfiles[targetID] else { return }
 
         for i in 0..<segmentHistory.count {
@@ -439,16 +432,24 @@ class AudioDiarizer: ObservableObject {
                 segmentHistory[i].assignedSpeakerID = targetID
                 segmentHistory[i].confidence        = 1.0
                 updateProfile(id: targetID, vector: event.vector)
+                mergeCount += 1
                 continue
             }
 
-            if event.assignedSpeakerID != 0 && event.assignedSpeakerID != targetID && event.assignedSpeakerID != ghostID {
+            if event.assignedSpeakerID != 0
+                && event.assignedSpeakerID != targetID
+                && event.assignedSpeakerID != ghostID {
+
                 var score = cosineSim(event.vector, targetProfile)
-                if let evLoc = event.locationTag, let mistLoc = mistakeContext, evLoc == mistLoc { score += 0.10 }
+                if let evLoc = event.locationTag, let mistLoc = mistakeContext, evLoc == mistLoc {
+                    score += 0.10
+                }
 
                 if score > 0.75 && score > (event.confidence + 0.05) {
+                    print("✨ Magic: Found a missed segment at index \(i) (Score: \(score))")
                     segmentHistory[i].assignedSpeakerID = targetID
                     segmentHistory[i].confidence        = score
+                    rippleCount += 1
                 }
             }
         }
@@ -459,6 +460,7 @@ class AudioDiarizer: ObservableObject {
             activeClusters.removeValue(forKey: ghostID)
             speakerNames.removeValue(forKey: ghostID)
         }
+
         self.objectWillChange.send()
     }
 
@@ -469,20 +471,24 @@ class AudioDiarizer: ObservableObject {
     
     // MARK: - Proactive Refinement
     func performRetroactiveRefinement() {
+        // Run on background thread to prevent session lag
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self else { return }
+            
             var hasChanges = false
             let profiles = self.speakerProfiles
             
             for i in 0..<self.segmentHistory.count {
                 let event = self.segmentHistory[i]
                 let currentID = event.assignedSpeakerID
+                let vector = event.vector
+                
                 var bestScore: Float = -1.0
                 var bestID: Int = currentID
                 
                 for (id, profile) in profiles {
-                    var score = self.cosineSim(event.vector, profile)
-                    if id == 0 { score += 0.03 }
+                    var score = self.cosineSim(vector, profile)
+                    if id == 0 { score += 0.10 } // Maintain restored user bias
                     
                     if score > bestScore {
                         bestScore = score
@@ -490,6 +496,7 @@ class AudioDiarizer: ObservableObject {
                     }
                 }
                 
+                // If a significantly better match is found, update it
                 let threshold = (bestID == 0) ? self.userMatchThreshold : self.matchThreshold
                 if bestID != currentID && bestScore > (event.confidence + 0.10) && bestScore >= threshold {
                     DispatchQueue.main.async {
@@ -499,28 +506,98 @@ class AudioDiarizer: ObservableObject {
                     hasChanges = true
                 }
             }
-            if hasChanges { DispatchQueue.main.async { self.objectWillChange.send() } }
+            
+            if hasChanges {
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                }
+            }
         }
     }
 }
 
 // MARK: - SpeechActivityGate
+/// Allowlist-based gate: only frames the classifier labels as human speech
+/// are allowed through. Noise classes are explicitly rejected.
+/// Hysteresis: once the gate opens it stays open for `holdOpen` extra frames
+/// so classifier jitter mid-sentence can't flicker it shut.
 private class SpeechActivityGate: NSObject, SNResultsObserving {
-    private let labels: Set<String> = ["speech"]
-    private var _active = true
-    private var _currentConfidence: Float = 0.0
+
+    // ✅ ALLOW: human vocalisation only
+    private let speechLabels: Set<String> = [
+        "speech", "whispering", "shout", "laughter", "singing", "humming"
+    ]
+
+    // ❌ DENY: non-speech noise classes in the Apple SoundAnalysis taxonomy.
+    private let noiseLabels: Set<String> = [
+        // Mechanical / HVAC
+        "fan", "air_conditioning", "hvac", "mechanical_fan", "white_noise",
+        "vacuum_cleaner", "blender", "hair_dryer", "lawn_mower",
+        // Vehicle / transport
+        "car", "vehicle", "truck", "motorcycle", "bus", "train",
+        "aircraft", "airplane", "helicopter", "boat", "ship",
+        "car_horn", "horn", "siren", "emergency_vehicle", "traffic",
+        "engine", "vehicle_engine", "idling",
+        // Environment / room
+        "crowd", "background_noise", "noise", "babble", "restaurant_noise",
+        "office_ambience", "classroom_ambience", "street_music",
+        "rain", "thunder", "wind", "water", "waterfall", "ocean", "stream",
+        "fire", "crackling",
+        // Alarms & signals
+        "alarm", "smoke_detector", "clock_alarm", "telephone", "door_bell",
+        "beep", "buzzer",
+        // Music / non-speech audio
+        "music", "instrument", "piano", "guitar", "drum", "percussion",
+        "electronic_music", "pop_music", "hip_hop",
+        // Animal
+        "dog", "cat", "bird", "animal"
+    ]
+
+    /// Minimum confidence for the #1 prediction to be treated as speech.
+    /// 0.28 is calibrated for real-room speech: SoundAnalysis typically scores
+    /// human voice at 0.30–0.55 in ambient conditions.
+    private let speechConfidenceThreshold: Float = 0.28
+
+    /// How many extra classifier frames to stay open after speech is detected.
+    /// Each frame is ~0.5 s × (1 – 0.75 overlap) = ~0.125 s effective stride,
+    /// so 2 frames ≈ 0.25 s of holdOpen — smooths over inter-word gaps.
+    private let holdOpen = 2
+    private var holdCounter = 0
+
+    private var _active = false
     private let lock = NSLock()
-    
-    var isActive: Bool { lock.lock(); defer { lock.unlock() }; return _active }
-    var currentConfidence: Float { lock.lock(); defer { lock.unlock() }; return _currentConfidence }
-    
+
+    var isActive: Bool {
+        lock.lock(); defer { lock.unlock() }; return _active
+    }
+
     func request(_ request: SNRequest, didProduce result: SNResult) {
-        guard let res = result as? SNClassificationResult, let top = res.classifications.first else { return }
-        
+        guard let res = result as? SNClassificationResult,
+              let top = res.classifications.first else { return }
+
+        let topLabel = top.identifier
+        let topConf  = Float(top.confidence)
+
+        // Gate opens when the best prediction is an unambiguous speech class
+        // with sufficient confidence AND is not itself a noise label.
+        let isSpeech = speechLabels.contains(topLabel)
+                    && topConf >= speechConfidenceThreshold
+                    && !noiseLabels.contains(topLabel)
+
         lock.lock()
-        _currentConfidence = Float(top.confidence)
-        // Set to 45% to ensure conversational/quiet speech is actually heard.
-        _active = labels.contains(top.identifier) && top.confidence > 0.45
+        if isSpeech {
+            _active = true
+            holdCounter = holdOpen          // reset hold timer on each speech frame
+        } else if holdCounter > 0 {
+            holdCounter -= 1               // burn down the hold — gate stays open
+            // _active stays true
+        } else {
+            _active = false
+            if topConf > 0.3 {
+                print("🔇 [Gate CLOSED] \(topLabel) @ \(String(format: "%.0f%%", topConf * 100)) — noise suppressed")
+            }
+        }
         lock.unlock()
     }
 }
+
