@@ -48,7 +48,19 @@ class ConversationCollectionViewCell: UICollectionViewCell {
     }
     
     func configure(with conversation: Conversation) {
-        titleLabel.text = conversation.title
+        if conversation.isPinned {
+            let fullString = NSMutableAttributedString(string: conversation.title + " ")
+            let imageAttachment = NSTextAttachment()
+            let config = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+            if let image = UIImage(systemName: "pin.fill", withConfiguration: config)?.withTintColor(.systemOrange, renderingMode: .alwaysOriginal) {
+                imageAttachment.image = image
+                imageAttachment.bounds = CGRect(x: 0, y: -2, width: image.size.width, height: image.size.height)
+            }
+            fullString.append(NSAttributedString(attachment: imageAttachment))
+            titleLabel.attributedText = fullString
+        } else {
+            titleLabel.text = conversation.title
+        }
         descriptionLabel.text = conversation.details
         
         // HIG: Removed repetitive Date & Time. Repurposing these slots based on user priority (Participants, Duration, Category)

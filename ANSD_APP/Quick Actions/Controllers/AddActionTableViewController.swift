@@ -227,14 +227,22 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             
             self.present(composeVC, animated: true, completion: nil)
         } else {
-            navigationController?.popViewController(animated: true)
+            if let nav = navigationController, nav.viewControllers.count > 1 {
+                nav.popViewController(animated: true)
+            } else {
+                dismiss(animated: true, completion: nil)
+            }
         }
     }
     
     // MARK: - Message Composer Delegate
     func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
         controller.dismiss(animated: true) {
-            self.navigationController?.popViewController(animated: true)
+            if let nav = self.navigationController, nav.viewControllers.count > 1 {
+                nav.popViewController(animated: true)
+            } else {
+                self.dismiss(animated: true, completion: nil)
+            }
         }
     }
     

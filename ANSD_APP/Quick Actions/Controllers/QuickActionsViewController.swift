@@ -18,6 +18,18 @@ class QuickActionsViewController: UITableViewController {
         self.title = "Quick Actions"
         tableView.tableHeaderView = UIView()
         tableView.sectionHeaderTopPadding = 0
+        
+        // Override the Storyboard native Push Segue with a programmatic Modal presentation
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(didTapAddButton))
+        self.navigationItem.rightBarButtonItem = addButton
+    }
+    
+    @objc private func didTapAddButton() {
+        if let addVC = self.storyboard?.instantiateViewController(withIdentifier: "AddCategoryVC") as? AddActionTableViewController {
+            addVC.delegate = self
+            let nav = UINavigationController(rootViewController: addVC)
+            self.present(nav, animated: true, completion: nil)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {

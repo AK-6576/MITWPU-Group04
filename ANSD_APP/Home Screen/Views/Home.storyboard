@@ -197,18 +197,12 @@
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="KCD-xc-nta">
-                                                    <rect key="frame" x="16" y="4" width="325" height="43"/>
+                                                    <rect key="frame" x="16" y="13.666666666666664" width="325" height="24"/>
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Quick Actions" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="te3-W2-f7O">
                                                             <rect key="frame" x="0.0" y="0.0" width="325" height="24"/>
                                                             <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
                                                             <nil key="textColor"/>
-                                                            <nil key="highlightedColor"/>
-                                                        </label>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Upcoming" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jQy-tB-aNd">
-                                                            <rect key="frame" x="0.0" y="26" width="325" height="17"/>
-                                                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                            <color key="textColor" systemColor="secondaryLabelColor"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
                                                     </subviews>
@@ -242,15 +236,14 @@
                                         </userDefinedRuntimeAttributes>
                                         <connections>
                                             <outlet property="chevronButton" destination="KLs-me-jDc" id="Nj4-hx-nDz"/>
-                                            <outlet property="subtitleLabel" destination="jQy-tB-aNd" id="3Yi-Lg-j82"/>
                                             <outlet property="titleLabel" destination="te3-W2-f7O" id="CpY-kw-2CY"/>
                                         </connections>
                                     </tableViewCell>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="routineCell" rowHeight="75" id="4Bl-75-44T" customClass="QuickActionTableViewCell" customModule="ANSD_APP" customModuleProvider="target">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="routineCell" rowHeight="75" id="4Bl-75-44T" customClass="QuickActionTableViewCell" customModule="ANSD_APP" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="439.33333206176758" width="393" height="75"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="4Bl-75-44T" id="kUR-JB-O5Y">
-                                            <rect key="frame" x="0.0" y="0.0" width="362.66666666666669" height="75"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="393" height="75"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" tag="101" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1na-0h-Rwf" userLabel="Header Label">
@@ -274,21 +267,11 @@
                                                         <constraint firstAttribute="width" constant="45" id="mj9-ho-zVT"/>
                                                     </constraints>
                                                 </imageView>
-                                                <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="v4O-zV-te6" userLabel="Separator.">
-                                                    <rect key="frame" x="16" y="74" width="346.66666666666669" height="1"/>
-                                                    <color key="backgroundColor" systemColor="systemGray5Color"/>
-                                                    <constraints>
-                                                        <constraint firstAttribute="height" constant="1" id="Wdc-8K-j0M"/>
-                                                    </constraints>
-                                                </view>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstAttribute="bottom" secondItem="v4O-zV-te6" secondAttribute="bottom" id="7US-ni-0fp"/>
                                                 <constraint firstItem="hcW-qQ-Qaf" firstAttribute="leading" secondItem="xR7-Ew-Fwj" secondAttribute="trailing" constant="15" id="85K-9j-Lj1"/>
                                                 <constraint firstItem="1na-0h-Rwf" firstAttribute="top" secondItem="kUR-JB-O5Y" secondAttribute="top" constant="16" id="8yU-lZ-vaL"/>
                                                 <constraint firstItem="hcW-qQ-Qaf" firstAttribute="top" secondItem="1na-0h-Rwf" secondAttribute="bottom" constant="4" id="LMl-o6-ZlY"/>
-                                                <constraint firstItem="v4O-zV-te6" firstAttribute="leading" secondItem="kUR-JB-O5Y" secondAttribute="leading" constant="16" id="RS2-EN-jWf"/>
-                                                <constraint firstAttribute="trailing" secondItem="v4O-zV-te6" secondAttribute="trailing" id="cDv-Ze-AzM"/>
                                                 <constraint firstItem="1na-0h-Rwf" firstAttribute="leading" secondItem="xR7-Ew-Fwj" secondAttribute="trailing" constant="15" id="mQW-Ci-BCh"/>
                                                 <constraint firstAttribute="bottom" secondItem="hcW-qQ-Qaf" secondAttribute="bottom" constant="12" id="xCW-nF-8rd"/>
                                                 <constraint firstItem="xR7-Ew-Fwj" firstAttribute="centerY" secondItem="kUR-JB-O5Y" secondAttribute="centerY" id="y56-Zf-tVq"/>
@@ -1357,7 +1340,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="OK6-jy-Qbd"/>
+        <segue reference="DsQ-zz-ELp"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="Apple" width="24" height="24"/>
