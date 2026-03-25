@@ -7,59 +7,145 @@
 //
 import UIKit
 
-// MARK: - Routine Cell (Quick Actions - Top List)
+// MARK: - Routine Cell (Quick Actions - Home Screen)
 class QuickActionTableViewCell: UITableViewCell {
+
+    // MARK: - Storyboard Outlets
     @IBOutlet weak var iconImageView: UIImageView!
     @IBOutlet weak var titleLabel: UILabel!
-    @IBOutlet weak var timeLabel: UILabel!
-    
+    @IBOutlet weak var timeLabel: UILabel!   // repurposed as "Category · N participants"
+
     var onInfoTapped: (() -> Void)?
-    
-    private let bottomBorder = UIView()
-    
+
+    // MARK: - Programmatic Right-side Views
+    private let timeLabelRight = UILabel()
+    private let todayBadgeContainer = UIView()
+    private let todayBadgeLabel = UILabel()
+    private var rightViewsAdded = false
+
+    // MARK: - Lifecycle
+
     override func awakeFromNib() {
         super.awakeFromNib()
-        setupDesign()
+        setupBaseDesign()
     }
 
-    func setupDesign() {
-        iconImageView.layer.cornerRadius = 10
-        iconImageView.backgroundColor = .systemGray6
-        iconImageView.contentMode = .center
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if !rightViewsAdded {
+            setupRightSideViews()
+            rightViewsAdded = true
+        }
+    }
+
+    // MARK: - Setup
+
+    private func setupBaseDesign() {
+        // Icon
+        iconImageView.layer.cornerRadius = 12
         iconImageView.clipsToBounds = true
-        
+        iconImageView.contentMode = .center
+
+        // Title
         titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         titleLabel.textColor = .label
-        
+
+        // Subtitle (category · participants) – reusing timeLabel outlet
         timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
         timeLabel.textColor = .secondaryLabel
-        
-        self.selectionStyle = .default
 
+        self.selectionStyle = .default
         self.backgroundColor = .secondarySystemGroupedBackground
     }
 
+    private func setupRightSideViews() {
+        // Right-side time label
+        timeLabelRight.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        timeLabelRight.textColor = .secondaryLabel
+        timeLabelRight.textAlignment = .right
+        timeLabelRight.translatesAutoresizingMaskIntoConstraints = false
+
+        // "Today" badge container
+        todayBadgeContainer.layer.cornerRadius = 8
+        todayBadgeContainer.clipsToBounds = true
+        todayBadgeContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        // "Today" badge label
+        todayBadgeLabel.font = UIFont.systemFont(ofSize: 11, weight: .bold)
+        todayBadgeLabel.textColor = .white
+        todayBadgeLabel.textAlignment = .center
+        todayBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
+        todayBadgeContainer.addSubview(todayBadgeLabel)
+
+        contentView.addSubview(timeLabelRight)
+        contentView.addSubview(todayBadgeContainer)
+
+        NSLayoutConstraint.activate([
+            // Badge label padding inside container
+            todayBadgeLabel.topAnchor.constraint(equalTo: todayBadgeContainer.topAnchor, constant: 3),
+            todayBadgeLabel.bottomAnchor.constraint(equalTo: todayBadgeContainer.bottomAnchor, constant: -3),
+            todayBadgeLabel.leadingAnchor.constraint(equalTo: todayBadgeContainer.leadingAnchor, constant: 8),
+            todayBadgeLabel.trailingAnchor.constraint(equalTo: todayBadgeContainer.trailingAnchor, constant: -8),
+
+            // Time label — top-right of cell
+            timeLabelRight.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
+            timeLabelRight.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 17),
+
+            // Badge — below time label
+            todayBadgeContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
+            todayBadgeContainer.topAnchor.constraint(equalTo: timeLabelRight.bottomAnchor, constant: 5),
+        ])
+
+        // Restrict title and subtitle labels to not overlap right column
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        timeLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        // Disable any existing trailing constraints on title/subtitle originating from the cell
+        for c in self.constraints + contentView.constraints {
+            let isTitle = (c.firstItem as? UIView == titleLabel || c.secondItem as? UIView == titleLabel)
+            let isSubtitle = (c.firstItem as? UIView == timeLabel || c.secondItem as? UIView == timeLabel)
+            if (isTitle || isSubtitle) && (c.firstAttribute == .trailing || c.secondAttribute == .trailing) {
+                c.isActive = false
+            }
+        }
+
+        NSLayoutConstraint.activate([
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: timeLabelRight.leadingAnchor, constant: -8),
+            timeLabel.trailingAnchor.constraint(lessThanOrEqualTo: timeLabelRight.leadingAnchor, constant: -8),
+        ])
+    }
+
+    // MARK: - Configure
+
     func configure(with item: RoutineConversation, isLast: Bool) {
+        // Title
         titleLabel.text = item.conversationTopic
-        timeLabel.text = item.startTime
-        
-        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
+
+        // Subtitle: "Category · N participants"
+        let count = item.participantNames.count
+        let pStr = count == 1 ? "1 participant" : "\(count) participants"
+        timeLabel.text = "\(item.categoryTitle) · \(pStr)"
+
+        // Icon
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
         if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
             iconImageView.image = image.withRenderingMode(.alwaysTemplate)
         }
-        
-        switch item.categoryTitle {
-        case "Office":
-            iconImageView.tintColor = .systemBlue
-        case "Family":
-            iconImageView.tintColor = .systemPink
-        case "Friends":
-            iconImageView.tintColor = .systemGreen
-        default:
-            iconImageView.tintColor = .systemGray
-        }
+
+        // Category colour
+        let color = getColorForCategory(item.categoryTitle)
+        iconImageView.tintColor = color
+        iconImageView.backgroundColor = color.withAlphaComponent(0.15)
+        iconImageView.layer.cornerRadius = 12
+
+        // Right-side time
+        timeLabelRight.text = item.startTime
+
+        // Today badge
+        todayBadgeLabel.text = "Today"
+        todayBadgeContainer.backgroundColor = color
     }
-    
+
     @objc private func infoButtonTapped() {
         onInfoTapped?()
     }
