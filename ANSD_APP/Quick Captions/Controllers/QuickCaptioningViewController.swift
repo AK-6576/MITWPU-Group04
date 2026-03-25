@@ -72,13 +72,9 @@ class QuickCaptioningViewController: UIViewController,
         speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
             
-    // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
         if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
-            
-            // ⭐️ Uses the new helper to lock your absolute anchor into the Diarizer
             diarizer.setPreEnrolledProfile(vector: savedProfile.embedding, name: savedProfile.name)
-            
             hasEnrolled = true
             startSession()
         } else {
@@ -150,7 +146,6 @@ class QuickCaptioningViewController: UIViewController,
             guard let self = self else { return }
             
             let name = alert.textFields?.first?.text ?? "Me"
-            
             self.diarizer.setUserName(name)
             
             if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
@@ -201,72 +196,69 @@ class QuickCaptioningViewController: UIViewController,
         }
     }
 
-    // MARK: - Transcript Handling
+    // MARK: - LIVE Transcript Handling
     
     private func handleSpeechTranscript(fullText: String, isFinal: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            if self.consumedTranscriptOffset > fullText.count {
-                return
-            }
+            if self.consumedTranscriptOffset > fullText.count { return }
             
             let startIndex = fullText.index(fullText.startIndex, offsetBy: self.consumedTranscriptOffset)
             let newContent = String(fullText[startIndex...])
             
-            guard !newContent.isEmpty else { return }
-            
-            self.transcriptBuffer += newContent
-            self.consumedTranscriptOffset = fullText.count
+            if !newContent.isEmpty {
+                self.transcriptBuffer += newContent
+                self.consumedTranscriptOffset = fullText.count
+                
+                // ⭐️ THE FIX: Bypass the timer and show the text IMMEDIATELY on screen
+                self.processBufferLive()
+            }
             
             self.holdTimer?.invalidate()
             self.holdTimer = nil
             
             if isFinal {
-                if !self.transcriptBuffer.isEmpty { self.processBuffer() }
                 if !self.messages.isEmpty {
                     self.finalizeBubble(at: self.messages.count - 1)
                     self.forceNewBubble = true
                 }
-                self.transcriptBuffer = ""
             } else {
-                self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
-                    self?.holdTimer = nil
-                    self?.processBuffer()
-                    
-                    if let messages = self?.messages, !messages.isEmpty {
-                        self?.finalizeBubble(at: messages.count - 1)
-                        self?.forceNewBubble = true
+                // ⭐️ THE FIX: Timer is now ONLY used to finalize the bubble and start the LLM cleanup if you pause speaking.
+                // It no longer delays the text from showing up!
+                self.holdTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: false) { [weak self] _ in
+                    guard let self = self else { return }
+                    if !self.messages.isEmpty {
+                        self.finalizeBubble(at: self.messages.count - 1)
+                        self.forceNewBubble = true
                     }
                 }
             }
         }
     }
     
-    private func processBuffer() {
+    private func processBufferLive(forcedSpeakerID: Int? = nil) {
         guard !transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
-        let speakerID = currentSpeakerID ?? (hasEnrolled ? 0 : 1)
+        let speakerID = forcedSpeakerID ?? currentSpeakerID ?? (hasEnrolled ? 0 : 1)
         let textToFlush = transcriptBuffer
+        self.transcriptBuffer = "" // Clear it instantly
         
         if let lastMsg = messages.last,
            let lastID = lastMsg.speakerID,
            lastID == speakerID,
            !self.forceNewBubble {
             
-            updateLastBubble(with: textToFlush)
+            // Instantly append to the current active bubble
+            let activeIndex = self.messages.count - 1
+            let currentText = self.messages[activeIndex].text
+            let newText = currentText == "..." ? textToFlush : currentText + textToFlush
+            self.updateBubbleUI(at: activeIndex, text: newText)
             
         } else {
             self.forceNewBubble = false
-            
-            if !messages.isEmpty {
-                finalizeBubble(at: messages.count - 1)
-            }
-            
             flushBufferToNewBubble(text: textToFlush, speakerID: speakerID)
         }
-        
-        transcriptBuffer = ""
     }
     
     private func flushBufferToNewBubble(text: String, speakerID: Int) {
@@ -280,64 +272,6 @@ class QuickCaptioningViewController: UIViewController,
         }
         
         self.appendNewBubble(text: text, isBlue: isBlue, name: name, id: speakerID)
-    }
-    
-    private func updateLastBubble(with text: String) {
-        DispatchQueue.main.async {
-            guard !self.messages.isEmpty else { return }
-            
-            let activeIndex = self.messages.count - 1
-            let currentText = self.messages[activeIndex].text
-            let combinedText = currentText == "..." ? text : currentText + text
-            
-            // Only split if we exceed the 3-line limit (~240 chars)
-            if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                var splitIndex = combinedText.index(combinedText.startIndex, offsetBy: MAX_BUBBLE_CHAR_LIMIT)
-                
-                // Try to find the last sentence boundary before the limit
-                let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
-                var bestBoundaryRange: Range<String.Index>? = nil
-                
-                let searchRange = combinedText.startIndex..<splitIndex
-                for boundary in boundaries {
-                    if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
-                        if bestBoundaryRange == nil || range.lowerBound > bestBoundaryRange!.lowerBound {
-                            bestBoundaryRange = range
-                        }
-                    }
-                }
-                
-                if let range = bestBoundaryRange {
-                    let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    let secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    
-                    self.updateBubbleUI(at: activeIndex, text: firstPart)
-                    self.finalizeBubble(at: activeIndex)
-                    
-                    if let speakerID = self.messages[activeIndex].speakerID {
-                        self.flushBufferToNewBubble(text: secondPart.isEmpty ? "..." : secondPart, speakerID: speakerID)
-                    }
-                } else {
-                    // No sentence boundary found, keep it together for now or split at space
-                    if let spaceRange = combinedText.range(of: " ", options: .backwards, range: searchRange) {
-                        let firstPart = String(combinedText[...spaceRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        let secondPart = String(combinedText[spaceRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        
-                        self.updateBubbleUI(at: activeIndex, text: firstPart)
-                        self.finalizeBubble(at: activeIndex)
-                        
-                        if let speakerID = self.messages[activeIndex].speakerID {
-                            self.flushBufferToNewBubble(text: secondPart.isEmpty ? "..." : secondPart, speakerID: speakerID)
-                        }
-                    } else {
-                        // Hard split as last resort
-                        self.updateBubbleUI(at: activeIndex, text: combinedText)
-                    }
-                }
-            } else {
-                self.updateBubbleUI(at: activeIndex, text: combinedText)
-            }
-        }
     }
     
     // MARK: - Cleanup & UI Updates
@@ -356,11 +290,50 @@ class QuickCaptioningViewController: UIViewController,
             DispatchQueue.main.async {
                 guard let currentIndex = self.cleanupIDs.firstIndex(of: targetID) else { return }
                 
-                // FIXED: Just update the existing bubble text. NO MORE duplication or splitting into sentences.
-                self.messages[currentIndex].text = cleaned
+                var textToProcess = cleaned
+                var sentences: [String] = []
+                while true {
+                    var splitRange: Range<String.Index>? = nil
+                    let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                    for boundary in boundaries {
+                        if let range = textToProcess.range(of: boundary) {
+                            if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
+                                splitRange = range
+                            }
+                        }
+                    }
+                    guard let range = splitRange else {
+                        if !textToProcess.isEmpty && textToProcess != "..." { sentences.append(textToProcess) }
+                        break
+                    }
+                    let firstPart = String(textToProcess[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    sentences.append(firstPart)
+                    textToProcess = String(textToProcess[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if textToProcess.isEmpty { break }
+                }
+                
+                if sentences.isEmpty { return }
+                
+                self.messages[currentIndex].text = sentences[0]
+                
+                let originalMessage = self.messages[currentIndex]
+                var newMessages: [QuickCaptionsChat] = []
+                var newIDs: [UUID] = []
+                
+                for i in 1..<sentences.count {
+                    var newMsg = originalMessage
+                    newMsg.text = sentences[i]
+                    newMessages.append(newMsg)
+                    newIDs.append(UUID())
+                }
+                
+                if !newMessages.isEmpty {
+                    self.messages.insert(contentsOf: newMessages, at: currentIndex + 1)
+                    self.cleanupIDs.insert(contentsOf: newIDs, at: currentIndex + 1)
+                }
                 
                 UIView.performWithoutAnimation {
-                    self.collectionView.reloadItems(at: [IndexPath(item: currentIndex, section: 0)])
+                    self.collectionView.reloadData()
                 }
                 self.scrollToBottom()
             }
@@ -394,9 +367,6 @@ class QuickCaptioningViewController: UIViewController,
         newMessage.speakerID = id
         if let currentEvent = diarizer.segmentHistory.last {
             newMessage.eventId = currentEvent.id
-            newMessage.timestamp = currentEvent.timestamp
-        } else {
-            newMessage.timestamp = Date()
         }
 
         messages.append(newMessage)
@@ -412,29 +382,35 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Diarizer Binding
     
     private func bindDiarizer() {
-        diarizer.$currentSpeakerID.receive(on: DispatchQueue.main).sink { [weak self] id in
-            guard let self = self else { return }
+        diarizer.$currentSpeakerID
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newID in
+                guard let self = self else { return }
 
-            self.currentSpeakerID = id
-
-            if id != nil {
-                self.processBuffer()
-            }
-
-            if let validID = id, !self.messages.isEmpty {
-                let lastIdx = self.messages.count - 1
-                if self.messages[lastIdx].speakerID == validID {
-                    var newName = "..."
-                    if validID == 0 { newName = self.diarizer.speakerNames[0] ?? "Me" }
-                    else { newName = self.diarizer.speakerNames[validID] ?? "Speaker \(validID)" }
-
-                    if self.messages[lastIdx].sender != newName {
-                        self.messages[lastIdx].sender = newName
-                        UIView.performWithoutAnimation { self.collectionView.reloadItems(at: [IndexPath(item: lastIdx, section: 0)]) }
+                if let oldID = self.currentSpeakerID, let validNewID = newID, oldID != validNewID {
+                    if !self.transcriptBuffer.isEmpty {
+                        self.processBufferLive(forcedSpeakerID: oldID)
+                        self.forceNewBubble = true
                     }
                 }
-            }
-        }.store(in: &diarizerCancellables)
+
+                self.currentSpeakerID = newID
+
+                if let validID = newID, !self.messages.isEmpty {
+                    let lastIdx = self.messages.count - 1
+                    if self.messages[lastIdx].speakerID == validID {
+                        var newName = "..."
+                        if validID == 0 { newName = self.diarizer.speakerNames[0] ?? "Me" }
+                        else { newName = self.diarizer.speakerNames[validID] ?? "Speaker \(validID)" }
+
+                        if self.messages[lastIdx].sender != newName {
+                            self.messages[lastIdx].sender = newName
+                            UIView.performWithoutAnimation { self.collectionView.reloadItems(at: [IndexPath(item: lastIdx, section: 0)]) }
+                        }
+                    }
+                }
+            }.store(in: &diarizerCancellables)
 
         diarizer.$segmentHistory
             .receive(on: DispatchQueue.main)
@@ -444,12 +420,11 @@ class QuickCaptioningViewController: UIViewController,
             .store(in: &diarizerCancellables)
     }
 
-    // MARK: - Audio Configuration (🚨 FIXED VPIO ERRORS HERE)
+    // MARK: - Audio Configuration
     
     private func setupAudioSession() {
         do {
-            // Use .record and .measurement to kill VPIO echo cancellation
-            try AVAudioSession.sharedInstance().setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
+            try AVAudioSession.sharedInstance().setCategory(.record, mode: .measurement, options: [.allowBluetooth])
             try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.05)
             try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
@@ -460,7 +435,6 @@ class QuickCaptioningViewController: UIViewController,
     private func startAudioEngine() throws {
         let inputNode = audioEngine.inputNode
         
-        // Explicitly block Voice Processing hardware
         if #available(iOS 13.0, *) {
             try? inputNode.setVoiceProcessingEnabled(false)
         }
@@ -468,7 +442,6 @@ class QuickCaptioningViewController: UIViewController,
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         
-        // Using 1024 buffer size to prevent memory boundary issues
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
             if self.isRecording { self.recognitionRequest?.append(buffer) }
@@ -496,7 +469,7 @@ class QuickCaptioningViewController: UIViewController,
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             
-            self.processBuffer()
+            self.processBufferLive()
             
             if !self.messages.isEmpty {
                 self.finalizeBubble(at: self.messages.count - 1)
