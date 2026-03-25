@@ -319,7 +319,7 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
             
         case 2: // Header Participants
             let cell = tableView.dequeueReusableCell(withIdentifier: "GroupNewSummarySectionHeaderCell", for: indexPath) as! GroupNewSummarySectionHeaderCell
-            cell.headerLabel.text = "Participant Summary"
+            cell.headerLabel.text = "Participants Summary"
             cell.headerIcon.image = UIImage(systemName: "person.2.fill")
             cell.selectionStyle = .none
             return cell

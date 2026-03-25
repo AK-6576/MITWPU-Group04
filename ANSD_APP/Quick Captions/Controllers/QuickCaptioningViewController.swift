@@ -15,7 +15,7 @@ import MapKit
 import FoundationModels
 import FirebaseAuth
 
-let MAX_BUBBLE_CHAR_LIMIT = 120
+let MAX_BUBBLE_CHAR_LIMIT = 240
 
 class QuickCaptioningViewController: UIViewController,
     UICollectionViewDelegate,
@@ -286,48 +286,56 @@ class QuickCaptioningViewController: UIViewController,
         DispatchQueue.main.async {
             guard !self.messages.isEmpty else { return }
             
-            var textToProcess = text
+            let activeIndex = self.messages.count - 1
+            let currentText = self.messages[activeIndex].text
+            let combinedText = currentText == "..." ? text : currentText + text
             
-            while true {
-                let activeIndex = self.messages.count - 1
-                let currentText = self.messages[activeIndex].text
-                let combinedText = currentText == "..." ? textToProcess : currentText + textToProcess
+            // Only split if we exceed the 3-line limit (~240 chars)
+            if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
+                var splitIndex = combinedText.index(combinedText.startIndex, offsetBy: MAX_BUBBLE_CHAR_LIMIT)
                 
-                var splitRange: Range<String.Index>? = nil
+                // Try to find the last sentence boundary before the limit
                 let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                var bestBoundaryRange: Range<String.Index>? = nil
                 
+                let searchRange = combinedText.startIndex..<splitIndex
                 for boundary in boundaries {
-                    if let range = combinedText.range(of: boundary) {
-                        if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
-                            splitRange = range
+                    if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
+                        if bestBoundaryRange == nil || range.lowerBound > bestBoundaryRange!.lowerBound {
+                            bestBoundaryRange = range
                         }
                     }
                 }
                 
-                guard let range = splitRange else {
-                    self.updateBubbleUI(at: activeIndex, text: combinedText)
-                    break
+                if let range = bestBoundaryRange {
+                    let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    let secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    self.updateBubbleUI(at: activeIndex, text: firstPart)
+                    self.finalizeBubble(at: activeIndex)
+                    
+                    if let speakerID = self.messages[activeIndex].speakerID {
+                        self.flushBufferToNewBubble(text: secondPart.isEmpty ? "..." : secondPart, speakerID: speakerID)
+                    }
+                } else {
+                    // No sentence boundary found, keep it together for now or split at space
+                    if let spaceRange = combinedText.range(of: " ", options: .backwards, range: searchRange) {
+                        let firstPart = String(combinedText[...spaceRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                        let secondPart = String(combinedText[spaceRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        self.updateBubbleUI(at: activeIndex, text: firstPart)
+                        self.finalizeBubble(at: activeIndex)
+                        
+                        if let speakerID = self.messages[activeIndex].speakerID {
+                            self.flushBufferToNewBubble(text: secondPart.isEmpty ? "..." : secondPart, speakerID: speakerID)
+                        }
+                    } else {
+                        // Hard split as last resort
+                        self.updateBubbleUI(at: activeIndex, text: combinedText)
+                    }
                 }
-                
-                let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                var secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                self.updateBubbleUI(at: activeIndex, text: firstPart)
-                self.finalizeBubble(at: activeIndex)
-                
-                if let speakerID = self.messages[activeIndex].speakerID {
-                    self.flushBufferToNewBubble(text: "...", speakerID: speakerID)
-                }
-                
-                textToProcess = secondPart
-                if textToProcess.isEmpty { break }
-            }
-            
-            let activeIndex = self.messages.count - 1
-            let finalCombinedText = self.messages[activeIndex].text
-            if finalCombinedText != "..." && (finalCombinedText.hasSuffix(".") || finalCombinedText.hasSuffix("?") || finalCombinedText.hasSuffix("!")) {
-                self.finalizeBubble(at: activeIndex)
-                self.forceNewBubble = true
+            } else {
+                self.updateBubbleUI(at: activeIndex, text: combinedText)
             }
         }
     }
@@ -348,50 +356,11 @@ class QuickCaptioningViewController: UIViewController,
             DispatchQueue.main.async {
                 guard let currentIndex = self.cleanupIDs.firstIndex(of: targetID) else { return }
                 
-                var textToProcess = cleaned
-                var sentences: [String] = []
-                while true {
-                    var splitRange: Range<String.Index>? = nil
-                    let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
-                    for boundary in boundaries {
-                        if let range = textToProcess.range(of: boundary) {
-                            if splitRange == nil || range.lowerBound < splitRange!.lowerBound {
-                                splitRange = range
-                            }
-                        }
-                    }
-                    guard let range = splitRange else {
-                        if !textToProcess.isEmpty && textToProcess != "..." { sentences.append(textToProcess) }
-                        break
-                    }
-                    let firstPart = String(textToProcess[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    sentences.append(firstPart)
-                    textToProcess = String(textToProcess[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    if textToProcess.isEmpty { break }
-                }
-                
-                if sentences.isEmpty { return }
-                
-                self.messages[currentIndex].text = sentences[0]
-                
-                let originalMessage = self.messages[currentIndex]
-                var newMessages: [QuickCaptionsChat] = []
-                var newIDs: [UUID] = []
-                
-                for i in 1..<sentences.count {
-                    var newMsg = originalMessage
-                    newMsg.text = sentences[i]
-                    newMessages.append(newMsg)
-                    newIDs.append(UUID())
-                }
-                
-                if !newMessages.isEmpty {
-                    self.messages.insert(contentsOf: newMessages, at: currentIndex + 1)
-                    self.cleanupIDs.insert(contentsOf: newIDs, at: currentIndex + 1)
-                }
+                // FIXED: Just update the existing bubble text. NO MORE duplication or splitting into sentences.
+                self.messages[currentIndex].text = cleaned
                 
                 UIView.performWithoutAnimation {
-                    self.collectionView.reloadData()
+                    self.collectionView.reloadItems(at: [IndexPath(item: currentIndex, section: 0)])
                 }
                 self.scrollToBottom()
             }
@@ -425,6 +394,9 @@ class QuickCaptioningViewController: UIViewController,
         newMessage.speakerID = id
         if let currentEvent = diarizer.segmentHistory.last {
             newMessage.eventId = currentEvent.id
+            newMessage.timestamp = currentEvent.timestamp
+        } else {
+            newMessage.timestamp = Date()
         }
 
         messages.append(newMessage)
@@ -463,6 +435,13 @@ class QuickCaptioningViewController: UIViewController,
                 }
             }
         }.store(in: &diarizerCancellables)
+
+        diarizer.$segmentHistory
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] history in
+                self?.handleDiarizationRefinement(history)
+            }
+            .store(in: &diarizerCancellables)
     }
 
     // MARK: - Audio Configuration (🚨 FIXED VPIO ERRORS HERE)
@@ -675,6 +654,32 @@ class QuickCaptioningViewController: UIViewController,
         
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
+    }
+
+    private func handleDiarizationRefinement(_ history: [DiarizationEvent]) {
+        var hasChanges = false
+        for i in 0..<messages.count {
+            if let timestamp = messages[i].timestamp {
+                if let matchingEvent = history.last(where: { $0.timestamp <= timestamp }) {
+                    if messages[i].speakerID != matchingEvent.assignedSpeakerID {
+                        let sid = matchingEvent.assignedSpeakerID
+                        messages[i].speakerID = sid
+                        messages[i].isIncoming = (sid != 0)
+                        if sid == 0 {
+                            messages[i].sender = diarizer.speakerNames[0] ?? "Me"
+                        } else {
+                            messages[i].sender = diarizer.speakerNames[sid] ?? "Speaker \(sid)"
+                        }
+                        hasChanges = true
+                    }
+                }
+            }
+        }
+        if hasChanges {
+            UIView.performWithoutAnimation {
+                self.collectionView.reloadData()
+            }
+        }
     }
 }
 

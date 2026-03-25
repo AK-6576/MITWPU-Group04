@@ -14,7 +14,7 @@ class GreetingViewCell: UIView {
     @IBOutlet weak var nameLabel: UILabel!
     
     func configure(name: String) {
-        helloLabel.text = "Hello,"
-        nameLabel.text = name
+        helloLabel.text = "Live Captioning"
+        nameLabel.isHidden = true
     }
 }

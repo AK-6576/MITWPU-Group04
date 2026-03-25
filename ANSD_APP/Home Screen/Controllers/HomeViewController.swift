@@ -34,9 +34,12 @@ class HomeViewController: UIViewController {
         
         let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
-            headerView.helloLabel.isHidden = false
-            headerView.nameLabel.isHidden = false
             headerView.configure(name: name)
+            // Keep original header height so all action cards remain visible
+            var frame = headerView.frame
+            frame.size.height = 333
+            headerView.frame = frame
+            tableView.tableHeaderView = headerView
         }
         
         navigationItem.title = ""
@@ -223,7 +226,17 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return (section == 0) ? 70 : 50
+        return section == 0 ? 28 : 38
+    }
+    
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        return section == 0 ? 24 : .leastNormalMagnitude
+    }
+    
+    func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+        let view = UIView()
+        view.backgroundColor = .clear
+        return view
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {

@@ -585,7 +585,10 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
-            return tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath)
+            let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummarySectionHeaderCell", for: indexPath) as! ViewSummarySectionHeaderCell
+            cell.headerLabel.text = "Conversation Summary"
+            cell.headerIcon.image = UIImage(systemName: "list.clipboard")
+            return cell
             
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCSummaryCardCell", for: indexPath) as! ViewSummaryCardCell
@@ -599,7 +602,10 @@ extension ChatHistoryViewController: UITableViewDelegate, UITableViewDataSource,
             return cell
             
         case 2:
-            return tableView.dequeueReusableCell(withIdentifier: "PCParticipantsSummaryHeaderCell", for: indexPath)
+            let cell = tableView.dequeueReusableCell(withIdentifier: "PCParticipantsSummaryHeaderCell", for: indexPath) as! ViewParticipantsSummaryHeaderCell
+            cell.participantLabel.text = "Participants Summary"
+            cell.participantIcon.image = UIImage(systemName: "person.2.fill")
+            return cell
             
         case 3:
             let cell = tableView.dequeueReusableCell(withIdentifier: "PCParticipantsCardCell", for: indexPath) as! ViewParticipantsCardCell

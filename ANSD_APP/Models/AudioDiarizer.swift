@@ -33,8 +33,9 @@ class AudioDiarizer: ObservableObject {
     private var collectedSamples: [Float] = []
 
     // MARK: - Core Diarization Parameters
-    private let matchThreshold: Float = 0.60
-    private let deadzoneThreshold: Float = 0.48
+    private let matchThreshold: Float = 0.65 // Strictly identify new speakers
+    private let deadzoneThreshold: Float = 0.48 // Noise floor
+    private let userMatchThreshold: Float = 0.55 // More lenient for enrolled user
     private let learningThreshold: Float = 0.85 // Strict: only learn from high-quality audio
     
     // MARK: - Temporal Continuity & Probation
@@ -142,14 +143,34 @@ class AudioDiarizer: ObservableObject {
     }
 
     private func processSamples(_ samples: [Float]) {
-        if speechGate.isActive {
+        if isEnrolling {
+            // ONLY collect samples for enrollment if the speech gate is active.
+            // This prevents silence or background noise from being saved as the user's profile.
+            if speechGate.isActive {
+                collectedSamples.append(contentsOf: samples)
+                if collectedSamples.count % 16000 == 0 {
+                    print("🎙 Enrolling: Captured \(collectedSamples.count)/\(requiredSamples) speech samples...")
+                }
+            }
+        } else {
+            // ALWAYS append samples during normal session to ensure continuous inference.
             collectedSamples.append(contentsOf: samples)
+            
+            if collectedSamples.count % 16000 == 0 {
+                print("🎤 Collected \(collectedSamples.count)/\(requiredSamples) samples...")
+            }
         }
         
         guard collectedSamples.count >= requiredSamples else { return }
         let chunk = Array(collectedSamples.prefix(requiredSamples))
         collectedSamples.removeFirst(stride)
-        scheduleInference(on: chunk)
+        
+        if speechGate.isActive {
+            scheduleInference(on: chunk)
+        } else {
+            // Optional: You can still run inference but ignore "New Speaker" results.
+            // But skipping it is cleaner and saves battery.
+        }
     }
 
     private func scheduleInference(on samples: [Float]) {
@@ -215,8 +236,8 @@ class AudioDiarizer: ObservableObject {
             let raw = max(dynScore, anchorScore)
             var score = raw
             
-            // Super-Magnet for ID 0
-            if id == 0 { score += 0.08 }
+            // Magnet for ID 0 (User's Voice) - Increased to 0.10 to ensure "No Grey" for me.
+            if id == 0 { score += 0.10 }
             // Continuity boost
             if id == lastMatchedSpeakerID { score += 0.04 }
             
@@ -226,8 +247,10 @@ class AudioDiarizer: ObservableObject {
 
         scoredSpeakers.sort { $0.score > $1.score }
         let bestMatch = scoredSpeakers[0]
+        
+        let threshold = (bestMatch.id == 0) ? userMatchThreshold : matchThreshold
 
-        if bestMatch.score >= matchThreshold {
+        if bestMatch.score >= threshold {
             // CONFIRMED MATCH
             unknownFrameCount = 0
             lastMatchedSpeakerID = bestMatch.id
@@ -236,13 +259,20 @@ class AudioDiarizer: ObservableObject {
             print("🎯 Match: Speaker \(bestMatch.id) (\(String(format: "%.0f%%", bestMatch.score * 100))) [Raw: \(String(format: "%.2f", bestMatch.raw))]")
             
             // Only update the room-adaptation cluster if the audio is exceedingly clean
-            if bestMatch.raw > learningThreshold {
-                print("🧠 Clean audio detected. Updating Centroid for Speaker \(bestMatch.id).")
+            if bestMatch.raw > learningThreshold && speechGate.isActive {
+                print("🧠 Clean speech detected. Updating Centroid for Speaker \(bestMatch.id).")
                 updateProfile(id: bestMatch.id, vector: normVector)
+            } else if bestMatch.raw > learningThreshold {
+                print("🧠 Match confirmed, but gate rejected learning (VAD low).")
             }
             
             currentSpeakerID = bestMatch.id
             addToHistory(vector: normVector, id: bestMatch.id, score: bestMatch.score)
+            
+            // Periodically run background refinement
+            if segmentHistory.count % 10 == 0 {
+                performRetroactiveRefinement()
+            }
             
         } else if bestMatch.score < deadzoneThreshold {
             // POTENTIAL NEW SPEAKER (Probation Phase)
@@ -435,6 +465,52 @@ class AudioDiarizer: ObservableObject {
     private func addToHistory(vector: [Float], id: Int, score: Float) {
         segmentHistory.append(DiarizationEvent(timestamp: Date(), vector: vector, assignedSpeakerID: id, confidence: score, locationTag: currentLocation))
         if segmentHistory.count > 500 { segmentHistory.removeFirst() }
+    }
+    
+    // MARK: - Proactive Refinement
+    func performRetroactiveRefinement() {
+        // Run on background thread to prevent session lag
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
+            
+            var hasChanges = false
+            let profiles = self.speakerProfiles
+            
+            for i in 0..<self.segmentHistory.count {
+                let event = self.segmentHistory[i]
+                let currentID = event.assignedSpeakerID
+                let vector = event.vector
+                
+                var bestScore: Float = -1.0
+                var bestID: Int = currentID
+                
+                for (id, profile) in profiles {
+                    var score = self.cosineSim(vector, profile)
+                    if id == 0 { score += 0.10 } // Maintain restored user bias
+                    
+                    if score > bestScore {
+                        bestScore = score
+                        bestID = id
+                    }
+                }
+                
+                // If a significantly better match is found, update it
+                let threshold = (bestID == 0) ? self.userMatchThreshold : self.matchThreshold
+                if bestID != currentID && bestScore > (event.confidence + 0.10) && bestScore >= threshold {
+                    DispatchQueue.main.async {
+                        self.segmentHistory[i].assignedSpeakerID = bestID
+                        self.segmentHistory[i].confidence = bestScore
+                    }
+                    hasChanges = true
+                }
+            }
+            
+            if hasChanges {
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                }
+            }
+        }
     }
 }
 
