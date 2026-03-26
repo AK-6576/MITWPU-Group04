@@ -156,8 +156,13 @@ class QuickActionsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "QuickActionCell", for: indexPath) as? QuickActionCell else { return UITableViewCell() }
-        let item = sections[indexPath.section].items[indexPath.row]
-        cell.configure(with: item)
+        let itemsInSection = sections[indexPath.section].items
+        let item = itemsInSection[indexPath.row]
+        
+        let isFirst = (indexPath.row == 0)
+        let isLast = (indexPath.row == itemsInSection.count - 1)
+        
+        cell.configure(with: item, isFirst: isFirst, isLast: isLast)
         cell.onInfoTapped = { [weak self] in self?.showActionDetails(for: item) }
         return cell
     }

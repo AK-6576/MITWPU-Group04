@@ -22,8 +22,12 @@ class RoutineTableViewCell: UITableViewCell {
     
     private func setupUI() {
         // Ensuring labels handle multiple lines if needed
-        titleLabel?.numberOfLines = 0
-        subtitleLabel?.numberOfLines = 0
+        titleLabel?.numberOfLines = 1
+        subtitleLabel?.numberOfLines = 1
+        
+        // Force left alignment (overrides any Storyboard setting)
+        titleLabel?.textAlignment    = .left
+        subtitleLabel?.textAlignment = .left
         
         // Visual polish for a 'card' list appearance
         selectionStyle = .none

@@ -208,7 +208,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
-            return quickActions.isEmpty ? 1 : quickActions.count
+            return quickActions.count >= 3 ? 3 : quickActions.count + 1
         } else {
             return recentHistory.isEmpty ? 1 : recentHistory.count
         }
@@ -229,14 +229,20 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
-            if quickActions.isEmpty {
-                return tableView.dequeueReusableCell(withIdentifier: "EmptyStateCell", for: indexPath)
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
+            
+            let isAddRowVisible = quickActions.count < 3
+            let isLast = (indexPath.row == (isAddRowVisible ? quickActions.count : 2))
+            let isAddRow = isAddRowVisible && (indexPath.row == quickActions.count)
+            let isFirst = (indexPath.row == 0)
+            
+            if isAddRow {
+                cell.configure(with: nil, isFirst: isFirst, isLast: true, isAddRow: true)
             } else {
-                guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
                 let item = quickActions[indexPath.row]
-                cell.configure(with: item, isLast: indexPath.row == quickActions.count - 1)
-                return cell
+                cell.configure(with: item, isFirst: isFirst, isLast: isLast, isAddRow: false)
             }
+            return cell
         } else {
             if recentHistory.isEmpty {
                 let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
@@ -254,24 +260,32 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        if indexPath.section == 0 && !quickActions.isEmpty {
-            let item = quickActions[indexPath.row]
-            
-            // ROLE-BASED NAVIGATION
-            let currentUID = Auth.auth().currentUser?.uid
-            if let host = item.hostUID, host != currentUID {
-                // I am a participant -> Go to Join screen with Room ID pre-filled
-                performSegue(withIdentifier: "showJoinConversation", sender: item)
-            } else {
-                // I am the host (or hostUID missing) -> Go to direct start/join transcription
-                var segueID = ""
-                switch item.categoryTitle {
-                    case "Office": segueID = "office"
-                    case "Family": segueID = "family"
-                    case "Friends": segueID = "friends"
-                    default: return
+        if indexPath.section == 0 {
+            let isAddRowVisible = quickActions.count < 3
+            if isAddRowVisible && indexPath.row == quickActions.count {
+                if let addVC = self.storyboard?.instantiateViewController(withIdentifier: "AddCategoryVC") as? AddActionTableViewController {
+                    let nav = UINavigationController(rootViewController: addVC)
+                    self.present(nav, animated: true, completion: nil)
                 }
-                performSegue(withIdentifier: segueID, sender: item)
+            } else {
+                let item = quickActions[indexPath.row]
+                
+                // ROLE-BASED NAVIGATION
+                let currentUID = Auth.auth().currentUser?.uid
+                if let host = item.hostUID, host != currentUID {
+                    // I am a participant -> Go to Join screen with Room ID pre-filled
+                    performSegue(withIdentifier: "showJoinConversation", sender: item)
+                } else {
+                    // I am the host (or hostUID missing) -> Go to direct start/join transcription
+                    var segueID = ""
+                    switch item.categoryTitle {
+                        case "Office": segueID = "office"
+                        case "Family": segueID = "family"
+                        case "Friends": segueID = "friends"
+                        default: return
+                    }
+                    performSegue(withIdentifier: segueID, sender: item)
+                }
             }
         } else if indexPath.section == 1 && !recentHistory.isEmpty {
             performSegue(withIdentifier: "viewConvoCell", sender: recentHistory[indexPath.row])

@@ -7,147 +7,297 @@
 //
 import UIKit
 
-// MARK: - Routine Cell (Quick Actions - Home Screen)
+// MARK: - Routine Cell (Quick Actions - Top List)
 class QuickActionTableViewCell: UITableViewCell {
 
-    // MARK: - Storyboard Outlets
+    // Kept as @IBOutlet so Storyboard doesn't crash, but immediately hidden
     @IBOutlet weak var iconImageView: UIImageView!
     @IBOutlet weak var titleLabel: UILabel!
-    @IBOutlet weak var timeLabel: UILabel!   // repurposed as "Category · N participants"
+    @IBOutlet weak var timeLabel: UILabel!
 
-    var onInfoTapped: (() -> Void)?
-
-    // MARK: - Programmatic Right-side Views
-    private let timeLabelRight = UILabel()
-    private let todayBadgeContainer = UIView()
-    private let todayBadgeLabel = UILabel()
-    private var rightViewsAdded = false
+    // MARK: - Programmatic Views
+    private let cardContainer      = UIView()
+    var isFirstRow = false
+    var isLastRow = false
+    private let outlinelayer = CAShapeLayer()
+    private let customIconContainer = UIView()
+    private let customIconImageView = UIImageView()
+    private let textStackView      = UIStackView()
+    private let customTitleLabel   = UILabel()
+    private let subtitleLabel      = UILabel()
+    private let rightStackView     = UIStackView()
+    private let customTimeLabel    = UILabel()
+    private let badgeContainer     = UIView()
+    private let badgeLabel         = UILabel()
+    private let chevronImageView   = UIImageView()
+    private let separator          = UIView()
 
     // MARK: - Lifecycle
 
     override func awakeFromNib() {
         super.awakeFromNib()
-        setupBaseDesign()
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        if !rightViewsAdded {
-            setupRightSideViews()
-            rightViewsAdded = true
-        }
+        // ✅ Hide all storyboard outlet views so they don't overlay the programmatic UI
+        iconImageView?.isHidden  = true
+        titleLabel?.isHidden     = true
+        timeLabel?.isHidden      = true
+        setupDesign()
     }
 
     // MARK: - Setup
 
-    private func setupBaseDesign() {
-        // Icon
-        iconImageView.layer.cornerRadius = 12
-        iconImageView.clipsToBounds = true
-        iconImageView.contentMode = .center
+    func setupDesign() {
+        backgroundColor              = .clear
+        contentView.backgroundColor  = .clear
+        selectionStyle               = .none
+        accessoryType                = .none
 
-        // Title
-        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = .label
+        // ── Card Container ──────────────────────────────
+        cardContainer.backgroundColor                 = .secondarySystemGroupedBackground
+        cardContainer.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(cardContainer)
 
-        // Subtitle (category · participants) – reusing timeLabel outlet
-        timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
-        timeLabel.textColor = .secondaryLabel
+        // ── Custom Icon ─────────────────────────────────
+        customIconContainer.layer.cornerRadius        = 10
+        customIconContainer.clipsToBounds             = true
+        customIconContainer.translatesAutoresizingMaskIntoConstraints = false
+        cardContainer.addSubview(customIconContainer)
 
-        self.selectionStyle = .default
-        self.backgroundColor = .secondarySystemGroupedBackground
+        customIconImageView.contentMode               = .scaleAspectFit
+        customIconImageView.translatesAutoresizingMaskIntoConstraints = false
+        customIconContainer.addSubview(customIconImageView)
+
+        // ── Text Stack ─────────────────────────────────
+        customTitleLabel.font                         = .systemFont(ofSize: 17, weight: .semibold)
+        customTitleLabel.textColor                    = .label
+
+        subtitleLabel.font                            = .systemFont(ofSize: 14, weight: .regular)
+        subtitleLabel.textColor                       = .secondaryLabel
+
+        textStackView.axis                            = .vertical
+        textStackView.spacing                         = 2
+        textStackView.translatesAutoresizingMaskIntoConstraints = false
+        textStackView.addArrangedSubview(customTitleLabel)
+        textStackView.addArrangedSubview(subtitleLabel)
+        cardContainer.addSubview(textStackView)
+
+        // ── Chevron ────────────────────────────────────
+        let chevCfg = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
+        chevronImageView.image                        = UIImage(systemName: "chevron.right", withConfiguration: chevCfg)
+        chevronImageView.tintColor                    = .systemGray3
+        chevronImageView.contentMode                  = .scaleAspectFit
+        chevronImageView.translatesAutoresizingMaskIntoConstraints = false
+        cardContainer.addSubview(chevronImageView)
+
+        // ── Right Stack (time + badge) ─────────────────
+        customTimeLabel.font                          = .systemFont(ofSize: 13, weight: .semibold)
+        customTimeLabel.textColor                     = .secondaryLabel
+
+        badgeLabel.font                               = .systemFont(ofSize: 11, weight: .bold)
+        badgeLabel.translatesAutoresizingMaskIntoConstraints = false
+        badgeContainer.layer.cornerRadius             = 6
+        badgeContainer.clipsToBounds                  = true
+        badgeContainer.translatesAutoresizingMaskIntoConstraints = false
+        badgeContainer.addSubview(badgeLabel)
+
+        rightStackView.axis                           = .vertical
+        rightStackView.spacing                        = 6
+        rightStackView.alignment                      = .trailing
+        rightStackView.translatesAutoresizingMaskIntoConstraints = false
+        rightStackView.addArrangedSubview(customTimeLabel)
+        rightStackView.addArrangedSubview(badgeContainer)
+        cardContainer.addSubview(rightStackView)
+
+        // ── Internal Separator ─────────────────────────
+        separator.backgroundColor                     = UIColor.systemGray5
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        cardContainer.addSubview(separator)
+
+        // ── Constraints ────────────────────────────────
+        NSLayoutConstraint.activate([
+            // Card fills cell with 16pt inset
+            cardContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
+            cardContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            cardContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            cardContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            cardContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 76),
+
+            // Icon
+            customIconContainer.leadingAnchor.constraint(equalTo: cardContainer.leadingAnchor, constant: 14),
+            customIconContainer.centerYAnchor.constraint(equalTo: cardContainer.centerYAnchor),
+            customIconContainer.widthAnchor.constraint(equalToConstant: 44),
+            customIconContainer.heightAnchor.constraint(equalToConstant: 44),
+
+            customIconImageView.centerXAnchor.constraint(equalTo: customIconContainer.centerXAnchor),
+            customIconImageView.centerYAnchor.constraint(equalTo: customIconContainer.centerYAnchor),
+            customIconImageView.widthAnchor.constraint(equalToConstant: 22),
+            customIconImageView.heightAnchor.constraint(equalToConstant: 22),
+
+            // Text stack
+            textStackView.leadingAnchor.constraint(equalTo: customIconContainer.trailingAnchor, constant: 12),
+            textStackView.centerYAnchor.constraint(equalTo: cardContainer.centerYAnchor),
+
+            // Chevron (rightmost)
+            chevronImageView.trailingAnchor.constraint(equalTo: cardContainer.trailingAnchor, constant: -14),
+            chevronImageView.centerYAnchor.constraint(equalTo: cardContainer.centerYAnchor),
+            chevronImageView.widthAnchor.constraint(equalToConstant: 10),
+            chevronImageView.heightAnchor.constraint(equalToConstant: 14),
+
+            // Right stack (time + badge), to the left of chevron
+            rightStackView.trailingAnchor.constraint(equalTo: chevronImageView.leadingAnchor, constant: -10),
+            rightStackView.centerYAnchor.constraint(equalTo: cardContainer.centerYAnchor),
+            rightStackView.leadingAnchor.constraint(greaterThanOrEqualTo: textStackView.trailingAnchor, constant: 8),
+
+            // Badge label padding
+            badgeLabel.topAnchor.constraint(equalTo: badgeContainer.topAnchor, constant: 3),
+            badgeLabel.bottomAnchor.constraint(equalTo: badgeContainer.bottomAnchor, constant: -3),
+            badgeLabel.leadingAnchor.constraint(equalTo: badgeContainer.leadingAnchor, constant: 8),
+            badgeLabel.trailingAnchor.constraint(equalTo: badgeContainer.trailingAnchor, constant: -8),
+
+            // Separator at bottom of card
+            separator.leadingAnchor.constraint(equalTo: textStackView.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: cardContainer.trailingAnchor),
+            separator.bottomAnchor.constraint(equalTo: cardContainer.bottomAnchor),
+            separator.heightAnchor.constraint(equalToConstant: 0.5),
+        ])
     }
 
-    private func setupRightSideViews() {
-        // Right-side time label
-        timeLabelRight.font = UIFont.systemFont(ofSize: 13, weight: .medium)
-        timeLabelRight.textColor = .secondaryLabel
-        timeLabelRight.textAlignment = .right
-        timeLabelRight.translatesAutoresizingMaskIntoConstraints = false
+    // MARK: - Corner Rounding + Border
 
-        // "Today" badge container
-        todayBadgeContainer.layer.cornerRadius = 8
-        todayBadgeContainer.clipsToBounds = true
-        todayBadgeContainer.translatesAutoresizingMaskIntoConstraints = false
+    
+    func applyCornerRounding(isFirst: Bool, isLast: Bool) {
+        self.isFirstRow = isFirst
+        self.isLastRow = isLast
+        
+        var corners: CACornerMask = []
+        if isFirst { corners.insert([.layerMinXMinYCorner, .layerMaxXMinYCorner]) }
+        if isLast  { corners.insert([.layerMinXMaxYCorner, .layerMaxXMaxYCorner]) }
 
-        // "Today" badge label
-        todayBadgeLabel.font = UIFont.systemFont(ofSize: 11, weight: .bold)
-        todayBadgeLabel.textColor = .white
-        todayBadgeLabel.textAlignment = .center
-        todayBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
-        todayBadgeContainer.addSubview(todayBadgeLabel)
+        cardContainer.layer.cornerRadius    = (isFirst || isLast) ? 16 : 0
+        cardContainer.layer.maskedCorners   = corners
+        cardContainer.clipsToBounds         = true
 
-        contentView.addSubview(timeLabelRight)
-        contentView.addSubview(todayBadgeContainer)
+        // Use custom shape layer instead of default border to avoid double horizontal lines
+        cardContainer.layer.borderWidth     = 0
 
-        NSLayoutConstraint.activate([
-            // Badge label padding inside container
-            todayBadgeLabel.topAnchor.constraint(equalTo: todayBadgeContainer.topAnchor, constant: 3),
-            todayBadgeLabel.bottomAnchor.constraint(equalTo: todayBadgeContainer.bottomAnchor, constant: -3),
-            todayBadgeLabel.leadingAnchor.constraint(equalTo: todayBadgeContainer.leadingAnchor, constant: 8),
-            todayBadgeLabel.trailingAnchor.constraint(equalTo: todayBadgeContainer.trailingAnchor, constant: -8),
+        separator.isHidden = isLast
+        setNeedsLayout()
+    }
 
-            // Time label — top-right of cell
-            timeLabelRight.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
-            timeLabelRight.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 17),
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        if outlinelayer.superlayer == nil {
+            outlinelayer.fillColor = UIColor.clear.cgColor
+            outlinelayer.strokeColor = UIColor.systemGray4.cgColor
+            outlinelayer.lineWidth = 0.5
+            cardContainer.layer.addSublayer(outlinelayer)
+        }
+        
+        let path = UIBezierPath()
+        let bounds = cardContainer.bounds
+        let r = cardContainer.layer.cornerRadius
+        
+        // Left line
+        path.move(to: CGPoint(x: 0, y: isFirstRow ? r : 0))
+        path.addLine(to: CGPoint(x: 0, y: isLastRow ? bounds.height - r : bounds.height))
+        
+        // Bottom-left, bottom, bottom-right
+        if isLastRow {
+            path.addArc(withCenter: CGPoint(x: r, y: bounds.height - r), radius: r, startAngle: .pi, endAngle: .pi / 2, clockwise: false)
+            path.addLine(to: CGPoint(x: bounds.width - r, y: bounds.height))
+            path.addArc(withCenter: CGPoint(x: bounds.width - r, y: bounds.height - r), radius: r, startAngle: .pi / 2, endAngle: 0, clockwise: false)
+        } else {
+            path.move(to: CGPoint(x: bounds.width, y: bounds.height))
+        }
+        
+        // Right line
+        path.addLine(to: CGPoint(x: bounds.width, y: isFirstRow ? r : 0))
+        
+        // Top-right, top, top-left
+        if isFirstRow {
+            path.addArc(withCenter: CGPoint(x: bounds.width - r, y: r), radius: r, startAngle: 0, endAngle: -.pi / 2, clockwise: false)
+            path.addLine(to: CGPoint(x: r, y: 0))
+            path.addArc(withCenter: CGPoint(x: r, y: r), radius: r, startAngle: -.pi / 2, endAngle: -.pi, clockwise: false)
+        }
+        
+        outlinelayer.path = path.cgPath
+    }
 
-            // Badge — below time label
-            todayBadgeContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
-            todayBadgeContainer.topAnchor.constraint(equalTo: timeLabelRight.bottomAnchor, constant: 5),
-        ])
-
-        // Restrict title and subtitle labels to not overlap right column
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        timeLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        // Disable any existing trailing constraints on title/subtitle originating from the cell
-        for c in self.constraints + contentView.constraints {
-            let isTitle = (c.firstItem as? UIView == titleLabel || c.secondItem as? UIView == titleLabel)
-            let isSubtitle = (c.firstItem as? UIView == timeLabel || c.secondItem as? UIView == timeLabel)
-            if (isTitle || isSubtitle) && (c.firstAttribute == .trailing || c.secondAttribute == .trailing) {
-                c.isActive = false
+    func configure(with item: RoutineConversation?, isFirst: Bool, isLast: Bool, isAddRow: Bool) {
+        applyCornerRounding(isFirst: isFirst, isLast: isLast)
+        
+        let config = UIImage.SymbolConfiguration(weight: .semibold)
+        
+        if isAddRow {
+            customTitleLabel.text = "Add Quick Action"
+            customTitleLabel.textColor = .systemBlue
+            subtitleLabel.isHidden = true
+            rightStackView.isHidden = true
+            
+            customIconContainer.backgroundColor = UIColor.secondarySystemFill
+            if let image = UIImage(systemName: "plus", withConfiguration: config) {
+                customIconImageView.image = image.withRenderingMode(.alwaysTemplate)
             }
+            customIconImageView.tintColor = .secondaryLabel
+        } else if let item = item {
+            customTitleLabel.text = item.conversationTopic
+            customTitleLabel.textColor = .label
+            subtitleLabel.isHidden = false
+            rightStackView.isHidden = false
+            
+            let paxCount = item.participantNames.count
+            subtitleLabel.text = "\(item.categoryTitle) • \(paxCount) participants"
+            
+            customTimeLabel.text = item.startTime
+            
+            // Determine Upcoming vs Scheduled based on time
+            let df = DateFormatter()
+            df.dateFormat = "h:mm a"
+            df.locale = Locale(identifier: "en_US_POSIX")
+            var badgeText = "Scheduled"
+            
+            if let targetDate = df.date(from: item.startTime) {
+                let now = Date()
+                let cal = Calendar.current
+                var tComps = cal.dateComponents([.hour, .minute], from: targetDate)
+                let nComps = cal.dateComponents([.year, .month, .day], from: now)
+                tComps.year = nComps.year
+                tComps.month = nComps.month
+                tComps.day = nComps.day
+                
+                if let combinedTarget = cal.date(from: tComps) {
+                    let diff = combinedTarget.timeIntervalSince(now)
+                    if diff > 0 && diff <= 3600 * 4 {
+                        badgeText = "Upcoming"
+                    }
+                }
+            }
+            badgeLabel.text = badgeText
+            
+            if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
+                customIconImageView.image = image.withRenderingMode(.alwaysTemplate)
+            }
+            
+            var tintColor: UIColor = .systemGray
+            switch item.categoryTitle {
+            case "Office": tintColor = .systemBlue
+            case "Family": tintColor = .systemGreen
+            case "Friends": tintColor = .systemOrange
+            default: tintColor = .systemGray
+            }
+            
+            // Add custom distinction color for 'Upcoming' status
+            if badgeText == "Upcoming" {
+                badgeContainer.backgroundColor = UIColor.systemRed.withAlphaComponent(0.15)
+                badgeLabel.textColor = .systemRed
+            } else {
+                badgeContainer.backgroundColor = tintColor.withAlphaComponent(0.15)
+                badgeLabel.textColor = tintColor
+            }
+            
+            customIconContainer.backgroundColor = tintColor.withAlphaComponent(0.15)
+            customIconImageView.tintColor = tintColor
         }
-
-        NSLayoutConstraint.activate([
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: timeLabelRight.leadingAnchor, constant: -8),
-            timeLabel.trailingAnchor.constraint(lessThanOrEqualTo: timeLabelRight.leadingAnchor, constant: -8),
-        ])
-    }
-
-    // MARK: - Configure
-
-    func configure(with item: RoutineConversation, isLast: Bool) {
-        // Title
-        titleLabel.text = item.conversationTopic
-
-        // Subtitle: "Category · N participants"
-        let count = item.participantNames.count
-        let pStr = count == 1 ? "1 participant" : "\(count) participants"
-        timeLabel.text = "\(item.categoryTitle) · \(pStr)"
-
-        // Icon
-        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
-        if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
-            iconImageView.image = image.withRenderingMode(.alwaysTemplate)
-        }
-
-        // Category colour
-        let color = getColorForCategory(item.categoryTitle)
-        iconImageView.tintColor = color
-        iconImageView.backgroundColor = color.withAlphaComponent(0.15)
-        iconImageView.layer.cornerRadius = 12
-
-        // Right-side time
-        timeLabelRight.text = item.startTime
-
-        // Today badge
-        todayBadgeLabel.text = "Today"
-        todayBadgeContainer.backgroundColor = color
-    }
-
-    @objc private func infoButtonTapped() {
-        onInfoTapped?()
     }
 }
 
