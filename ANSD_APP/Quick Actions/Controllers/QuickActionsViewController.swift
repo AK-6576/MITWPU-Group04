@@ -18,7 +18,18 @@ class QuickActionsViewController: UITableViewController {
         self.title = "Quick Actions"
         tableView.tableHeaderView = UIView()
         tableView.sectionHeaderTopPadding = 0
-        tableView.separatorStyle = .none
+        
+        // Override the Storyboard native Push Segue with a programmatic Modal presentation
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(didTapAddButton))
+        self.navigationItem.rightBarButtonItem = addButton
+    }
+    
+    @objc private func didTapAddButton() {
+        if let addVC = self.storyboard?.instantiateViewController(withIdentifier: "AddCategoryVC") as? AddActionTableViewController {
+            addVC.delegate = self
+            let nav = UINavigationController(rootViewController: addVC)
+            self.present(nav, animated: true, completion: nil)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -36,20 +47,6 @@ class QuickActionsViewController: UITableViewController {
             filteredSection.items = activeItems
             return filteredSection
         }
-        
-        if self.sections.isEmpty {
-            let emptyLabel = UILabel()
-            emptyLabel.text = "No Quick Actions"
-            emptyLabel.textColor = .secondaryLabel
-            emptyLabel.textAlignment = .center
-            emptyLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-            tableView.backgroundView = emptyLabel
-            tableView.separatorStyle = .none
-        } else {
-            tableView.backgroundView = nil
-            tableView.separatorStyle = .none
-        }
-        
         tableView.reloadData()
     }
     
@@ -156,13 +153,8 @@ class QuickActionsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "QuickActionCell", for: indexPath) as? QuickActionCell else { return UITableViewCell() }
-        let itemsInSection = sections[indexPath.section].items
-        let item = itemsInSection[indexPath.row]
-        
-        let isFirst = (indexPath.row == 0)
-        let isLast = (indexPath.row == itemsInSection.count - 1)
-        
-        cell.configure(with: item, isFirst: isFirst, isLast: isLast)
+        let item = sections[indexPath.section].items[indexPath.row]
+        cell.configure(with: item)
         cell.onInfoTapped = { [weak self] in self?.showActionDetails(for: item) }
         return cell
     }
@@ -181,17 +173,6 @@ class QuickActionsViewController: UITableViewController {
             } else {
                 tableView.deleteRows(at: [indexPath], with: .fade)
             }
-            
-            if self.sections.isEmpty {
-                let emptyLabel = UILabel()
-                emptyLabel.text = "No Quick Actions"
-                emptyLabel.textColor = .secondaryLabel
-                emptyLabel.textAlignment = .center
-                emptyLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-                tableView.backgroundView = emptyLabel
-                tableView.separatorStyle = .none
-            }
-            
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed

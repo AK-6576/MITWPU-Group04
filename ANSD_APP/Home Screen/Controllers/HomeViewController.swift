@@ -174,7 +174,7 @@ class HomeViewController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         if #available(iOS 15.0, *) { tableView.sectionHeaderTopPadding = 0 }
-        tableView.backgroundColor = .systemBackground
+        
         tableView.separatorStyle = .none
         tableView.estimatedRowHeight = 80
     }
@@ -218,8 +218,41 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"
         guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else { return nil }
-        header.titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
-        header.subtitleLabel?.text = (section == 0) ? "Upcoming" : ""
+        
+        // Failsafe for disconnected Storyboard Outlets
+        if header.titleLabel != nil {
+            header.titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
+            header.subtitleLabel?.text = (section == 0) ? "Upcoming" : ""
+        } else {
+            // Programmatic fallback
+            header.contentView.subviews.forEach { $0.removeFromSuperview() } // Clear broken IB elements
+            
+            let titleLbl = UILabel()
+            titleLbl.text = (section == 0) ? "Quick Actions" : "View Conversations"
+            titleLbl.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+            titleLbl.translatesAutoresizingMaskIntoConstraints = false
+            header.contentView.addSubview(titleLbl)
+            
+            NSLayoutConstraint.activate([
+                titleLbl.leadingAnchor.constraint(equalTo: header.contentView.leadingAnchor, constant: 16),
+                titleLbl.centerYAnchor.constraint(equalTo: header.contentView.centerYAnchor)
+            ])
+            
+            if section == 0 {
+                let subLbl = UILabel()
+                subLbl.text = "Upcoming"
+                subLbl.font = UIFont.systemFont(ofSize: 15, weight: .regular)
+                subLbl.textColor = .secondaryLabel
+                subLbl.translatesAutoresizingMaskIntoConstraints = false
+                header.contentView.addSubview(subLbl)
+                
+                NSLayoutConstraint.activate([
+                    subLbl.leadingAnchor.constraint(equalTo: titleLbl.trailingAnchor, constant: 8),
+                    subLbl.bottomAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: -2)
+                ])
+            }
+        }
+        
         return header.contentView
     }
     
@@ -294,7 +327,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
 
     // MARK: - Queue Deletion & Edit (Swipe for Quick Actions)
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        guard indexPath.section == 0 && !quickActions.isEmpty else { return nil }
+        guard indexPath.section == 0, indexPath.row < quickActions.count else { return nil }
         let item = quickActions[indexPath.row]
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
