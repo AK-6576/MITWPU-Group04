@@ -12,12 +12,6 @@ import MessageUI
 import Contacts
 import FirebaseAuth
 
-// MARK: - Add Action Delegate
-// Protocol for notifying the delegate when a new action is created.
-protocol AddActionDelegate: AnyObject {
-    func didCreateNewAction(_ action: RoutineConversation)
-}
-
 // MARK: - Add Action View Controller
 // Manages the interface for adding new actions, including input validation and data persistence.
 class AddActionTableViewController: UITableViewController, ParticipantsSelectionDelegate, MFMessageComposeViewControllerDelegate {
@@ -29,7 +23,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     @IBOutlet weak var daysCell: UITableViewCell!
     @IBOutlet weak var categoryCell: UITableViewCell!
     
-    weak var delegate: AddActionDelegate?
     private var dayPopupButton: UIButton?
     private var categoryPopupButton: UIButton?
     

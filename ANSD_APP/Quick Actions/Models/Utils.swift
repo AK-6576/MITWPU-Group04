@@ -50,7 +50,18 @@ func getSymbolForCategory(_ name: String) -> String {
     case "movie", "cinema": return "popcorn.fill"
     case "travel": return "airplane"
     case "bank", "finance": return "banknote.fill"
-    default: return "tag.fill"
+    case "doctor", "health", "hospital", "medical", "appointment": return "cross.case.fill"
+    case "food", "lunch", "dinner", "breakfast", "restaurant": return "fork.knife"
+    case "coffee", "tea", "cafe": return "cup.and.saucer.fill"
+    case "chat", "talk", "discussion": return "bubble.left.and.bubble.right.fill"
+    default:
+        let symbols = [
+            "star.fill", "bolt.fill", "bookmark.fill", "flag.fill",
+            "bell.fill", "flame.fill", "paperplane.fill", "cube.fill",
+            "leaf.fill", "sparkles", "drop.fill", "moon.fill"
+        ]
+        let hash = abs(name.hashValue)
+        return symbols[hash % symbols.count]
     }
 }
 

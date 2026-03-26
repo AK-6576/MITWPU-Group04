@@ -938,13 +938,13 @@
                                                 </label>
                                                 <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="Action Title" textAlignment="right" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="mrG-PM-2sp">
                                                     <rect key="frame" x="264" y="7" width="73" height="37.666666666666664"/>
-                                                    <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <textInputTraits key="textInputTraits"/>
                                                 </textField>
                                             </subviews>
                                             <constraints>
                                                 <constraint firstAttribute="bottom" secondItem="mrG-PM-2sp" secondAttribute="bottom" constant="10.333332061767578" id="89d-j6-Zbg"/>
-                                                <constraint firstItem="mrG-PM-2sp" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="VBY-O6-nsr" secondAttribute="trailing" constant="12" id="Ana-Nt-17I"/>
+                                                <constraint firstItem="mrG-PM-2sp" firstAttribute="leading" secondItem="VBY-O6-nsr" secondAttribute="trailing" constant="12" id="Ana-Nt-17I"/>
                                                 <constraint firstAttribute="trailing" secondItem="mrG-PM-2sp" secondAttribute="trailing" constant="16" id="KAH-O8-PZc"/>
                                                 <constraint firstItem="VBY-O6-nsr" firstAttribute="leading" secondItem="uPs-vX-rdy" secondAttribute="leading" constant="16" id="RYr-kX-iEE"/>
                                                 <constraint firstAttribute="bottom" secondItem="VBY-O6-nsr" secondAttribute="bottom" constant="15" id="YJm-rH-qxO"/>

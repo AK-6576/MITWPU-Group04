@@ -278,13 +278,7 @@ class QuickActionTableViewCell: UITableViewCell {
                 customIconImageView.image = image.withRenderingMode(.alwaysTemplate)
             }
             
-            var tintColor: UIColor = .systemGray
-            switch item.categoryTitle {
-            case "Office": tintColor = .systemBlue
-            case "Family": tintColor = .systemGreen
-            case "Friends": tintColor = .systemOrange
-            default: tintColor = .systemGray
-            }
+            let tintColor = getColorForCategory(item.categoryTitle)
             
             // Add custom distinction color for 'Upcoming' status
             if badgeText == "Upcoming" {
