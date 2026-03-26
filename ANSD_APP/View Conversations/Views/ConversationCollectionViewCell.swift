@@ -17,11 +17,9 @@ class ConversationCollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
+    @IBOutlet weak var categoryContainer: UIView!
     @IBOutlet weak var calendarIcon: UIImageView!
     @IBOutlet weak var clockIcon: UIImageView!
-    @IBOutlet weak var categoryIcon: UIImageView!
-    
-    private var categoryAccessibilityName: String = ""
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -30,11 +28,10 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         contentView.backgroundColor = .secondarySystemGroupedBackground
         layer.cornerRadius = 16
         layer.masksToBounds = true
+        layer.shadowRadius = 8
+        layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowOpacity = 0
         layer.borderWidth = 0
-        
-        // HIG: Truncate summary to exactly one line to keep cards compact and uniform.
-        descriptionLabel.numberOfLines = 1
         
         // HIG: Enforce strong typographic hierarchy and spacing.
         titleLabel.font = UIFont.preferredFont(forTextStyle: .headline)
@@ -49,96 +46,73 @@ class ConversationCollectionViewCell: UICollectionViewCell {
     
     func configure(with conversation: Conversation) {
         if conversation.isPinned {
-            let fullString = NSMutableAttributedString(string: conversation.title + " ")
+            let fullString = NSMutableAttributedString()
             let imageAttachment = NSTextAttachment()
             let config = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-            if let image = UIImage(systemName: "pin.fill", withConfiguration: config)?.withTintColor(.systemOrange, renderingMode: .alwaysOriginal) {
+            if let image = UIImage(systemName: "pin.fill", withConfiguration: config)?.withTintColor(.systemGray, renderingMode: .alwaysOriginal) {
                 imageAttachment.image = image
                 imageAttachment.bounds = CGRect(x: 0, y: -2, width: image.size.width, height: image.size.height)
             }
             fullString.append(NSAttributedString(attachment: imageAttachment))
+            fullString.append(NSAttributedString(string: " " + conversation.title))
             titleLabel.attributedText = fullString
+            
+            // HIG: Pinned cards have 1 summary line, regular cards have 2.
+            descriptionLabel.numberOfLines = 1
         } else {
             titleLabel.text = conversation.title
+            descriptionLabel.numberOfLines = 2
         }
         descriptionLabel.text = conversation.details
         
         // HIG: Removed repetitive Date & Time. Repurposing these slots based on user priority (Participants, Duration, Category)
         
         // Slot 1 (Left): Participants
-        let paxCount = conversation.participants?.count ?? 0
-        dateLabel.text = "\(paxCount) People"
+        let paxCount = max(1, conversation.participants?.count ?? 0)
+        dateLabel.text = paxCount == 1 ? "1 Person" : "\(paxCount) People"
         calendarIcon.image = UIImage(systemName: "person.2.fill")
         calendarIcon.tintColor = .secondaryLabel // Increased emphasis slightly
         
-        // Slot 2 (Middle): Duration
-        let durationStr = calculateDuration(start: conversation.startTime, end: conversation.endTime)
-        timeLabel.text = durationStr
-        clockIcon.image = UIImage(systemName: "timer")
+        // Slot 2 (Middle): Time Range
+        let timeRangeStr = "\(conversation.startTime) - \(conversation.endTime)"
+        timeLabel.text = timeRangeStr
+        clockIcon.image = UIImage(systemName: "clock")
         clockIcon.tintColor = .secondaryLabel
         
+        // Slot 3 (Right): Category Badge
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
-        // Enforcing proper scale down for metadata
-        dateLabel.font = UIFont.preferredFont(forTextStyle: .caption1)
-        timeLabel.font = UIFont.preferredFont(forTextStyle: .caption1)
-        categoryLabel.font = UIFont.preferredFont(forTextStyle: .footnote) // slightly larger for category to stand out
-        
-        let iconName: String
-        let tintColor: UIColor
+        let txtColor: UIColor
         
         switch categoryString {
         case "Family":
-            iconName = "figure.2.and.child.holdinghands"
-            tintColor = .systemRed
-            categoryAccessibilityName = "Family"
+            txtColor = .systemRed
         case "Friends":
-            iconName = "person.2.fill"
-            tintColor = .systemOrange
-            categoryAccessibilityName = "Friends"
+            txtColor = .systemGreen
         case "Office", "Work":
-            iconName = "briefcase.fill"
-            tintColor = .systemBlue
-            categoryAccessibilityName = "Office"
-        case "Medical", "Health":
-            iconName = "cross.case.fill"
-            tintColor = .systemGreen
-            categoryAccessibilityName = "Medical"
-        case "general":
-            iconName = "note.text"
-            tintColor = .systemGray
-            categoryAccessibilityName = "General"
-        case "Quick Captions":
-            iconName = "waveform"
-            tintColor = .systemBlue
-            categoryAccessibilityName = "Quick Captions"
-        case "Group-Join":
-            iconName = "person.bubble"
-            tintColor = .systemBlue
-            categoryAccessibilityName = "Group-Join"
-        case "Group-New":
-            iconName = "square.and.pencil"
-            tintColor = .systemBlue
-            categoryAccessibilityName = "Group-New"
+            txtColor = .systemBlue
+        case "Quick Captions", "Quick Captioning":
+            txtColor = .systemYellow
+        case "Group-Join", "Group-New":
+            txtColor = .systemTeal
         default:
-            iconName = "folder.fill"
-            tintColor = .systemGray
-            categoryAccessibilityName = "Uncategorized"
+            txtColor = getColorForCategory(categoryString)
         }
         
-        categoryIcon.image = UIImage(systemName: iconName)
-        categoryIcon.tintColor = tintColor
+        categoryContainer.backgroundColor = txtColor.withAlphaComponent(0.15)
+        categoryLabel.textColor = txtColor
         
         calendarIcon.isAccessibilityElement = true
-        calendarIcon.accessibilityLabel = "\(paxCount) Participants"
+        let paxAccessibilityCount = max(1, conversation.participants?.count ?? 0)
+        calendarIcon.accessibilityLabel = "\(paxAccessibilityCount) Participants"
         
         clockIcon.isAccessibilityElement = true
-        clockIcon.accessibilityLabel = "Duration: \(durationStr)"
+        clockIcon.accessibilityLabel = "Time: \(timeRangeStr)"
         
-        categoryIcon.isAccessibilityElement = true
-        categoryIcon.accessibilityLabel = "Category: \(categoryAccessibilityName)"
+        categoryContainer.isAccessibilityElement = true
+        categoryContainer.accessibilityLabel = "Category: \(capitalizedCategory)"
     }
     
     // HIG: Helper to calculate accurate duration

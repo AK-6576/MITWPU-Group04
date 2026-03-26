@@ -190,8 +190,9 @@ class QuickActionTableViewCell: UITableViewCell {
             subtitleLabel.isHidden = false
             rightStackView.isHidden = false
             
-            let paxCount = item.participantNames.count
-            subtitleLabel.text = "\(item.categoryTitle) • \(paxCount) participants"
+            let paxCount = max(1, item.participantNames.count)
+            let paxText = paxCount == 1 ? "1 participant" : "\(paxCount) participants"
+            subtitleLabel.text = "\(item.categoryTitle) • \(paxText)"
             
             customTimeLabel.text = item.startTime
             

@@ -88,7 +88,6 @@ class QuickActionsViewController: UITableViewController {
         let sectionData = sections[indexPath.section]
         let item = sectionData.items[indexPath.row]
         
-        // NATIVE FIX: Use the built-in rawValue initializer
         let category = ChatCategory(rawValue: sectionData.category) ?? .other
         
         let segueID: String
