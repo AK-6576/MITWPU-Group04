@@ -155,7 +155,7 @@ class QuickActionsRepository {
     func deleteAction(_ action: RoutineConversation) {
         // 1. Delete from Firebase
         let codeToDelete = action.roomCode ?? action.id
-        FirebaseManager.shared.deleteQuickAction(roomCode: codeToDelete)
+        FirebaseManager.shared.deleteQuickAction(actionID: codeToDelete)
         
         // 2. Delete from Local
         self.quickActionBubbles.removeAll { $0.id == action.id }

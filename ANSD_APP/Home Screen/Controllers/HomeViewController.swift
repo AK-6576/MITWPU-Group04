@@ -32,11 +32,8 @@ class HomeViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
         
-        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.helloLabel.isHidden = false
-            headerView.nameLabel.isHidden = false
-            headerView.configure(name: name)
         }
         
         navigationItem.title = ""

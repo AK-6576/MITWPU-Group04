@@ -109,9 +109,15 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
             do {
                 // Prompt: Ask for Notes AND per-person summaries
                 let prompt = """
-                Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
+                You are a professional assistant specialized in conversation analysis. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
                 
-                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point on a new line as a standalone sentence.
+                STRICT CONSTRAINTS:
+                - Strictly output only the requested sections (e.g., "NOTES:", "SUMMARY_...:").
+                - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
+                - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
+                - If information is missing or unclear, omit it rather than speculating.
+                
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. If you want points, use bullets (•) or numbers (1, 2, ...). Provide each point on a new line as a standalone sentence.
                 
                 Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences.
                 
@@ -313,7 +319,7 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
             
         case 2: // Header Participants
             let cell = tableView.dequeueReusableCell(withIdentifier: "GroupNewSummarySectionHeaderCell", for: indexPath) as! GroupNewSummarySectionHeaderCell
-            cell.headerLabel.text = "Participant Summary"
+            cell.headerLabel.text = "Participants Summary"
             cell.headerIcon.image = UIImage(systemName: "person.2.fill")
             cell.selectionStyle = .none
             return cell

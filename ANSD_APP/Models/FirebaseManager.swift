@@ -157,10 +157,10 @@ class FirebaseManager {
     }
     
     /// NEW: Deletes a Quick Action from Firebase.
-    func deleteQuickAction(roomCode: String) {
+    func deleteQuickAction(actionID: String) {
         guard let uid = currentUID else { return }
         let safeUID = sanitizeKey(uid)
-        let safeCode = sanitizeKey(roomCode)
+        let safeCode = sanitizeKey(actionID)
         
         // 1. Remove from global registry
         databaseRef.child("quick_actions").child(safeCode).removeValue()

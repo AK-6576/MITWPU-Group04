@@ -15,4 +15,5 @@ struct QuickCaptionsChat: Sendable {
     var isIncoming: Bool
     var speakerID: Int?
     var eventId: UUID?
+    var timestamp: Date? = Date()
 }

@@ -15,8 +15,8 @@ class TextCleanupManager {
     private let model = SystemLanguageModel.default
     private var workItems: [Int: DispatchWorkItem] = [:]
     
-    // CHANGED: 1.0 second delay after stopping speaking
-    private let delay: TimeInterval = 1.0
+    // REDUCED: 0.4 second delay for faster response
+    private let delay: TimeInterval = 0.4
     
     // MARK: - API
     
