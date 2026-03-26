@@ -195,9 +195,30 @@ class ParticipantsViewController: UITableViewController, UISearchResultsUpdating
 
     // MARK: - TableView Data Source
     
+    private var selectedContactsCurrent: [CNContact] {
+        return contacts.filter { selectedContactIDs.contains($0.identifier) }
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        if viewerMode { return 1 }
+        return 2
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        if viewerMode { return nil }
+        if section == 0 {
+            return selectedContactsCurrent.isEmpty ? nil : "Added Participants"
+        } else {
+            return "Contacts"
+        }
+    }
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if viewerMode {
             return viewerParticipantNames.count
+        }
+        if section == 0 {
+            return selectedContactsCurrent.count
         }
         return isFiltering ? filteredContacts.count : contacts.count
     }
@@ -213,7 +234,13 @@ class ParticipantsViewController: UITableViewController, UISearchResultsUpdating
     // MARK: - Picker Cell (Original)
     private func configurePickerCell(for indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactCell", for: indexPath)
-        let contact = isFiltering ? filteredContacts[indexPath.row] : contacts[indexPath.row]
+        
+        let contact: CNContact
+        if indexPath.section == 0 {
+            contact = selectedContactsCurrent[indexPath.row]
+        } else {
+            contact = isFiltering ? filteredContacts[indexPath.row] : contacts[indexPath.row]
+        }
         
         cell.textLabel?.text = "\(contact.givenName) \(contact.familyName)"
         
@@ -265,7 +292,12 @@ class ParticipantsViewController: UITableViewController, UISearchResultsUpdating
         
         tableView.deselectRow(at: indexPath, animated: true)
         
-        let contact = isFiltering ? filteredContacts[indexPath.row] : contacts[indexPath.row]
+        let contact: CNContact
+        if indexPath.section == 0 {
+            contact = selectedContactsCurrent[indexPath.row]
+        } else {
+            contact = isFiltering ? filteredContacts[indexPath.row] : contacts[indexPath.row]
+        }
         let id = contact.identifier
         
         if selectedContactIDs.contains(id) {
@@ -274,7 +306,7 @@ class ParticipantsViewController: UITableViewController, UISearchResultsUpdating
             selectedContactIDs.insert(id)
         }
         
-        tableView.reloadRows(at: [indexPath], with: .none)
+        tableView.reloadData()
     }
     
     // MARK: - Row Height

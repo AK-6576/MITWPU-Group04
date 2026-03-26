@@ -263,24 +263,30 @@ class VoiceCalibrationViewController: UIViewController {
     // MARK: - Microphone Permission
 
     private func requestMicrophoneAccess() {
+        let handlePermission: (Bool) -> Void = { [weak self] allowed in
+            DispatchQueue.main.async {
+                if allowed {
+                    // Permission just granted — ensure the button is active and ready
+                    self?.phase = .ready
+                } else {
+                    self?.instructionLabel.text = "Microphone access is required. Enable it in Settings → Privacy."
+                    self?.setButton(title: "Microphone Required", image: "mic.slash.fill", color: .systemRed, enabled: false)
+                }
+            }
+        }
+
         if #available(iOS 17.0, *) {
-            AVAudioApplication.requestRecordPermission { [weak self] allowed in
-                DispatchQueue.main.async {
-                    if !allowed {
-                        self?.instructionLabel.text = "Microphone access is required in Settings."
-                        self?.recordButton.isEnabled = false
-                    }
-                }
-            }
+            AVAudioApplication.requestRecordPermission(completionHandler: handlePermission)
         } else {
-            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-                DispatchQueue.main.async {
-                    if !allowed {
-                        self?.instructionLabel.text = "Microphone access is required in Settings."
-                        self?.recordButton.isEnabled = false
-                    }
-                }
-            }
+            AVAudioSession.sharedInstance().requestRecordPermission(handlePermission)
+        }
+    }
+
+    private func isMicrophonePermissionGranted() -> Bool {
+        if #available(iOS 17.0, *) {
+            return AVAudioApplication.shared.recordPermission == .granted
+        } else {
+            return AVAudioSession.sharedInstance().recordPermission == .granted
         }
     }
 
@@ -311,17 +317,32 @@ class VoiceCalibrationViewController: UIViewController {
 
     @IBAction func recordButtonTapped(_ sender: UIButton) {
         switch phase {
-        case .ready:
-            sentenceEmbeddings.removeAll()
-            resetSentenceStatuses()
-            beginCountdown()
-        case .mismatch:
+        case .ready, .mismatch:
+            // Guard: mic must be granted before starting
+            guard isMicrophonePermissionGranted() else {
+                let alert = UIAlertController(
+                    title: "Microphone Required",
+                    message: "Please allow microphone access in Settings to use Voice Setup.",
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "Open Settings", style: .default) { _ in
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                })
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+                present(alert, animated: true)
+                return
+            }
+
             sentenceEmbeddings.removeAll()
             resetSentenceStatuses()
             updatePromptText(index: 0)
             beginCountdown()
+
         case .finished:
             navigateToHome()
+
         default:
             break
         }
@@ -358,7 +379,15 @@ class VoiceCalibrationViewController: UIViewController {
         phase = .recording(index)
 
         setupAudioRecorder(for: index)
-        audioRecorder?.record()
+
+        // Safety guard — if audioRecorder failed to initialise, abort gracefully
+        guard let recorder = audioRecorder else {
+            print("VoiceCalibration: audioRecorder is nil for sentence \(index) — aborting.")
+            DispatchQueue.main.async { self.phase = .mismatch }
+            return
+        }
+
+        recorder.record()
         startMeteringAnimation()
 
         // Each sentence gets 7 seconds of recording time (model needs 6s = 96,000 samples @ 16kHz, plus 1s buffer)
@@ -366,7 +395,7 @@ class VoiceCalibrationViewController: UIViewController {
             guard let self else { return }
             self.audioRecorder?.stop()
             self.stopMeteringAnimation()
-            
+
             // Enter verification phase
             self.phase = .verifying(index)
             self.verifySentence(index: index)

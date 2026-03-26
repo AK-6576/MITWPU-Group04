@@ -62,7 +62,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     var otherPersonName = "Host"
     
     // Constant for bubble splitting (Adjust based on your UI)
-    let MAX_BUBBLE_CHAR_LIMIT = 150
+    let MAX_BUBBLE_CHAR_LIMIT = 240
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -190,13 +190,36 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                         let combinedText = baseText + newContent
                         
                         if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
-                            self.messages[lastIndex].text = combinedText
-                            self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                            self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                            // Find the last sentence boundary to split at
+                            let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                            var splitIndex: String.Index? = nil
                             
-                            let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                            self.messages.append(newMsg)
-                            self.reloadDataAndScroll()
+                            let searchRange = combinedText.startIndex..<combinedText.index(combinedText.startIndex, offsetBy: self.MAX_BUBBLE_CHAR_LIMIT)
+                            for boundary in boundaries {
+                                if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
+                                    if splitIndex == nil || range.lowerBound > splitIndex! {
+                                        splitIndex = range.lowerBound
+                                    }
+                                }
+                            }
+                            
+                            if let idx = splitIndex {
+                                let endOfSentence = combinedText.index(idx, offsetBy: 1)
+                                let firstPart = String(combinedText[...endOfSentence]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                let secondPart = String(combinedText[combinedText.index(after: endOfSentence)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                
+                                self.messages[lastIndex].text = firstPart
+                                self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                                self.processTextWithAppleIntelligence(text: firstPart, index: lastIndex)
+                                
+                                let newMsg = GroupJoinChatMessage(text: secondPart.isEmpty ? "..." : secondPart, isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                                self.messages.append(newMsg)
+                                self.reloadDataAndScroll()
+                            } else {
+                                // No boundary found yet, just append to current
+                                self.messages[lastIndex].text = combinedText
+                                self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            }
                         } else {
                             self.messages[lastIndex].text = combinedText
                             self.GroupJoinCollectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])

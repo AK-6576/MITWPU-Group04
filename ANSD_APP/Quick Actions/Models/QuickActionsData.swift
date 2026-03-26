@@ -36,6 +36,16 @@ class QuickActionsRepository {
             self?.handleIncomingAction(dict)
         }
         
+        // Also observe by full name, since contacts often use First + Last name
+        let lastName = UserDefaults.standard.string(forKey: "user_last_name") ?? ""
+        let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+        
+        if fullName != firstName && !fullName.isEmpty {
+            FirebaseManager.shared.observeSharedQuickActions(forUserName: fullName) { [weak self] dict in
+                self?.handleIncomingAction(dict)
+            }
+        }
+        
         // Also observe the user's own quick_actions node (by UID)
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let safeUID = FirebaseManager.shared.sanitizeKey(uid)
@@ -144,7 +154,8 @@ class QuickActionsRepository {
 
     func deleteAction(_ action: RoutineConversation) {
         // 1. Delete from Firebase
-        FirebaseManager.shared.deleteQuickAction(actionID: action.id)
+        let codeToDelete = action.roomCode ?? action.id
+        FirebaseManager.shared.deleteQuickAction(actionID: codeToDelete)
         
         // 2. Delete from Local
         self.quickActionBubbles.removeAll { $0.id == action.id }

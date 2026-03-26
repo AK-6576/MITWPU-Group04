@@ -12,6 +12,9 @@ import SwiftData
 
 class SimpleMonthHeaderView: UICollectionReusableView {
     let label = UILabel()
+    let chevronImageView = UIImageView()
+    let stackView = UIStackView()
+    var onHeaderTapped: (() -> Void)?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -24,20 +27,58 @@ class SimpleMonthHeaderView: UICollectionReusableView {
     }
     
     private func setupView() {
-        addSubview(label)
-        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stackView)
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .horizontal
+        stackView.spacing = 8
+        stackView.alignment = .center
+        
+        chevronImageView.contentMode = .scaleAspectFit
+        chevronImageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            chevronImageView.widthAnchor.constraint(equalToConstant: 16),
+            chevronImageView.heightAnchor.constraint(equalToConstant: 16)
+        ])
+        
+        // Add spacer to dynamically push the chevron to the exact trailing edge
+        let spacer = UIView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        
+        stackView.addArrangedSubview(label)
+        stackView.addArrangedSubview(spacer)
+        stackView.addArrangedSubview(chevronImageView)
         
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            label.centerYAnchor.constraint(equalTo: centerYAnchor)
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16), // Locks the stack to the full width
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
         
         label.font = UIFont.boldSystemFont(ofSize: 22)
         label.textColor = .label
+        chevronImageView.tintColor = .secondaryLabel
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        addGestureRecognizer(tap)
+    }
+    
+    @objc func handleTap() {
+        onHeaderTapped?()
+    }
+    
+    func configureChevron(isCollapsed: Bool?) {
+        if let collapsed = isCollapsed {
+            chevronImageView.isHidden = false
+            let config = UIImage.SymbolConfiguration(weight: .bold)
+            chevronImageView.image = UIImage(systemName: collapsed ? "chevron.right" : "chevron.down", withConfiguration: config)
+        } else {
+            chevronImageView.isHidden = true
+        }
     }
 }
 
-class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate {
+class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UISearchBarDelegate {
     
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet var searchBar: UISearchBar!
@@ -46,6 +87,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     var allConversationSections: [ConversationSection] = []
     var conversationSections: [ConversationSection] = []
     var originalBottomConstant: CGFloat = 0
+    var isPinnedCollapsed: Bool = false
     
     // Tracks the current filter
     var activeSelectedDate: Date? = nil
@@ -111,7 +153,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
                 let updatedConvo = self.conversationSections[indexPath.section].conversations[indexPath.row]
                 updatedConvo.isPinned.toggle()
                 DataManager.shared.saveData()
-                self.collectionView.reloadItems(at: [indexPath])
+                self.loadConversationData() // HIG: Full reload to cleanly move the item between sections instead of just reloading the cell.
             }
             
             let renameAction = UIAction(title: "Rename", image: UIImage(systemName: "pencil")) { action in
@@ -244,38 +286,143 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
         collectionView.register(nib, forCellWithReuseIdentifier: "conversationCell")
         collectionView.register(SimpleMonthHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "headerId")
         
-        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.estimatedItemSize = .zero
-            layout.minimumLineSpacing = 8
-            let horizontalPadding: CGFloat = 16.0
-            let bottomSpacing: CGFloat = 12.0
-            layout.sectionInset = UIEdgeInsets(top: 0, left: horizontalPadding, bottom: bottomSpacing, right: horizontalPadding)
-        }
+        // HIG: Apply Compositional Layout
+        collectionView.collectionViewLayout = createCompositionalLayout()
+        
         collectionView.contentInset.bottom = 100
+    }
+    
+    func createCompositionalLayout() -> UICollectionViewLayout {
+        let layout = UICollectionViewCompositionalLayout { [weak self] (sectionIndex: Int, layoutEnvironment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection? in
+            guard let self = self else { return nil }
+            
+            // HIG: 100% Vertical List for all sections (both History and Pinned) to precisely match Apple Notes Flow
+            let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(120))
+            let item = NSCollectionLayoutItem(layoutSize: itemSize)
+            
+            let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(120))
+            let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
+            
+            let section = NSCollectionLayoutSection(group: group)
+            section.interGroupSpacing = 12
+            // HIG: "approx half to half to the top spacing"
+            // Bottom margin connecting sections is 20, so top margin (gap between header and first card) is 10 (half constraint)
+            section.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 20, trailing: 16)
+            
+            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(50))
+            let header = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: headerSize,
+                elementKind: UICollectionView.elementKindSectionHeader,
+                alignment: .top
+            )
+            section.boundarySupplementaryItems = [header]
+            
+            return section
+        }
+        return layout
     }
     
     func loadConversationData() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let allConvos = DataManager.shared.fetchConversations()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMMM"
+            var pinnedConvos: [Conversation] = [] // HIG: Distinct grouping for pinned items
             
-            var sectionsDict: [String: [Conversation]] = [:]
-            var sectionTitles: [String] = []
+            var todayConvos: [Conversation] = []
+            var yesterdayConvos: [Conversation] = []
+            
+            // HIG: Exclusively group all history between 3-30 days into a single bucket
+            var recentConvos: [Conversation] = []
+            var maxRecentDaysAgo: Int = 0
+            
+            var monthDict: [String: [Conversation]] = [:]
+            var yearDict: [String: [Conversation]] = [:]
+            
+            // Arrays to rigidly maintain the chronological order as items flow in
+            var monthTitles: [String] = []  
+            var yearTitles: [String] = []
+            
+            let calendar = Calendar.current
+            let now = Date()
+            
+            let monthFormatter = DateFormatter()
+            monthFormatter.dateFormat = "MMMM" // e.g. "October"
+            
+            let yearFormatter = DateFormatter()
+            yearFormatter.dateFormat = "yyyy" // e.g. "2023"
             
             for convo in allConvos {
-                let title = convo.calendarDate != nil ? formatter.string(from: convo.calendarDate!) : "Recent History"
-                if sectionsDict[title] == nil {
-                    sectionsDict[title] = []
-                    sectionTitles.append(title)
+                if convo.isPinned {
+                    pinnedConvos.append(convo)
+                    continue // Isolate from standard timeline flow
                 }
-                sectionsDict[title]?.append(convo)
+
+                if let date = convo.calendarDate {
+                    if calendar.isDateInToday(date) {
+                        todayConvos.append(convo)
+                    } else if calendar.isDateInYesterday(date) {
+                        yesterdayConvos.append(convo)
+                    } else {
+                        // Accurately count elapsed days using purely start-of-day offsets
+                        let startOfNow = calendar.startOfDay(for: now)
+                        let startOfDate = calendar.startOfDay(for: date)
+                        let daysAgo = calendar.dateComponents([.day], from: startOfDate, to: startOfNow).day ?? 0
+                        
+                        // HIG: Deep Apple Notes style relative-time classifications (Mutually exclusive 7 vs 30 days)
+                        if daysAgo <= 30 {
+                            recentConvos.append(convo)
+                            maxRecentDaysAgo = max(maxRecentDaysAgo, daysAgo)
+                        } else if daysAgo <= 365 {
+                            let mTitle = monthFormatter.string(from: date)
+                            if monthDict[mTitle] == nil {
+                                monthDict[mTitle] = []
+                                monthTitles.append(mTitle)
+                            }
+                            monthDict[mTitle]?.append(convo)
+                        } else {
+                            let yTitle = yearFormatter.string(from: date)
+                            if yearDict[yTitle] == nil {
+                                yearDict[yTitle] = []
+                                yearTitles.append(yTitle)
+                            }
+                            yearDict[yTitle]?.append(convo)
+                        }
+                    }
+                } else {
+                    // Safety Fallback for corrupted date entries
+                    let yTitle = "Previous History"
+                    if yearDict[yTitle] == nil {
+                        yearDict[yTitle] = []
+                        yearTitles.append(yTitle)
+                    }
+                    yearDict[yTitle]?.append(convo)
+                }
             }
             
             var loadedSections: [ConversationSection] = []
-            for title in sectionTitles {
-                loadedSections.append(ConversationSection(title: title, conversations: sectionsDict[title]!))
+            
+            // Append sequentially to establish hierarchy
+            if !pinnedConvos.isEmpty { loadedSections.append(ConversationSection(title: "Pinned", conversations: pinnedConvos)) }
+            
+            if !todayConvos.isEmpty { loadedSections.append(ConversationSection(title: "Today", conversations: todayConvos)) }
+            if !yesterdayConvos.isEmpty { loadedSections.append(ConversationSection(title: "Yesterday", conversations: yesterdayConvos)) }
+            
+            // Generate either the 7-day or 30-day header based on the oldest conversation in this bucket
+            if !recentConvos.isEmpty {
+                let dynamicTitle = maxRecentDaysAgo <= 7 ? "Previous 7 Days" : "Previous 30 Days"
+                loadedSections.append(ConversationSection(title: dynamicTitle, conversations: recentConvos))
+            }
+            
+            for title in monthTitles {
+                if let convos = monthDict[title], !convos.isEmpty {
+                    loadedSections.append(ConversationSection(title: title, conversations: convos))
+                }
+            }
+            
+            for title in yearTitles {
+                if let convos = yearDict[title], !convos.isEmpty {
+                    loadedSections.append(ConversationSection(title: title, conversations: convos))
+                }
             }
             
             if loadedSections.isEmpty {
@@ -315,6 +462,9 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        if conversationSections[section].title == "Pinned" && isPinnedCollapsed {
+            return 0
+        }
         return conversationSections[section].conversations.count
     }
 
@@ -330,19 +480,28 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         if kind == UICollectionView.elementKindSectionHeader {
             let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "headerId", for: indexPath) as! SimpleMonthHeaderView
-            header.label.text = conversationSections[indexPath.section].title
+            
+            let title = conversationSections[indexPath.section].title
+            header.label.text = title
+            
+            if title == "Pinned" {
+                header.configureChevron(isCollapsed: isPinnedCollapsed)
+                header.isUserInteractionEnabled = true
+                header.onHeaderTapped = { [weak self] in
+                    guard let self = self else { return }
+                    self.isPinnedCollapsed.toggle()
+                    self.collectionView.reloadSections(IndexSet(integer: indexPath.section))
+                }
+            } else {
+                header.configureChevron(isCollapsed: nil)
+                header.isUserInteractionEnabled = false
+            }
             return header
         }
         return UICollectionReusableView()
     }
 
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.frame.width - 32, height: 110)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
-        return CGSize(width: collectionView.frame.width, height: 50)
-    }
+    // HIG: UICollectionViewDelegateFlowLayout math deleted in favor of Compositional Layout dynamic sizing
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.isEmpty {

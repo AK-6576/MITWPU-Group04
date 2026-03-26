@@ -32,11 +32,8 @@ class HomeViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
         
-        let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.helloLabel.isHidden = false
-            headerView.nameLabel.isHidden = false
-            headerView.configure(name: name)
         }
         
         navigationItem.title = ""
@@ -174,7 +171,7 @@ class HomeViewController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         if #available(iOS 15.0, *) { tableView.sectionHeaderTopPadding = 0 }
-        tableView.backgroundColor = .systemBackground
+        
         tableView.separatorStyle = .none
         tableView.estimatedRowHeight = 80
     }
@@ -208,7 +205,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
-            return quickActions.isEmpty ? 1 : quickActions.count
+            return quickActions.count >= 3 ? 3 : quickActions.count + 1
         } else {
             return recentHistory.isEmpty ? 1 : recentHistory.count
         }
@@ -218,8 +215,41 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"
         guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else { return nil }
-        header.titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
-        header.subtitleLabel?.text = (section == 0) ? "Upcoming" : ""
+        
+        // Failsafe for disconnected Storyboard Outlets
+        if header.titleLabel != nil {
+            header.titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
+            header.subtitleLabel?.text = (section == 0) ? "Upcoming" : ""
+        } else {
+            // Programmatic fallback
+            header.contentView.subviews.forEach { $0.removeFromSuperview() } // Clear broken IB elements
+            
+            let titleLbl = UILabel()
+            titleLbl.text = (section == 0) ? "Quick Actions" : "View Conversations"
+            titleLbl.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+            titleLbl.translatesAutoresizingMaskIntoConstraints = false
+            header.contentView.addSubview(titleLbl)
+            
+            NSLayoutConstraint.activate([
+                titleLbl.leadingAnchor.constraint(equalTo: header.contentView.leadingAnchor, constant: 16),
+                titleLbl.centerYAnchor.constraint(equalTo: header.contentView.centerYAnchor)
+            ])
+            
+            if section == 0 {
+                let subLbl = UILabel()
+                subLbl.text = "Upcoming"
+                subLbl.font = UIFont.systemFont(ofSize: 15, weight: .regular)
+                subLbl.textColor = .secondaryLabel
+                subLbl.translatesAutoresizingMaskIntoConstraints = false
+                header.contentView.addSubview(subLbl)
+                
+                NSLayoutConstraint.activate([
+                    subLbl.leadingAnchor.constraint(equalTo: titleLbl.trailingAnchor, constant: 8),
+                    subLbl.bottomAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: -2)
+                ])
+            }
+        }
+        
         return header.contentView
     }
     
@@ -229,14 +259,20 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
-            if quickActions.isEmpty {
-                return tableView.dequeueReusableCell(withIdentifier: "EmptyStateCell", for: indexPath)
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
+            
+            let isAddRowVisible = quickActions.count < 3
+            let isLast = (indexPath.row == (isAddRowVisible ? quickActions.count : 2))
+            let isAddRow = isAddRowVisible && (indexPath.row == quickActions.count)
+            let isFirst = (indexPath.row == 0)
+            
+            if isAddRow {
+                cell.configure(with: nil, isFirst: isFirst, isLast: true, isAddRow: true)
             } else {
-                guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
                 let item = quickActions[indexPath.row]
-                cell.configure(with: item, isLast: indexPath.row == quickActions.count - 1)
-                return cell
+                cell.configure(with: item, isFirst: isFirst, isLast: isLast, isAddRow: false)
             }
+            return cell
         } else {
             if recentHistory.isEmpty {
                 let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
@@ -254,24 +290,32 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        if indexPath.section == 0 && !quickActions.isEmpty {
-            let item = quickActions[indexPath.row]
-            
-            // ROLE-BASED NAVIGATION
-            let currentUID = Auth.auth().currentUser?.uid
-            if let host = item.hostUID, host != currentUID {
-                // I am a participant -> Go to Join screen with Room ID pre-filled
-                performSegue(withIdentifier: "showJoinConversation", sender: item)
-            } else {
-                // I am the host (or hostUID missing) -> Go to direct start/join transcription
-                var segueID = ""
-                switch item.categoryTitle {
-                    case "Office": segueID = "office"
-                    case "Family": segueID = "family"
-                    case "Friends": segueID = "friends"
-                    default: return
+        if indexPath.section == 0 {
+            let isAddRowVisible = quickActions.count < 3
+            if isAddRowVisible && indexPath.row == quickActions.count {
+                if let addVC = self.storyboard?.instantiateViewController(withIdentifier: "AddCategoryVC") as? AddActionTableViewController {
+                    let nav = UINavigationController(rootViewController: addVC)
+                    self.present(nav, animated: true, completion: nil)
                 }
-                performSegue(withIdentifier: segueID, sender: item)
+            } else {
+                let item = quickActions[indexPath.row]
+                
+                // ROLE-BASED NAVIGATION
+                let currentUID = Auth.auth().currentUser?.uid
+                if let host = item.hostUID, host != currentUID {
+                    // I am a participant -> Go to Join screen with Room ID pre-filled
+                    performSegue(withIdentifier: "showJoinConversation", sender: item)
+                } else {
+                    // I am the host (or hostUID missing) -> Go to direct start/join transcription
+                    var segueID = ""
+                    switch item.categoryTitle {
+                        case "Office": segueID = "office"
+                        case "Family": segueID = "family"
+                        case "Friends": segueID = "friends"
+                        default: return
+                    }
+                    performSegue(withIdentifier: segueID, sender: item)
+                }
             }
         } else if indexPath.section == 1 && !recentHistory.isEmpty {
             performSegue(withIdentifier: "viewConvoCell", sender: recentHistory[indexPath.row])
@@ -280,7 +324,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
 
     // MARK: - Queue Deletion & Edit (Swipe for Quick Actions)
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        guard indexPath.section == 0 && !quickActions.isEmpty else { return nil }
+        guard indexPath.section == 0, indexPath.row < quickActions.count else { return nil }
         let item = quickActions[indexPath.row]
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in

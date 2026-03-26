@@ -186,20 +186,38 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                         let combinedText = baseText + newContent
                         
                         // CHECK LIMIT (3-4 Lines Logic)
-                        let MAX_BUBBLE_CHAR_LIMIT = 200 // Threshold for a new bubble
-                        if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                            // 1. Update and Finalize current bubble
-                            self.messages[lastIndex].text = combinedText
-                            self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                        // --- UPDATED BUBBLE SPLITTING LOGIC ---
+                        if combinedText.count > 240 { // Match new MAX_BUBBLE_CHAR_LIMIT
+                            // Find the last sentence boundary to split at
+                            let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                            var splitIndex: String.Index? = nil
                             
-                            // 2. Trigger AI Cleanup for this bubble
-                            self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                            let searchRange = combinedText.startIndex..<combinedText.index(combinedText.startIndex, offsetBy: 240)
+                            for boundary in boundaries {
+                                if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
+                                    if splitIndex == nil || range.lowerBound > splitIndex! {
+                                        splitIndex = range.lowerBound
+                                    }
+                                }
+                            }
                             
-                            // 3. Start NEW Bubble
-                            let newMsg = GroupNewChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                            self.messages.append(newMsg)
-                            self.reloadDataAndScroll()
-                            
+                            if let idx = splitIndex {
+                                let endOfSentence = combinedText.index(idx, offsetBy: 1)
+                                let firstPart = String(combinedText[...endOfSentence]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                let secondPart = String(combinedText[combinedText.index(after: endOfSentence)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                
+                                self.messages[lastIndex].text = firstPart
+                                self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                                self.processTextWithAppleIntelligence(text: firstPart, index: lastIndex)
+                                
+                                let newMsg = GroupNewChatMessage(text: secondPart.isEmpty ? "..." : secondPart, isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                                self.messages.append(newMsg)
+                                self.reloadDataAndScroll()
+                            } else {
+                                // No boundary found yet, just append
+                                self.messages[lastIndex].text = combinedText
+                                self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            }
                         } else {
                             // JUST APPEND
                             self.messages[lastIndex].text = combinedText

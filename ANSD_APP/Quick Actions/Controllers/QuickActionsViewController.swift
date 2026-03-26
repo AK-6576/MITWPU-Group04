@@ -18,6 +18,29 @@ class QuickActionsViewController: UITableViewController {
         self.title = "Quick Actions"
         tableView.tableHeaderView = UIView()
         tableView.sectionHeaderTopPadding = 0
+        
+        // Override the Storyboard native Push Segue with a programmatic Modal presentation
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(didTapAddButton))
+        self.navigationItem.rightBarButtonItem = addButton
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleDataUpdate() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadData()
+        }
+    }
+    
+    @objc private func didTapAddButton() {
+        if let addVC = self.storyboard?.instantiateViewController(withIdentifier: "AddCategoryVC") as? AddActionTableViewController {
+            let nav = UINavigationController(rootViewController: addVC)
+            self.present(nav, animated: true, completion: nil)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -41,12 +64,7 @@ class QuickActionsViewController: UITableViewController {
     // MARK: - Navigation & Segues
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // 1. Handle Add Screen Delegate
-        if let addVC = segue.destination as? AddActionTableViewController {
-            addVC.delegate = self
-        }
-        
-        // 2. Handle Chat Screen Navigation
+        // 1. Handle Chat Screen Navigation
         let chatSegueIDs = ["officeChat", "familyChat", "friendChat", "genericChat"]
         if let segueID = segue.identifier, chatSegueIDs.contains(segueID) {
             if let selectedItem = sender as? RoutineConversation {
@@ -153,13 +171,8 @@ class QuickActionsViewController: UITableViewController {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
             QuickActionsRepository.shared.deleteAction(item)
-            self.sections[indexPath.section].items.remove(at: indexPath.row)
-            
-            if self.sections[indexPath.section].items.isEmpty {
-                self.sections.remove(at: indexPath.section)
-                tableView.deleteSections([indexPath.section], with: .fade)
-            } else {
-                tableView.deleteRows(at: [indexPath], with: .fade)
+            DispatchQueue.main.async {
+                self.loadData()
             }
             completion(true)
         }
@@ -207,10 +220,3 @@ class QuickActionsViewController: UITableViewController {
 }
 
 // MARK: - Extensions
-
-extension QuickActionsViewController: AddActionDelegate {
-    func didCreateNewAction(_ action: RoutineConversation) {
-        QuickActionsRepository.shared.addAction(action)
-        loadData()
-    }
-}

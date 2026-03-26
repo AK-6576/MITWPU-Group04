@@ -12,12 +12,6 @@ import MessageUI
 import Contacts
 import FirebaseAuth
 
-// MARK: - Add Action Delegate
-// Protocol for notifying the delegate when a new action is created.
-protocol AddActionDelegate: AnyObject {
-    func didCreateNewAction(_ action: RoutineConversation)
-}
-
 // MARK: - Add Action View Controller
 // Manages the interface for adding new actions, including input validation and data persistence.
 class AddActionTableViewController: UITableViewController, ParticipantsSelectionDelegate, MFMessageComposeViewControllerDelegate {
@@ -29,11 +23,10 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     @IBOutlet weak var daysCell: UITableViewCell!
     @IBOutlet weak var categoryCell: UITableViewCell!
     
-    weak var delegate: AddActionDelegate?
     private var dayPopupButton: UIButton?
     private var categoryPopupButton: UIButton?
     
-    var selectedCategory: String = "Office"
+    var selectedCategory: String? = nil
     var selectedDays: Set<String> = ["Monday"]
     var selectedParticipants: [CNContact] = []
     
@@ -45,11 +38,19 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardDismissal()
-        participantsLabel.text = "None"
+        nameTextField.autocapitalizationType = .words
+        participantsLabel.text = "Add"
         saveButton.isEnabled = false
         setupDayCell()
         setupCategoryCell()
         nameTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
+        updateSaveButtonState()
+    }
+
+    private func updateSaveButtonState() {
+        let hasName = !(nameTextField.text?.isEmpty ?? true)
+        let hasCategory = selectedCategory != nil
+        saveButton.isEnabled = hasName && hasCategory
     }
 
     // MARK: - Day Selection Setup
@@ -100,7 +101,18 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         categoryPopupButton = createPopupButton()
         setupCategoryMenu()
         categoryCell.accessoryView = categoryPopupButton
-        updateCategory(selectedCategory)
+        
+        if let category = selectedCategory {
+            updateCategory(category)
+        } else {
+            if var config = categoryPopupButton?.configuration {
+                config.title = "Select"
+                config.image = UIImage(systemName: "chevron.up.chevron.down")
+                config.imagePlacement = .trailing
+                config.baseForegroundColor = .label
+                categoryPopupButton?.configuration = config
+            }
+        }
     }
     
     private func setupCategoryMenu() {
@@ -119,7 +131,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         }
         
         let plusImage = UIImage(systemName: "plus")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
-        let createOwnAction = UIAction(title: "Create Own...", image: plusImage) { [weak self] _ in
+        let createOwnAction = UIAction(title: "Create", image: plusImage) { [weak self] _ in
             self?.showCustomCategoryAlert()
         }
         
@@ -139,15 +151,30 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             let coloredImage = UIImage(systemName: iconName, withConfiguration: symbolConfig)?
                 .withTintColor(color, renderingMode: .alwaysOriginal)
             config.image = coloredImage
+            config.imagePlacement = .leading
             config.imagePadding = 8
             categoryPopupButton?.configuration = config
+        }
+        setupCategoryMenu() // Rebuild menu so the checkmark moves to the new selection
+        updateSaveButtonState()
+    }
+    
+    private func closeScreen() {
+        if let nav = navigationController, nav.viewControllers.count > 1 {
+            nav.popViewController(animated: true)
+        } else {
+            dismiss(animated: true, completion: nil)
         }
     }
     
     // MARK: - Save Action (Notification & Data)
     
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
-        guard let name = nameTextField.text, !name.isEmpty else { return }
+        guard let name = nameTextField.text, !name.isEmpty,
+              let selectedCategory = self.selectedCategory else { return }
+        
+        // Prevent double saving
+        saveButton.isEnabled = false
         
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
@@ -203,38 +230,49 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         // 1. Save to Repository (The Source of Truth)
         QuickActionsRepository.shared.addAction(newAction)
         
-        // 2. FIXED: Removed the delegate call here.
-        // Calling BOTH the repository and the delegate was creating 2 actions.
-        
-        // 3. Post notification so HomeViewController reloads its data from the repository
+        // 2. Post notification so HomeViewController reloads its data from the repository
         NotificationCenter.default.post(name: NSNotification.Name("ActionsUpdated"), object: nil)
         
-        // 4. Present SMS integration if there are participants
-        if !selectedParticipants.isEmpty && MFMessageComposeViewController.canSendText() {
-            let composeVC = MFMessageComposeViewController()
-            composeVC.messageComposeDelegate = self
-            
-            // Extract phone numbers
-            var phoneNumbers: [String] = []
-            for contact in selectedParticipants {
-                if let phoneNumber = contact.phoneNumbers.first?.value.stringValue {
-                    phoneNumbers.append(phoneNumber)
+        // 3. Present SMS integration if there are participants
+        if !selectedParticipants.isEmpty {
+            if MFMessageComposeViewController.canSendText() {
+                let composeVC = MFMessageComposeViewController()
+                composeVC.messageComposeDelegate = self
+                
+                // Extract phone numbers or explicitly fallback to name
+                var phoneNumbers: [String] = []
+                for contact in selectedParticipants {
+                    if let phoneNumber = contact.phoneNumbers.first?.value.stringValue, !phoneNumber.isEmpty {
+                        phoneNumbers.append(phoneNumber)
+                    } else {
+                        let fullName = "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces)
+                        if !fullName.isEmpty {
+                            phoneNumbers.append(fullName)
+                        }
+                    }
                 }
+                
+                composeVC.recipients = phoneNumbers
+                composeVC.body = "Join my \(selectedCategory) Quick Action session on \(dayStringForNotification) at \(timeString). Room Code: \(roomCode) - Generated by EchoWave ANSD App"
+                
+                self.present(composeVC, animated: true, completion: nil)
+            } else {
+                // Feature unavailable on Simulators or devices without Messages
+                let alert = UIAlertController(title: "Messages Unavailable", message: "iMessage cannot be sent from this device (e.g., Simulator). Quick Action has been saved.", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                    self.closeScreen()
+                }))
+                self.present(alert, animated: true)
             }
-            
-            composeVC.recipients = phoneNumbers
-            composeVC.body = "Join my \(selectedCategory) Quick Action session on \(dayStringForNotification) at \(timeString). Room Code: \(roomCode) - Generated by EchoWave ANSD App"
-            
-            self.present(composeVC, animated: true, completion: nil)
         } else {
-            navigationController?.popViewController(animated: true)
+            closeScreen()
         }
     }
     
     // MARK: - Message Composer Delegate
     func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
         controller.dismiss(animated: true) {
-            self.navigationController?.popViewController(animated: true)
+            self.closeScreen()
         }
     }
     
@@ -257,7 +295,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     func didSelectParticipants(_ contacts: [CNContact]) {
         self.selectedParticipants = contacts
         let names = contacts.map { "\($0.givenName) \($0.familyName)" }
-        participantsLabel.text = names.isEmpty ? "None" : names.joined(separator: ", ")
+        participantsLabel.text = names.isEmpty ? "Add" : names.joined(separator: ", ")
         participantsLabel.textColor = names.isEmpty ? .secondaryLabel : .label
     }
     
@@ -269,6 +307,11 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         config.imagePlacement = .trailing
         config.imagePadding = 8
         config.titleLineBreakMode = .byTruncatingTail
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 17)
+            return outgoing
+        }
         let button = UIButton(configuration: config)
         button.showsMenuAsPrimaryAction = true
         button.frame = CGRect(x: 0, y: 0, width: 160, height: 35)
@@ -314,6 +357,6 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     }
 
     @objc private func textDidChange(_ sender: UITextField) {
-        saveButton.isEnabled = !(sender.text?.isEmpty ?? true)
+        updateSaveButtonState()
     }
 }
