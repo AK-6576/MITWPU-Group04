@@ -108,7 +108,7 @@ class QuickActionTableViewCell: UITableViewCell {
         cardContainer.addSubview(rightStackView)
 
         // ── Internal Separator ─────────────────────────
-        separator.backgroundColor                     = UIColor.systemGray5
+        separator.backgroundColor                     = UIColor.systemGray4
         separator.translatesAutoresizingMaskIntoConstraints = false
         cardContainer.addSubview(separator)
 
@@ -188,7 +188,7 @@ class QuickActionTableViewCell: UITableViewCell {
         
         if outlinelayer.superlayer == nil {
             outlinelayer.fillColor = UIColor.clear.cgColor
-            outlinelayer.strokeColor = UIColor.systemGray4.cgColor
+            outlinelayer.strokeColor = UIColor.systemGray3.cgColor
             outlinelayer.lineWidth = 0.5
             cardContainer.layer.addSublayer(outlinelayer)
         }
