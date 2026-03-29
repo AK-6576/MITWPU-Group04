@@ -42,6 +42,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     var isRecording = false
     var isRestarting = false
     var consumedTranscriptOffset = 0
+    var cleanedMessageIndices = Set<Int>()
     var myName: String {
         UserDefaults.standard.string(forKey: "user_first_name") ?? UIDevice.current.name
     }
@@ -393,6 +394,9 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     // MARK: - Apple Intelligence Logic
     private func processTextWithAppleIntelligence(text: String, index: Int) {
+        if cleanedMessageIndices.contains(index) { return }
+        cleanedMessageIndices.insert(index)
+        
         Task {
             do {
                 let prompt = """

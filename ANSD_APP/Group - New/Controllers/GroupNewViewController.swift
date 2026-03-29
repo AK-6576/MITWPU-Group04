@@ -39,6 +39,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         
         var otherPersonName = "Guest"
         var messages: [GroupNewChatMessage] = []
+        var cleanedMessageIndices = Set<Int>()
         var currentSessionID: String = ""
         
     // --- FIXED PROPERTY DECLARATIONS ---
@@ -260,6 +261,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     
     // MARK: - Apple Intelligence Logic
     private func processTextWithAppleIntelligence(text: String, index: Int) {
+        if cleanedMessageIndices.contains(index) { return }
+        cleanedMessageIndices.insert(index)
+        
         Task {
             do {
                 let prompt = """

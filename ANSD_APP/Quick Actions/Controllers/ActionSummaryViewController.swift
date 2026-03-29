@@ -106,18 +106,19 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     
     // MARK: - Data Preparation
     private func prepareParticipantsFromMessages() {
-        var uniqueSenders = [String: String]() // senderID: name
+        var uniqueSenders = [String: String]() // standardizedName: exactName
         var order = [String]()
         
         for msg in transcriptMessages {
-            if uniqueSenders[msg.senderID] == nil {
-                uniqueSenders[msg.senderID] = msg.sender
-                order.append(msg.senderID)
+            let standardizedName = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if uniqueSenders[standardizedName] == nil {
+                uniqueSenders[standardizedName] = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines)
+                order.append(standardizedName)
             }
         }
         
-        self.participants = order.map { id in
-            ParticipantData(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis...")
+        self.participants = order.map { key in
+            ParticipantData(name: uniqueSenders[key] ?? "Unknown", senderID: UUID().uuidString, summary: "Waiting for analysis...")
         }
         tableView.reloadData()
     }
@@ -173,8 +174,16 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         Task {
             do {
                 let prompt = """
+                You are a professional assistant specialized in conversation analysis.
                 Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript. 
-                Summarize the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point as a standalone sentence. 
+                
+                STRICT CONSTRAINTS:
+                - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
+                - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
+                - If the transcript is empty or meaningless, simply return empty notes and an empty participants array.
+                - The JSON output must perfectly adhere to the schema with no extra text.
+                
+                Summarize the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point as a standalone sentence. 
                 
                 The JSON must perfectly match this structure:
                 {
@@ -184,7 +193,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
                   ]
                 }
                 
-                CRITICAL: You MUST use the EXACT speaker names exactly as they appear in the transcript below for the "name" field. Do not invent new names or use "Speaker 1".
+                CRITICAL: You MUST use the EXACT speaker names exactly as they appear in the transcript below for the "name" field. Do not invent new names or duplicate participants.
                 
                 TRANSCRIPT:
                 \(fullTranscript)

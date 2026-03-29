@@ -259,11 +259,18 @@ class ChatHistoryViewController: UIViewController {
         Task {
             do {
                 let prompt = """
-                Analyze the following transcript.
+                You are an expert transcriber and conversation analyst. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
                 
-                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use symbols like '-', '*', or '#' for listing things. Provide each point on a new line as a standalone sentence.
+                STRICT CONSTRAINTS:
+                - Strictly output only the requested sections (e.g., "NOTES:", "SUMMARY_...:").
+                - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
+                - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
+                - If the transcript is empty or meaningless, simply return an empty string.
+                - Provide exact sections explicitly labeled with standard capitalization. Do not output anything that doesn't belong to a section.
                 
-                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences.
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point on a new line as a standalone sentence.
+                
+                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences. Do not duplicate participants!
                 
                 TRANSCRIPT:
                 \(fullTranscript)

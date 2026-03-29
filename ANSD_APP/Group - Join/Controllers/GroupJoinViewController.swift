@@ -40,6 +40,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     var isRestarting = false
     
     var messages: [GroupJoinChatMessage] = []
+    var cleanedMessageIndices = Set<Int>()
     
     // Tracks the character offset into the full cumulative transcript string to extract only new speech.
     var consumedTranscriptOffset = 0
@@ -257,6 +258,9 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     // MARK: - Apple Intelligence Logic
     private func processTextWithAppleIntelligence(text: String, index: Int) {
+        if cleanedMessageIndices.contains(index) { return }
+        cleanedMessageIndices.insert(index)
+        
         Task {
             do {
                 let prompt = """

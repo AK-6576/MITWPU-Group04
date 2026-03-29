@@ -84,18 +84,19 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - Logic
     private func prepareParticipantsFromMessages() {
-        var uniqueSenders = [String: String]() // senderID: name
+        var uniqueSenders = [String: String]() // standardizedName: exactName
         var order = [String]()
         
         for msg in transcriptMessages {
-            if uniqueSenders[msg.senderID] == nil {
-                uniqueSenders[msg.senderID] = msg.sender
-                order.append(msg.senderID)
+            let standardizedName = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if uniqueSenders[standardizedName] == nil {
+                uniqueSenders[standardizedName] = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines)
+                order.append(standardizedName)
             }
         }
         
-        participantsData = order.map { id in
-            GroupJoinParticipants(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis...", avatarTitle: "")
+        participantsData = order.map { key in
+            GroupJoinParticipants(name: uniqueSenders[key] ?? "Unknown", senderID: UUID().uuidString, summary: "Waiting for analysis...", avatarTitle: "")
         }
         GroupJoinTableView.reloadData()
     }
@@ -113,17 +114,18 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
         Task {
             do {
                 let prompt = """
-                You are a professional assistant specialized in conversation analysis. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
+                You are an expert transcriber and conversation analyst. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
                 
                 STRICT CONSTRAINTS:
                 - Strictly output only the requested sections (e.g., "NOTES:", "SUMMARY_...:").
                 - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
                 - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
-                - If information is missing or unclear, omit it rather than speculating.
+                - If the transcript is empty or meaningless, simply return an empty string.
+                - Provide exact sections explicitly labeled with standard capitalization. Do not output anything that doesn't belong to a section.
                 
-                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. If you want points, use bullets (•) or numbers (1, 2, ...). Provide each point on a new line as a standalone sentence.
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point on a new line as a standalone sentence.
                 
-                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences.
+                Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences. Do not duplicate participants!
                 
                 TRANSCRIPT:
                 \(text)
