@@ -73,6 +73,7 @@ class QuickActionsViewController: UITableViewController {
                     chatVC.category = selectedItem.categoryTitle
                     chatVC.roomCode = selectedItem.roomCode
                     chatVC.participantNames = selectedItem.participantNames
+                    chatVC.hostUID = selectedItem.hostUID // Propagate hostUID
                 }
             }
         }

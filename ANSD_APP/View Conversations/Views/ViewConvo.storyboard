@@ -152,7 +152,7 @@
                                                             <rect key="frame" x="16" y="6" width="408" height="190.66666666666666"/>
                                                             <subviews>
                                                                 <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="NdY-ZO-Eai">
-                                                                    <rect key="frame" x="12" y="6" width="384" height="178.66666666666666"/>
+                                                                    <rect key="frame" x="12" y="8" width="384" height="174.66666666666666"/>
                                                                     <subviews>
                                                                         <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="vc-row1">
                                                                             <rect key="frame" x="0.0" y="0.0" width="384" height="44"/>
@@ -196,14 +196,14 @@
                                                                                         <constraint firstAttribute="width" constant="24" id="vc-w-img2"/>
                                                                                     </constraints>
                                                                                 </imageView>
-                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" ambiguous="YES" text="Date" textAlignment="natural" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vc-lbl2">
-                                                                                    <rect key="frame" x="31.999999999999986" y="12.333333333333334" width="249.66666666666663" height="19.333333333333329"/>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Date" textAlignment="natural" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vc-lbl2">
+                                                                                    <rect key="frame" x="32" y="12.333333333333336" width="34.333333333333343" height="19.333333333333332"/>
                                                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <nil key="textColor"/>
                                                                                     <nil key="highlightedColor"/>
                                                                                 </label>
-                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" ambiguous="YES" text="30 Mar 2026" textAlignment="right" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="sbh-3R-V1l">
-                                                                                    <rect key="frame" x="289.66666666666669" y="12.333333333333334" width="94.333333333333314" height="19.333333333333329"/>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" text="30 Mar 2026" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="sbh-3R-V1l">
+                                                                                    <rect key="frame" x="74.333333333333343" y="12.333333333333336" width="309.66666666666663" height="19.333333333333332"/>
                                                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <color key="textColor" systemColor="secondaryLabelColor"/>
                                                                                     <nil key="highlightedColor"/>
@@ -231,14 +231,14 @@
                                                                                         <constraint firstAttribute="width" constant="24" id="vc-w-img3"/>
                                                                                     </constraints>
                                                                                 </imageView>
-                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" ambiguous="YES" text="Time" textAlignment="natural" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vc-lbl3">
-                                                                                    <rect key="frame" x="32" y="12.333333333333327" width="277.66666666666669" height="19.333333333333329"/>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Time" textAlignment="natural" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vc-lbl3">
+                                                                                    <rect key="frame" x="32" y="12.333333333333329" width="35.666666666666657" height="19.333333333333332"/>
                                                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <nil key="textColor"/>
                                                                                     <nil key="highlightedColor"/>
                                                                                 </label>
-                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" ambiguous="YES" text="11:28 AM" textAlignment="right" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="l9Z-OH-mJg">
-                                                                                    <rect key="frame" x="317.66666666666669" y="12.333333333333327" width="66.333333333333314" height="19.333333333333329"/>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" text="11:28 AM" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="l9Z-OH-mJg">
+                                                                                    <rect key="frame" x="75.666666666666657" y="12.333333333333329" width="308.33333333333337" height="19.333333333333332"/>
                                                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <color key="textColor" systemColor="secondaryLabelColor"/>
                                                                                     <nil key="highlightedColor"/>
@@ -256,7 +256,7 @@
                                                                             </constraints>
                                                                         </view>
                                                                         <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="vc-row4">
-                                                                            <rect key="frame" x="0.0" y="133.66666666666666" width="384" height="45"/>
+                                                                            <rect key="frame" x="0.0" y="133.66666666666666" width="384" height="41"/>
                                                                             <subviews>
                                                                                 <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="location" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="vc-img4">
                                                                                     <rect key="frame" x="0.0" y="11.333333333333339" width="24" height="22.333333333333332"/>
@@ -266,14 +266,14 @@
                                                                                         <constraint firstAttribute="width" constant="24" id="vc-w-img4"/>
                                                                                     </constraints>
                                                                                 </imageView>
-                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" ambiguous="YES" text="Location" textAlignment="natural" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vc-lbl4">
-                                                                                    <rect key="frame" x="32" y="12.666666666666684" width="263.66666666666669" height="19.333333333333329"/>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Location" textAlignment="natural" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vc-lbl4">
+                                                                                    <rect key="frame" x="32" y="10.666666666666686" width="62" height="19.333333333333332"/>
                                                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <nil key="textColor"/>
                                                                                     <nil key="highlightedColor"/>
                                                                                 </label>
-                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" ambiguous="YES" text="Pune, India" textAlignment="right" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="AKH-lA-1pY">
-                                                                                    <rect key="frame" x="303.66666666666669" y="12.666666666666684" width="80.333333333333314" height="19.333333333333329"/>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" text="Pune, India" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="AKH-lA-1pY">
+                                                                                    <rect key="frame" x="102" y="10.666666666666686" width="282" height="19.333333333333332"/>
                                                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                                                                     <color key="textColor" systemColor="secondaryLabelColor"/>
                                                                                     <nil key="highlightedColor"/>
@@ -295,16 +295,25 @@
                                                                     </constraints>
                                                                 </stackView>
                                                             </subviews>
-                                                            <color key="backgroundColor" systemColor="secondarySystemGroupedBackgroundColor"/>
+                                                            <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                             <constraints>
-                                                                <constraint firstItem="NdY-ZO-Eai" firstAttribute="top" secondItem="Dnh-ex-jut" secondAttribute="top" constant="6" id="CPC-k9-wck"/>
+                                                                <constraint firstItem="NdY-ZO-Eai" firstAttribute="top" secondItem="Dnh-ex-jut" secondAttribute="top" constant="8" id="CPC-k9-wck"/>
                                                                 <constraint firstItem="NdY-ZO-Eai" firstAttribute="leading" secondItem="Dnh-ex-jut" secondAttribute="leading" constant="12" id="U67-qX-lFE"/>
                                                                 <constraint firstAttribute="trailing" secondItem="NdY-ZO-Eai" secondAttribute="trailing" constant="12" id="XGw-4h-a7k"/>
-                                                                <constraint firstAttribute="bottom" secondItem="NdY-ZO-Eai" secondAttribute="bottom" constant="6" id="yEt-Xu-4q7"/>
+                                                                <constraint firstAttribute="bottom" secondItem="NdY-ZO-Eai" secondAttribute="bottom" constant="8" id="yEt-Xu-4q7"/>
                                                             </constraints>
                                                             <userDefinedRuntimeAttributes>
                                                                 <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                                                    <integer key="value" value="12"/>
+                                                                    <integer key="value" value="16"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowOpacity">
+                                                                    <real key="value" value="0.050000000000000003"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="size" keyPath="layer.shadowOffset">
+                                                                    <size key="value" width="0.0" height="2"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowRadius">
+                                                                    <integer key="value" value="4"/>
                                                                 </userDefinedRuntimeAttribute>
                                                             </userDefinedRuntimeAttributes>
                                                         </view>
@@ -373,13 +382,13 @@
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <subviews>
                                                         <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="HOQ-4o-pQE">
-                                                            <rect key="frame" x="20" y="6" width="400" height="73"/>
+                                                            <rect key="frame" x="16" y="6" width="408" height="73"/>
                                                             <subviews>
                                                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="nWV-Ny-Y9X">
-                                                                    <rect key="frame" x="16" y="16" width="40" height="40"/>
+                                                                    <rect key="frame" x="12" y="16" width="40" height="40"/>
                                                                     <subviews>
                                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="SP" textAlignment="center" lineBreakMode="tailTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="avatar-initials">
-                                                                            <rect key="frame" x="9.6666666666666643" y="10.333333333333334" width="21" height="19.333333333333329"/>
+                                                                            <rect key="frame" x="9.3333333333333357" y="10.333333333333334" width="21" height="19.333333333333329"/>
                                                                             <fontDescription key="fontDescription" type="boldSystem" pointSize="16"/>
                                                                             <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                         </label>
@@ -398,11 +407,11 @@
                                                                     </userDefinedRuntimeAttributes>
                                                                 </view>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Participant details go here..." textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" translatesAutoresizingMaskIntoConstraints="NO" id="38g-oR-Drc">
-                                                                    <rect key="frame" x="68" y="16" width="316" height="18"/>
+                                                                    <rect key="frame" x="64" y="16" width="328" height="18"/>
                                                                     <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                                                 </label>
                                                             </subviews>
-                                                            <color key="backgroundColor" systemColor="secondarySystemGroupedBackgroundColor"/>
+                                                            <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                             <constraints>
                                                                 <constraint firstItem="nWV-Ny-Y9X" firstAttribute="top" secondItem="HOQ-4o-pQE" secondAttribute="top" constant="16" id="1d1-uJ-bmA"/>
                                                                 <constraint firstItem="38g-oR-Drc" firstAttribute="leading" secondItem="nWV-Ny-Y9X" secondAttribute="trailing" constant="12" id="7iR-F6-Gzd"/>
@@ -410,20 +419,29 @@
                                                                 <constraint firstAttribute="trailing" secondItem="38g-oR-Drc" secondAttribute="trailing" constant="16" id="ILz-z3-aSw"/>
                                                                 <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="nWV-Ny-Y9X" secondAttribute="bottom" constant="16" id="iaj-F2-qCD"/>
                                                                 <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="38g-oR-Drc" secondAttribute="bottom" constant="16" id="pJ1-aQ-yfi"/>
-                                                                <constraint firstItem="nWV-Ny-Y9X" firstAttribute="leading" secondItem="HOQ-4o-pQE" secondAttribute="leading" constant="16" id="rsB-u7-8ju"/>
+                                                                <constraint firstItem="nWV-Ny-Y9X" firstAttribute="leading" secondItem="HOQ-4o-pQE" secondAttribute="leading" constant="12" id="rsB-u7-8ju"/>
                                                             </constraints>
                                                             <userDefinedRuntimeAttributes>
                                                                 <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                                                    <integer key="value" value="12"/>
+                                                                    <integer key="value" value="16"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowOpacity">
+                                                                    <real key="value" value="0.050000000000000003"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="size" keyPath="layer.shadowOffset">
+                                                                    <size key="value" width="0.0" height="2"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowRadius">
+                                                                    <integer key="value" value="4"/>
                                                                 </userDefinedRuntimeAttribute>
                                                             </userDefinedRuntimeAttributes>
                                                         </view>
                                                     </subviews>
                                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="trailing" secondItem="HOQ-4o-pQE" secondAttribute="trailing" constant="20" id="1aK-YX-ymH"/>
+                                                        <constraint firstAttribute="trailing" secondItem="HOQ-4o-pQE" secondAttribute="trailing" constant="16" id="1aK-YX-ymH"/>
                                                         <constraint firstItem="HOQ-4o-pQE" firstAttribute="top" secondItem="TZ4-js-yof" secondAttribute="top" constant="6" id="Q3E-KS-VVX"/>
-                                                        <constraint firstItem="HOQ-4o-pQE" firstAttribute="leading" secondItem="TZ4-js-yof" secondAttribute="leading" constant="20" id="oMw-HI-a6f"/>
+                                                        <constraint firstItem="HOQ-4o-pQE" firstAttribute="leading" secondItem="TZ4-js-yof" secondAttribute="leading" constant="16" id="oMw-HI-a6f"/>
                                                         <constraint firstAttribute="bottom" secondItem="HOQ-4o-pQE" secondAttribute="bottom" constant="6" id="xSp-CP-8hX"/>
                                                     </constraints>
                                                 </tableViewCellContentView>
@@ -482,26 +500,35 @@
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <subviews>
                                                         <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Nbh-4K-itg">
-                                                            <rect key="frame" x="20" y="6" width="400" height="67"/>
+                                                            <rect key="frame" x="16" y="6" width="408" height="67"/>
                                                             <subviews>
                                                                 <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" scrollEnabled="NO" text="Add notes about the conversation here..." textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="5ue-iT-YoD">
-                                                                    <rect key="frame" x="16" y="16" width="368" height="35"/>
+                                                                    <rect key="frame" x="12" y="16" width="384" height="35"/>
                                                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <color key="textColor" systemColor="labelColor"/>
                                                                     <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                                                     <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                                                                 </textView>
                                                             </subviews>
-                                                            <color key="backgroundColor" systemColor="secondarySystemGroupedBackgroundColor"/>
+                                                            <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                             <constraints>
                                                                 <constraint firstItem="5ue-iT-YoD" firstAttribute="top" secondItem="Nbh-4K-itg" secondAttribute="top" constant="16" id="TOP-Lp-K9O"/>
-                                                                <constraint firstAttribute="trailing" secondItem="5ue-iT-YoD" secondAttribute="trailing" constant="16" id="gid-0l-jpn"/>
-                                                                <constraint firstItem="5ue-iT-YoD" firstAttribute="leading" secondItem="Nbh-4K-itg" secondAttribute="leading" constant="16" id="glJ-YG-3Ja"/>
+                                                                <constraint firstAttribute="trailing" secondItem="5ue-iT-YoD" secondAttribute="trailing" constant="12" id="gid-0l-jpn"/>
+                                                                <constraint firstItem="5ue-iT-YoD" firstAttribute="leading" secondItem="Nbh-4K-itg" secondAttribute="leading" constant="12" id="glJ-YG-3Ja"/>
                                                                 <constraint firstAttribute="bottom" secondItem="5ue-iT-YoD" secondAttribute="bottom" constant="16" id="kJx-UE-BLx"/>
                                                             </constraints>
                                                             <userDefinedRuntimeAttributes>
                                                                 <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                                                    <integer key="value" value="12"/>
+                                                                    <integer key="value" value="16"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowOpacity">
+                                                                    <real key="value" value="0.050000000000000003"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="size" keyPath="layer.shadowOffset">
+                                                                    <size key="value" width="0.0" height="2"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowRadius">
+                                                                    <integer key="value" value="4"/>
                                                                 </userDefinedRuntimeAttribute>
                                                             </userDefinedRuntimeAttributes>
                                                         </view>
@@ -510,8 +537,8 @@
                                                     <constraints>
                                                         <constraint firstItem="Nbh-4K-itg" firstAttribute="top" secondItem="YYm-Dt-4qo" secondAttribute="top" constant="6" id="Yml-gz-Ctd"/>
                                                         <constraint firstAttribute="bottom" secondItem="Nbh-4K-itg" secondAttribute="bottom" constant="6" id="dBQ-jh-kyA"/>
-                                                        <constraint firstAttribute="trailing" secondItem="Nbh-4K-itg" secondAttribute="trailing" constant="20" id="oJS-dN-kW1"/>
-                                                        <constraint firstItem="Nbh-4K-itg" firstAttribute="leading" secondItem="YYm-Dt-4qo" secondAttribute="leading" constant="20" id="vVr-nI-PPN"/>
+                                                        <constraint firstAttribute="trailing" secondItem="Nbh-4K-itg" secondAttribute="trailing" constant="16" id="oJS-dN-kW1"/>
+                                                        <constraint firstItem="Nbh-4K-itg" firstAttribute="leading" secondItem="YYm-Dt-4qo" secondAttribute="leading" constant="16" id="vVr-nI-PPN"/>
                                                     </constraints>
                                                 </tableViewCellContentView>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>

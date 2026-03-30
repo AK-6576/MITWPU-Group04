@@ -206,7 +206,21 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             }
         }
         
-        let participantNames = selectedParticipants.map { "\($0.givenName) \($0.familyName)" }
+        let participantNames = selectedParticipants.map { "\($0.givenName) \($0.familyName)".trimmingCharacters(in: .whitespaces) }
+        
+        var participantEmails: [String] = []
+        var participantPhones: [String] = []
+        
+        for contact in selectedParticipants {
+            // Extract emails
+            for email in contact.emailAddresses {
+                participantEmails.append(email.value as String)
+            }
+            // Extract phones (sanitized)
+            for phone in contact.phoneNumbers {
+                participantPhones.append(phone.value.stringValue)
+            }
+        }
         
         // Generate a 4-digit room code for this quick action
         let roomCode = String(Int.random(in: 1000...9999))
@@ -224,6 +238,8 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             timeImage: "clock",
             roomCode: roomCode,
             participantNames: participantNames,
+            participantEmails: participantEmails,
+            participantPhones: participantPhones,
             hostUID: Auth.auth().currentUser?.uid
         )
         

@@ -20,8 +20,8 @@ protocol SummaryCardDelegate: AnyObject {
 // MARK: - Styling Helper
 private func styleCard(view: UIView?) {
     guard let card = view else { return }
-    card.layer.cornerRadius = 12
-    card.backgroundColor = .secondarySystemGroupedBackground
+    card.layer.cornerRadius = 16
+    card.backgroundColor = .systemBackground
     card.layer.shadowColor = UIColor.black.cgColor
     card.layer.shadowOpacity = 0.06
     card.layer.shadowOffset = CGSize(width: 0, height: 3)

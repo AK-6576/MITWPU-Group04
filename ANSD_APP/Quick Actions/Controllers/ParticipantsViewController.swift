@@ -138,7 +138,7 @@ class ParticipantsViewController: UITableViewController, UISearchResultsUpdating
     
     // Function - Fetches contact details from the store, matches them with initially selected names, and updates the table view.
     func getContacts(from store: CNContactStore) {
-        let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactIdentifierKey, CNContactPhoneNumbersKey] as [CNKeyDescriptor]
+        let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactIdentifierKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey] as [CNKeyDescriptor]
         let request = CNContactFetchRequest(keysToFetch: keys)
         request.sortOrder = .userDefault
 

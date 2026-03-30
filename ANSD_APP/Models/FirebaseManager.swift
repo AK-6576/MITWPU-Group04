@@ -290,6 +290,8 @@ class FirebaseManager {
             "date": action.date ?? "",
             "description": action.description ?? "",
             "participantNames": action.participantNames,
+            "participantEmails": action.participantEmails ?? [],
+            "participantPhones": action.participantPhones ?? [],
             "lastUpdated": ServerValue.timestamp()
         ]
         
@@ -307,21 +309,28 @@ class FirebaseManager {
             }
         }
         
-        // 4. Also save to each participant's own quick_actions node (by EMAIL lookup)
-        for participant in action.participantNames {
-            let trimmed = participant.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.contains("@") { // Probable email
-                lookupUID(byEmail: trimmed) { [weak self] participantUID in
-                    guard let self = self, let uid = participantUID else { return }
-                    self.databaseRef.child("users").child(uid).child("quick_actions").child(safeCode).setValue(metadata)
-                }
-            } else {
-                // Fallback to name lookup (less secure)
-                lookupUID(byFirstName: trimmed) { [weak self] participantUID in
-                    guard let self = self, let uid = participantUID else { return }
-                    self.databaseRef.child("users").child(uid).child("quick_actions").child(safeCode).setValue(metadata)
-                }
-            }
+        // 4. SYNC TO PARTICIPANTS' PERSONAL NODES (Multi-Index Lookup)
+        
+        // Helper to perform the actual write to a discovered UID
+        let syncToActionPersonalNode: (String?) -> Void = { [weak self] uid in
+            guard let self = self, let discoveredUID = uid else { return }
+            let safeParticipantUID = self.sanitizeKey(discoveredUID)
+            self.databaseRef.child("users").child(safeParticipantUID).child("quick_actions").child(safeCode).setValue(metadata)
+        }
+        
+        // 4a. Sync by Email
+        for email in action.participantEmails ?? [] {
+            lookupUID(byEmail: email, completion: syncToActionPersonalNode)
+        }
+        
+        // 4b. Sync by Phone
+        for phone in action.participantPhones ?? [] {
+            lookupUID(byPhone: phone, completion: syncToActionPersonalNode)
+        }
+        
+        // 4c. Sync by Full Name (Fallback for dummy emails)
+        for name in action.participantNames {
+            lookupUID(byFullName: name, completion: syncToActionPersonalNode)
         }
     }
     
@@ -440,22 +449,36 @@ class FirebaseManager {
                 // 5. If new user, save initial profile to RTDB
                 let isNewUser = authResult?.additionalUserInfo?.isNewUser ?? false
                 if isNewUser {
+                    let firstName = user.profile?.givenName ?? ""
+                    let lastName = user.profile?.familyName ?? ""
+                    let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+                    let email = firebaseUser.email ?? ""
+                    
                     let userProfile: [String: Any] = [
-                        "firstName": user.profile?.givenName ?? "",
-                        "lastName": user.profile?.familyName ?? "",
-                        "email": firebaseUser.email ?? "",
+                        "firstName": firstName,
+                        "lastName": lastName,
+                        "email": email,
+                        "phoneNumber": firebaseUser.phoneNumber ?? "",
                         "createdAt": ServerValue.timestamp()
                     ]
                     
                     let safeUID = self.sanitizeKey(firebaseUser.uid)
-                    let safeEmail = self.sanitizeKey(firebaseUser.email?.lowercased() ?? "")
+                    let safeEmail = self.sanitizeKey(email.lowercased())
+                    let safeFullName = self.sanitizeKey(fullName.lowercased())
+                    let safePhone = self.sanitizeKey(firebaseUser.phoneNumber ?? "")
                     
-                    // Save standard profile
+                    // 1. Save standard profile
                     self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile)
                     
-                    // Save to 'users_by_email' index
+                    // 2. Update all lookup indices
                     if !safeEmail.isEmpty {
                         self.databaseRef.child("users_by_email").child(safeEmail).setValue(firebaseUser.uid)
+                    }
+                    if !safeFullName.isEmpty {
+                        self.databaseRef.child("users_by_fullname").child(safeFullName).setValue(firebaseUser.uid)
+                    }
+                    if !safePhone.isEmpty {
+                        self.databaseRef.child("users_by_phone").child(safePhone).setValue(firebaseUser.uid)
                     }
                 }
                 
@@ -481,30 +504,33 @@ class FirebaseManager {
                 return
             }
             
+            let firstName = details["firstName"] ?? ""
+            let lastName = details["lastName"] ?? ""
+            let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+            let phoneNumber = details["phoneNumber"] ?? ""
+            
             let userProfile: [String: Any] = [
-                "firstName": details["firstName"] ?? "",
-                "lastName": details["lastName"] ?? "",
+                "firstName": firstName,
+                "lastName": lastName,
                 "email": email,
+                "phoneNumber": phoneNumber,
                 "createdAt": ServerValue.timestamp()
             ]
             
             let safeUID = self.sanitizeKey(user.uid)
             let safeEmail = self.sanitizeKey(email.lowercased())
+            let safeFullName = self.sanitizeKey(fullName.lowercased())
+            let safePhone = self.sanitizeKey(phoneNumber)
             
             // 1. Save standard profile
             self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile)
             
-            // 2. Save to 'users_by_email' index for secure lookup (Non-fatal)
-            self.databaseRef.child("users_by_email").child(safeEmail).setValue(user.uid) { error, _ in
-                if let error = error {
-                    print("Firebase: WARNING - Failed to update email index: \(error.localizedDescription)")
-                    print("Firebase: Check your Realtime Database security rules for /users_by_email")
-                    // Still complete with success because the user and profile were created
-                    completion(.success(user))
-                } else {
-                    completion(.success(user))
-                }
-            }
+            // 2. Update lookup indices (Email is key for Account, but we index all for sync)
+            if !safeEmail.isEmpty { self.databaseRef.child("users_by_email").child(safeEmail).setValue(user.uid) }
+            if !safeFullName.isEmpty { self.databaseRef.child("users_by_fullname").child(safeFullName).setValue(user.uid) }
+            if !safePhone.isEmpty { self.databaseRef.child("users_by_phone").child(safePhone).setValue(user.uid) }
+            
+            completion(.success(user))
         }
     }
     
@@ -576,8 +602,22 @@ class FirebaseManager {
     
     /// NEW: Search by Email (Precise) instead of First Name (Ambiguous)
     func lookupUID(byEmail email: String, completion: @escaping (String?) -> Void) {
-        let safeEmail = sanitizeKey(email.lowercased())
+        let safeEmail = sanitizeKey(email.lowercased().trimmingCharacters(in: .whitespacesAndNewlines))
         databaseRef.child("users_by_email").child(safeEmail).observeSingleEvent(of: .value) { snapshot in
+            completion(snapshot.value as? String)
+        }
+    }
+    
+    func lookupUID(byPhone phone: String, completion: @escaping (String?) -> Void) {
+        let safePhone = sanitizeKey(phone.trimmingCharacters(in: .whitespacesAndNewlines))
+        databaseRef.child("users_by_phone").child(safePhone).observeSingleEvent(of: .value) { snapshot in
+            completion(snapshot.value as? String)
+        }
+    }
+    
+    func lookupUID(byFullName name: String, completion: @escaping (String?) -> Void) {
+        let safeName = sanitizeKey(name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines))
+        databaseRef.child("users_by_fullname").child(safeName).observeSingleEvent(of: .value) { snapshot in
             completion(snapshot.value as? String)
         }
     }

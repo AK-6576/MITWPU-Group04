@@ -81,6 +81,8 @@ class QuickActionsRepository {
         }
         
         let hostUID = dict["hostUID"] as? String
+        let participantEmails = dict["participantEmails"] as? [String] ?? []
+        let participantPhones = dict["participantPhones"] as? [String] ?? []
         
         let action = RoutineConversation(
             id: id,
@@ -95,6 +97,8 @@ class QuickActionsRepository {
             timeImage: timeImage,
             roomCode: roomCode,
             participantNames: participantNames,
+            participantEmails: participantEmails,
+            participantPhones: participantPhones,
             hostUID: hostUID
         )
         

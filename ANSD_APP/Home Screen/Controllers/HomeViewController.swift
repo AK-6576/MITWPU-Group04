@@ -158,7 +158,8 @@ class HomeViewController: UIViewController {
                         chatVC.sessionTitle = "\(selectedItem.conversationTopic) Session" // Use topic as title
                         chatVC.category = selectedItem.categoryTitle
                         chatVC.roomCode = selectedItem.roomCode
-                        chatVC.participantNames = selectedItem.participantNames
+                        chatVC.participantNames = selectedItem.participantNames ?? []
+                        chatVC.hostUID = selectedItem.hostUID
                     }
                 }
             }
@@ -303,8 +304,17 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 // ROLE-BASED NAVIGATION
                 let currentUID = Auth.auth().currentUser?.uid
                 if let host = item.hostUID, host != currentUID {
-                    // I am a participant -> Go to Join screen with Room ID pre-filled
-                    performSegue(withIdentifier: "showJoinConversation", sender: item)
+                    // I am a participant -> Push ActionJoinViewController directly from Action storyboard
+                    // This ensures participants join the same room as the host without legacy generic join logic.
+                    let storyboard = UIStoryboard(name: "Action", bundle: nil)
+                    if let chatVC = storyboard.instantiateViewController(withIdentifier: "ActionNewViewController") as? ActionJoinViewController {
+                        chatVC.sessionTitle = "\(item.conversationTopic) Session"
+                        chatVC.category = item.categoryTitle
+                        chatVC.roomCode = item.roomCode
+                        chatVC.participantNames = item.participantNames ?? []
+                        chatVC.hostUID = item.hostUID
+                        self.navigationController?.pushViewController(chatVC, animated: true)
+                    }
                 } else {
                     // I am the host (or hostUID missing) -> Go to direct start/join transcription
                     var segueID = ""

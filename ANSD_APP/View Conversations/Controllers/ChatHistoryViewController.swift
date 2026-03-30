@@ -68,8 +68,8 @@ class ViewSummaryCardCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         backgroundColor = .clear
-        mainCardView.backgroundColor = .secondarySystemGroupedBackground
-        mainCardView.layer.cornerRadius = 12
+        mainCardView.backgroundColor = .systemBackground
+        mainCardView.layer.cornerRadius = 16
         
         // Add shadow for "floating card" effect
         mainCardView.layer.shadowColor = UIColor.black.cgColor
@@ -96,8 +96,8 @@ class ViewParticipantsCardCell: UITableViewCell {
         contentView.backgroundColor = .clear
         
         // Standard Card Styling
-        mainCardView.layer.cornerRadius = 12
-        mainCardView.backgroundColor = .secondarySystemGroupedBackground
+        mainCardView.layer.cornerRadius = 16
+        mainCardView.backgroundColor = .systemBackground
         mainCardView.layer.shadowColor = UIColor.black.cgColor
         mainCardView.layer.shadowOpacity = 0.06
         mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)

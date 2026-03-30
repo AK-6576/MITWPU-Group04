@@ -31,6 +31,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     var participantNames: [String] = []
+    var hostUID: String?
     
     // Core Managers
     private let firebase = FirebaseManager.shared
@@ -145,33 +146,36 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     // MARK: - Firebase Integration
     private func startFirebaseSession() {
-        guard let code = roomCode else {
-            // print("DEBUG: No Room Code passed to ActionJoinViewController")
-            return
-        }
+        guard let code = roomCode else { return }
         
-        // print("DEBUG: ActionJoin - Starting Firebase session for code: \(code), myID: \(currentUserID)")
-        
-        // Try to find if a host exists for this code
-        firebase.findHostID(for: code) { [weak self] hostUID in
+        // Define a unified completion handler to reduce duplication
+        let handleHostFound: (String?) -> Void = { [weak self] targetUID in
             guard let self = self else { return }
             
-            if let targetUID = hostUID {
-                // Room exists -> JOIN IT
-                let isMeHost = (targetUID == self.currentUserID)
-                // print("DEBUG: Action Room found. HostUID: \(targetUID). Am I Host?: \(isMeHost)")
-                self.firebase.setupSession(hostUID: targetUID, conversationID: code, isHost: isMeHost)
-                self.firebase.linkConversationToJoiner(hostUID: targetUID, conversationID: code, conversationTitle: self.sessionTitle)
+            if let uid = targetUID {
+                // Host ID found (either explicitly passed or found in registry)
+                let isMeHost = (uid == self.currentUserID)
+                self.firebase.setupSession(hostUID: uid, conversationID: code, isHost: isMeHost)
+                self.firebase.linkConversationToJoiner(hostUID: uid, conversationID: code, conversationTitle: self.sessionTitle)
             } else {
-                // Doesn't exist -> CREATE IT
+                // No host found anywhere -> Register myself as the host
                 let hostID = self.currentUserID
-                // print("DEBUG: Action Room not found. Creating as Host. UID: \(hostID)")
                 self.firebase.registerRoom(code: code, hostUID: hostID)
                 self.firebase.setupSession(hostUID: hostID, conversationID: code, isHost: true)
                 self.firebase.linkConversationToJoiner(hostUID: hostID, conversationID: code, conversationTitle: self.sessionTitle)
             }
             
             self.setupFirebaseObservers()
+        }
+        
+        // PRIORITIZE: If the Quick Action already told us who the host is, use it!
+        if let explicitHost = self.hostUID, !explicitHost.isEmpty {
+            // print("DEBUG: ActionJoin - Using explicit hostUID from model: \(explicitHost)")
+            handleHostFound(explicitHost)
+        } else {
+            // FALLBACK: Query the room_registry (Legacy/Other flows)
+            // print("DEBUG: ActionJoin - Querying room_registry for code: \(code)")
+            firebase.findHostID(for: code, completion: handleHostFound)
         }
     }
     
