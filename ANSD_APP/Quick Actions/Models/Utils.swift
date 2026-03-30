@@ -20,6 +20,9 @@ func getColorForCategory(_ name: String) -> UIColor {
     case "gym", "health", "medical":          return .systemOrange
     case "finance", "money", "bank":          return .systemMint
     case "create":                     return .systemBlue
+    case "quick captions", "quick captioning": return .systemBlue
+    case "group-join", "group join":           return .black
+    case "group-new", "group new":             return .black
         
     default:
         let palette: [UIColor] = [

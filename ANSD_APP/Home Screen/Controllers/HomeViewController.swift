@@ -239,7 +239,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 let subLbl = UILabel()
                 subLbl.text = "Upcoming"
                 subLbl.font = UIFont.systemFont(ofSize: 15, weight: .regular)
-                subLbl.textColor = .secondaryLabel
+                subLbl.textColor = .label
                 subLbl.translatesAutoresizingMaskIntoConstraints = false
                 header.contentView.addSubview(subLbl)
                 

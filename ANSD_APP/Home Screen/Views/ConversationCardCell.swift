@@ -281,13 +281,8 @@ class QuickActionTableViewCell: UITableViewCell {
             let tintColor = getColorForCategory(item.categoryTitle)
             
             // Add custom distinction color for 'Upcoming' status
-            if badgeText == "Upcoming" {
-                badgeContainer.backgroundColor = UIColor.systemRed.withAlphaComponent(0.15)
-                badgeLabel.textColor = .systemRed
-            } else {
-                badgeContainer.backgroundColor = tintColor.withAlphaComponent(0.15)
-                badgeLabel.textColor = tintColor
-            }
+            badgeContainer.backgroundColor = .secondarySystemFill
+            badgeLabel.textColor = .label
             
             customIconContainer.backgroundColor = tintColor.withAlphaComponent(0.15)
             customIconImageView.tintColor = tintColor

@@ -106,20 +106,27 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
     
     // MARK: - Data Preparation
     private func prepareParticipantsFromMessages() {
-        var uniqueSenders = [String: String]() // standardizedName: exactName
-        var order = [String]()
+        let placeholders: Set<String> = ["system", "listening...", "identifying…", "identifying..."]
+        var seenIDs = [String: Int]() // senderID -> index
+        var result = [ParticipantData]()
         
         for msg in transcriptMessages {
-            let standardizedName = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if uniqueSenders[standardizedName] == nil {
-                uniqueSenders[standardizedName] = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines)
-                order.append(standardizedName)
+            let trimmedName = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lowerName = trimmedName.lowercased()
+            if placeholders.contains(lowerName) { continue }
+            
+            let key = msg.senderID.isEmpty ? lowerName : msg.senderID
+            
+            if let idx = seenIDs[key] {
+                // Update to the latest display name
+                result[idx] = ParticipantData(name: trimmedName, senderID: msg.senderID, summary: "Waiting for analysis...")
+            } else {
+                seenIDs[key] = result.count
+                result.append(ParticipantData(name: trimmedName, senderID: msg.senderID, summary: "Waiting for analysis..."))
             }
         }
         
-        self.participants = order.map { key in
-            ParticipantData(name: uniqueSenders[key] ?? "Unknown", senderID: UUID().uuidString, summary: "Waiting for analysis...")
-        }
+        self.participants = result
         tableView.reloadData()
     }
     

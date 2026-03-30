@@ -615,20 +615,30 @@ class QuickCaptioningViewController: UIViewController,
                 summaryVC.locationString = self.currentLocationString
                 
                 var participants: [QuickCaptionsParticipantData] = []
-                var uniqueSenders = [String: String]()
+                var seenIDs = [String: Int]() // senderID -> index in participants
                 var order = [String]()
                 
                 for msg in self.messages {
-                    if msg.senderID != "system" {
-                        if uniqueSenders[msg.senderID] == nil {
-                            uniqueSenders[msg.senderID] = msg.sender
-                            order.append(msg.senderID)
-                        }
+                    // Skip system and placeholder bubbles
+                    let sid = msg.senderID
+                    if sid == "system" || sid == "-1" { continue }
+                    
+                    if let idx = seenIDs[sid] {
+                        // Update to the latest display name for this speaker
+                        participants[idx] = QuickCaptionsParticipantData(
+                            name: msg.sender,
+                            senderID: sid,
+                            summary: "Waiting for analysis..."
+                        )
+                    } else {
+                        seenIDs[sid] = participants.count
+                        order.append(sid)
+                        participants.append(QuickCaptionsParticipantData(
+                            name: msg.sender,
+                            senderID: sid,
+                            summary: "Waiting for analysis..."
+                        ))
                     }
-                }
-                
-                for id in order {
-                    participants.append(QuickCaptionsParticipantData(name: uniqueSenders[id] ?? "Unknown", senderID: id, summary: "Waiting for analysis..."))
                 }
                 
                 summaryVC.participantsData = participants

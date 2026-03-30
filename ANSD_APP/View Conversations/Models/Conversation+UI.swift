@@ -57,9 +57,9 @@ extension Conversation {
         case "Quick Captions":
             return .systemBlue
         case "Group-Join":
-            return .systemBlue
+            return .black
         case "Group-New":
-            return .systemBlue
+            return .black
         default:
             return .systemGray
         }

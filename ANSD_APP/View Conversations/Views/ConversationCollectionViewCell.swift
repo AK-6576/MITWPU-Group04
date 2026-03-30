@@ -84,22 +84,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
         
-        let txtColor: UIColor
-        
-        switch categoryString {
-        case "Family":
-            txtColor = .systemRed
-        case "Friends":
-            txtColor = .systemGreen
-        case "Office", "Work":
-            txtColor = .systemBlue
-        case "Quick Captions", "Quick Captioning":
-            txtColor = .systemYellow
-        case "Group-Join", "Group-New":
-            txtColor = .systemTeal
-        default:
-            txtColor = getColorForCategory(categoryString)
-        }
+        let txtColor = conversation.categoryTintColor
         
         categoryContainer.backgroundColor = txtColor.withAlphaComponent(0.15)
         categoryLabel.textColor = txtColor

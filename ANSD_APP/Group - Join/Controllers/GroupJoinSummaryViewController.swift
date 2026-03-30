@@ -84,20 +84,26 @@ class GroupJoinSummaryViewController: UIViewController, UITableViewDelegate, UIT
     
     // MARK: - Logic
     private func prepareParticipantsFromMessages() {
-        var uniqueSenders = [String: String]() // standardizedName: exactName
-        var order = [String]()
+        let placeholders: Set<String> = ["system", "listening...", "identifying…", "identifying..."]
+        var seenIDs = [String: Int]() // senderID -> index
+        var result = [GroupJoinParticipants]()
         
         for msg in transcriptMessages {
-            let standardizedName = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if uniqueSenders[standardizedName] == nil {
-                uniqueSenders[standardizedName] = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines)
-                order.append(standardizedName)
+            let trimmedName = msg.sender.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lowerName = trimmedName.lowercased()
+            if placeholders.contains(lowerName) { continue }
+            
+            let key = msg.senderID.isEmpty ? lowerName : msg.senderID
+            
+            if let idx = seenIDs[key] {
+                result[idx] = GroupJoinParticipants(name: trimmedName, senderID: msg.senderID, summary: "Waiting for analysis...", avatarTitle: "")
+            } else {
+                seenIDs[key] = result.count
+                result.append(GroupJoinParticipants(name: trimmedName, senderID: msg.senderID, summary: "Waiting for analysis...", avatarTitle: ""))
             }
         }
         
-        participantsData = order.map { key in
-            GroupJoinParticipants(name: uniqueSenders[key] ?? "Unknown", senderID: UUID().uuidString, summary: "Waiting for analysis...", avatarTitle: "")
-        }
+        participantsData = result
         GroupJoinTableView.reloadData()
     }
     

@@ -220,7 +220,17 @@ class ChatHistoryViewController: UIViewController {
         let hasExistingParticipants = histconversationData?.participants?.isEmpty == false
         
         if hasExistingParticipants {
-            self.participantsData = histconversationData!.participants!
+            // Deduplicate existing participants by lowercased name (cleans up legacy data)
+            var seenNames = Set<String>()
+            var deduped = [Participant]()
+            for p in histconversationData!.participants! {
+                let key = p.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if !seenNames.contains(key) {
+                    seenNames.insert(key)
+                    deduped.append(p)
+                }
+            }
+            self.participantsData = deduped
             self.generatedNotesText = histconversationData?.notes ?? ""
         } else if !transcript.isEmpty {
             prepareParticipantsFromMessages()
@@ -235,20 +245,27 @@ class ChatHistoryViewController: UIViewController {
     // MARK: - AI Summarization Logic
     
     private func prepareParticipantsFromMessages() {
-        var seenSenders = Set<String>()
-        var ordering: [String] = []
+        let placeholders: Set<String> = ["system", "listening...", "identifying…", "identifying..."]
+        var seenIDs = [String: Int]() // senderId -> index
+        var result = [Participant]()
         
         for msg in transcript {
-            if !seenSenders.contains(msg.senderName) {
-                seenSenders.insert(msg.senderName)
-                ordering.append(msg.senderName)
+            let trimmedName = msg.senderName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lowerName = trimmedName.lowercased()
+            if placeholders.contains(lowerName) { continue }
+            
+            let key = msg.senderId.isEmpty ? lowerName : msg.senderId
+            
+            if let idx = seenIDs[key] {
+                // Update to the latest display name for this speaker
+                result[idx].name = trimmedName
+            } else {
+                seenIDs[key] = result.count
+                result.append(Participant(name: trimmedName, summary: "Waiting for analysis...", image: "person.circle.fill"))
             }
         }
         
-        self.participantsData = ordering.map { name in
-            Participant(name: name, summary: "Waiting for analysis...", image: "person.circle.fill")
-        }
-        
+        self.participantsData = result
         tableView.reloadData()
     }
     
