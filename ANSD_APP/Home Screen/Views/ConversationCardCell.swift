@@ -320,8 +320,14 @@ class ConversationCardCell: UITableViewCell {
         cardContainer.backgroundColor = .secondarySystemGroupedBackground
         cardContainer.layer.cornerRadius = 16
         cardContainer.layer.cornerCurve = .continuous
-        cardContainer.layer.masksToBounds = true
         cardContainer.layer.borderWidth = 0
+        
+        // Shadow styling
+        cardContainer.layer.shadowColor = UIColor.black.cgColor
+        cardContainer.layer.shadowOpacity = 0.06
+        cardContainer.layer.shadowRadius = 6
+        cardContainer.layer.shadowOffset = CGSize(width: 0, height: 3)
+        cardContainer.layer.masksToBounds = false
     }
     
     func configure(with conversation: Conversation) {
