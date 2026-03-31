@@ -540,14 +540,13 @@
                                         <connections>
                                             <outlet property="calendarIcon" destination="eG6-XX-vLQ" id="xrp-dg-7KM" />
                                             <outlet property="cardContainer" destination="hLN-ai-G6b" id="9Mg-Lv-PUi" />
-                                            <outlet property="categoryIcon" destination="NEW-DUMMY-ICON" id="kLG-km-Nem" />
                                             <outlet property="categoryLabel" destination="cat-badge-label" id="YPD-Pt-sN7" />
                                             <outlet property="clockIcon" destination="t6h-O6-nRa" id="icg-Yx-Hzh" />
                                             <outlet property="dateLabel" destination="Llc-tf-Ssz" id="nRr-EM-TyC" />
                                             <outlet property="descriptionLabel" destination="U1L-6T-sam" id="Dqx-Oq-erg" />
                                             <outlet property="timeLabel" destination="bge-Zm-tp7" id="3Nj-dg-DOx" />
                                             <outlet property="topicLabel" destination="3aZ-jt-5wa" id="Yrh-kd-sp6" />
-                                        </connections>
+                                        <outlet property="categoryContainer" destination="cat-badge-container" id="cat-btn-cnt-123" /></connections>
                                     </tableViewCell>
                                 </prototypes>
                             </tableView>

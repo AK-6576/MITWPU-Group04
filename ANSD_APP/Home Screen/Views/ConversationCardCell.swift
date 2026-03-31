@@ -301,10 +301,10 @@ class ConversationCardCell: UITableViewCell {
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
+    @IBOutlet weak var categoryContainer: UIView!
     
     @IBOutlet weak var calendarIcon: UIImageView!
     @IBOutlet weak var clockIcon: UIImageView!
-    @IBOutlet weak var categoryIcon: UIImageView!
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -317,33 +317,53 @@ class ConversationCardCell: UITableViewCell {
         self.contentView.backgroundColor = .clear
         self.selectionStyle = .none
         
-        
         cardContainer.backgroundColor = .secondarySystemGroupedBackground
-        cardContainer.layer.cornerRadius = 20
+        cardContainer.layer.cornerRadius = 16
         cardContainer.layer.cornerCurve = .continuous
-        cardContainer.layer.masksToBounds = false
-        
-        cardContainer.layer.borderWidth = 1
-        cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
+        cardContainer.layer.masksToBounds = true
+        cardContainer.layer.borderWidth = 0
     }
     
     func configure(with conversation: Conversation) {
-        topicLabel.text = conversation.title
+        if conversation.isPinned {
+            let fullString = NSMutableAttributedString()
+            let imageAttachment = NSTextAttachment()
+            let config = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+            if let image = UIImage(systemName: "pin.fill", withConfiguration: config)?.withTintColor(.systemGray, renderingMode: .alwaysOriginal) {
+                imageAttachment.image = image
+                imageAttachment.bounds = CGRect(x: 0, y: -2, width: image.size.width, height: image.size.height)
+            }
+            fullString.append(NSAttributedString(attachment: imageAttachment))
+            fullString.append(NSAttributedString(string: " " + conversation.title))
+            topicLabel.attributedText = fullString
+            
+            descriptionLabel.numberOfLines = 1
+        } else {
+            topicLabel.text = conversation.title
+            descriptionLabel.numberOfLines = 2
+        }
         descriptionLabel.text = conversation.details
         
-        dateLabel.text = conversation.formattedDisplayDate
-        timeLabel.text = "\(conversation.startTime)"
+        // Slot 1 (Left): Participants
+        let paxCount = max(1, conversation.participants?.count ?? 0)
+        dateLabel.text = paxCount == 1 ? "1 Person" : "\(paxCount) People"
+        calendarIcon.image = UIImage(systemName: "person.2.fill")
+        calendarIcon.tintColor = .secondaryLabel
         
-        calendarIcon.image = UIImage(systemName: "calendar")
-        calendarIcon.tintColor = .systemGray2
-        
+        // Slot 2 (Middle): Time Range
+        let timeRangeStr = "\(conversation.startTime) - \(conversation.endTime)"
+        timeLabel.text = timeRangeStr
         clockIcon.image = UIImage(systemName: "clock")
-        clockIcon.tintColor = .systemGray2
+        clockIcon.tintColor = .secondaryLabel
         
-        categoryLabel.text = conversation.displayCategory
-        categoryIcon.image = UIImage(systemName: conversation.categoryIconName)
-        categoryIcon.tintColor = conversation.categoryTintColor
+        // Slot 3 (Right): Category Badge
+        let categoryString = conversation.category
+        let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
+        categoryLabel.text = capitalizedCategory
         
-        categoryLabel.textColor = .secondaryLabel
+        let txtColor = conversation.categoryTintColor
+        
+        categoryContainer.backgroundColor = txtColor.withAlphaComponent(0.15)
+        categoryLabel.textColor = txtColor
     }
 }
