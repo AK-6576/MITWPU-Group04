@@ -97,3 +97,49 @@ func getDate(from timeString: String) -> Date? {
     let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
     return calendar.date(bySettingHour: timeComponents.hour ?? 0, minute: timeComponents.minute ?? 0, second: 0, of: now)
 }
+
+import FirebaseAuth
+
+class QuickActionAccess {
+    static func verifyAccess(for item: RoutineConversation, over vc: UIViewController, onSuccess: @escaping () -> Void) {
+        let currentUID = Auth.auth().currentUser?.uid
+        if item.hostUID == currentUID {
+            onSuccess() // Host bypasses room code
+            return
+        }
+        
+        let safeCode = item.roomCode ?? ""
+        if safeCode.isEmpty {
+            onSuccess()
+            return
+        }
+        
+        let defaultsKey = "joined_qa_\(item.id)"
+        if UserDefaults.standard.bool(forKey: defaultsKey) {
+            onSuccess()
+            return
+        }
+        
+        let alert = UIAlertController(title: "Enter Room Code", message: "Please enter the room code to join this Quick Action session.", preferredStyle: .alert)
+        alert.addTextField { tf in
+            tf.placeholder = "Room Code"
+            tf.keyboardType = .default
+            tf.autocapitalizationType = .allCharacters
+        }
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Join", style: .default) { _ in
+            let enteredCode = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if enteredCode.lowercased() == safeCode.lowercased() {
+                UserDefaults.standard.set(true, forKey: defaultsKey)
+                onSuccess()
+            } else {
+                let errorAlert = UIAlertController(title: "Incorrect Code", message: "The code you entered is incorrect.", preferredStyle: .alert)
+                errorAlert.addAction(UIAlertAction(title: "OK", style: .default))
+                vc.present(errorAlert, animated: true)
+            }
+        })
+        
+        vc.present(alert, animated: true)
+    }
+}

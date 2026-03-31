@@ -37,6 +37,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupNavigationBar()
         setupKeyboardDismissal()
         nameTextField.autocapitalizationType = .words
         participantsLabel.text = "Add"
@@ -45,6 +46,12 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         setupCategoryCell()
         nameTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
         updateSaveButtonState()
+    }
+    
+    private func setupNavigationBar() {
+        let dismissButton = UIBarButtonItem(image: UIImage(systemName: "xmark"), style: .plain, target: self, action: #selector(closeScreen))
+        dismissButton.tintColor = .label
+        navigationItem.leftBarButtonItem = dismissButton
     }
 
     private func updateSaveButtonState() {
@@ -159,7 +166,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         updateSaveButtonState()
     }
     
-    private func closeScreen() {
+    @objc private func closeScreen() {
         if let nav = navigationController, nav.viewControllers.count > 1 {
             nav.popViewController(animated: true)
         } else {

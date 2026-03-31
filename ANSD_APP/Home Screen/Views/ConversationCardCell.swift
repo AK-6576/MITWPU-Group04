@@ -320,13 +320,16 @@ class ConversationCardCell: UITableViewCell {
         cardContainer.backgroundColor = .secondarySystemGroupedBackground
         cardContainer.layer.cornerRadius = 16
         cardContainer.layer.cornerCurve = .continuous
-        cardContainer.layer.borderWidth = 0
         
-        // Shadow styling
+        // Add subtle border to make the card more distinct against the background
+        cardContainer.layer.borderWidth = 1
+        cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
+        
+        // Shadow styling - SLIGHTLY increase opacity since it's "barely perceptible"
         cardContainer.layer.shadowColor = UIColor.black.cgColor
-        cardContainer.layer.shadowOpacity = 0.06
-        cardContainer.layer.shadowRadius = 6
-        cardContainer.layer.shadowOffset = CGSize(width: 0, height: 3)
+        cardContainer.layer.shadowOpacity = 0.08
+        cardContainer.layer.shadowRadius = 8
+        cardContainer.layer.shadowOffset = CGSize(width: 0, height: 4)
         cardContainer.layer.masksToBounds = false
     }
     

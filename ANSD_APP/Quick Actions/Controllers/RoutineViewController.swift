@@ -85,7 +85,9 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let item = routineList[indexPath.row]
-        performSegue(withIdentifier: "ShowChat", sender: item)
+        QuickActionAccess.verifyAccess(for: item, over: self) { [weak self] in
+            self?.performSegue(withIdentifier: "ShowChat", sender: item)
+        }
     }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {

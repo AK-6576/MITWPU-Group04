@@ -95,18 +95,20 @@ class QuickActionsViewController: UITableViewController {
         let sectionData = sections[indexPath.section]
         let item = sectionData.items[indexPath.row]
         
-        // NATIVE FIX: Use the built-in rawValue initializer
-        let category = ChatCategory(rawValue: sectionData.category) ?? .other
-        
-        let segueID: String
-        switch category {
-        case .family:  segueID = "familyChat"
-        case .friends: segueID = "friendChat"
-        case .office:  segueID = "officeChat"
-        case .other:   segueID = "genericChat"
+        QuickActionAccess.verifyAccess(for: item, over: self) { [weak self] in
+            // NATIVE FIX: Use the built-in rawValue initializer
+            let category = ChatCategory(rawValue: sectionData.category) ?? .other
+            
+            let segueID: String
+            switch category {
+            case .family:  segueID = "familyChat"
+            case .friends: segueID = "friendChat"
+            case .office:  segueID = "officeChat"
+            case .other:   segueID = "genericChat"
+            }
+            
+            self?.performSegue(withIdentifier: segueID, sender: item)
         }
-        
-        performSegue(withIdentifier: segueID, sender: item)
     }
     
     // MARK: - Header Navigation

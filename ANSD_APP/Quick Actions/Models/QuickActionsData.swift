@@ -32,18 +32,22 @@ class QuickActionsRepository {
             return
         }
         
-        FirebaseManager.shared.observeSharedQuickActions(forUserName: firstName) { [weak self] dict in
+        FirebaseManager.shared.observeSharedQuickActions(forUserName: firstName, onAddedOrChanged: { [weak self] dict in
             self?.handleIncomingAction(dict)
-        }
+        }, onRemoved: { [weak self] actionID in
+            self?.handleRemovedAction(actionID: actionID)
+        })
         
         // Also observe by full name, since contacts often use First + Last name
         let lastName = UserDefaults.standard.string(forKey: "user_last_name") ?? ""
         let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
         
         if fullName != firstName && !fullName.isEmpty {
-            FirebaseManager.shared.observeSharedQuickActions(forUserName: fullName) { [weak self] dict in
+            FirebaseManager.shared.observeSharedQuickActions(forUserName: fullName, onAddedOrChanged: { [weak self] dict in
                 self?.handleIncomingAction(dict)
-            }
+            }, onRemoved: { [weak self] actionID in
+                self?.handleRemovedAction(actionID: actionID)
+            })
         }
         
         // Also observe the user's own quick_actions node (by UID)
@@ -62,6 +66,25 @@ class QuickActionsRepository {
                 self?.handleIncomingAction(value)
             }
         }
+        
+        dbRef.child("users").child(safeUID).child("quick_actions").observe(.childRemoved) { [weak self] snapshot in
+            self?.handleRemovedAction(actionID: snapshot.key)
+        }
+    }
+    
+    private func handleRemovedAction(actionID: String) {
+        // Find the action using the roomCode (or id) as the snapshot key might be either
+        self.quickActionBubbles.removeAll { item in
+            let isMatch = item.id == actionID || item.roomCode == actionID
+            if isMatch {
+                NotificationManager.shared.cancelNotification(identifier: "qa_\(item.id)_exact")
+                NotificationManager.shared.cancelNotification(identifier: "qa_\(item.id)_5min")
+            }
+            return isMatch
+        }
+        self.saveToDisk()
+        self.notifyObservers()
+        print("QuickActionsData: Removed deleted shared Quick Action with ID/Code: '\(actionID)'")
     }
     
     private func handleIncomingAction(_ dict: [String: Any]) {

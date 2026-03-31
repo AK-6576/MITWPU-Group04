@@ -337,20 +337,24 @@ class FirebaseManager {
     // MARK: - Generic Observers
     
     // Observes Quick Actions assigned specifically to the user (by checking their name against the shared node).
-    func observeSharedQuickActions(forUserName userName: String, completion: @escaping ([String: Any]) -> Void) {
+    func observeSharedQuickActions(forUserName userName: String, onAddedOrChanged: @escaping ([String: Any]) -> Void, onRemoved: @escaping (String) -> Void) {
         let safeName = sanitizeKey(userName.trimmingCharacters(in: .whitespacesAndNewlines))
         guard !safeName.isEmpty else { return }
         
         databaseRef.child("shared_quick_actions").child(safeName).observe(.childAdded) { snapshot in
             if let value = snapshot.value as? [String: Any] {
-                completion(value)
+                onAddedOrChanged(value)
             }
         }
         
         databaseRef.child("shared_quick_actions").child(safeName).observe(.childChanged) { snapshot in
             if let value = snapshot.value as? [String: Any] {
-                completion(value)
+                onAddedOrChanged(value)
             }
+        }
+        
+        databaseRef.child("shared_quick_actions").child(safeName).observe(.childRemoved) { snapshot in
+            onRemoved(snapshot.key)
         }
     }
     
