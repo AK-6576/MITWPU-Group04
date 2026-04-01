@@ -41,6 +41,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     var messages: [GroupJoinChatMessage] = []
     var cleanedMessageIndices = Set<Int>()
+    var isSessionEnded = false
     
     // Tracks the character offset into the full cumulative transcript string to extract only new speech.
     var consumedTranscriptOffset = 0
@@ -295,6 +296,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     private func stopRecording() {
+        guard isRecording else { return }
         audioEngine.stop()
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
@@ -428,19 +430,29 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     private func handleGlobalSessionEnd() {
-        self.stopRecording()
-        self.removeListeningBubble()
+        guard !isSessionEnded else { return }
+        isSessionEnded = true
         
-        let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
-        if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
-            summaryVC.transcriptMessages = self.messages
-            summaryVC.conversationTitle = self.sessionTitle
-            let nav = UINavigationController(rootViewController: summaryVC)
-            nav.modalPresentationStyle = .pageSheet
-            nav.isModalInPresentation = true
-            self.present(nav, animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            
+            if self.isRecording {
+                self.stopRecording()
+            } else {
+                self.removeListeningBubble()
+            }
+            
+            let storyboard = UIStoryboard(name: "Group-Join", bundle: nil)
+            if let summaryVC = storyboard.instantiateViewController(withIdentifier: "GroupJoinSummaryViewController") as? GroupJoinSummaryViewController {
+                summaryVC.transcriptMessages = self.messages
+                summaryVC.conversationTitle = self.sessionTitle
+                let nav = UINavigationController(rootViewController: summaryVC)
+                nav.modalPresentationStyle = .pageSheet
+                nav.isModalInPresentation = true
+                self.present(nav, animated: true)
+            }
+            self.firebase.stop()
         }
-        firebase.stop()
     }
     
     // MARK: - Helpers

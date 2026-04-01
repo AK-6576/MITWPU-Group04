@@ -44,6 +44,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     var isRestarting = false
     var consumedTranscriptOffset = 0
     var cleanedMessageIndices = Set<Int>()
+    var isSessionEnded = false
     var myName: String {
         UserDefaults.standard.string(forKey: "user_first_name") ?? UIDevice.current.name
     }
@@ -272,10 +273,16 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     }
 
     private func handleGlobalSessionEnd() {
-        self.stopRecording()
-        self.removeListeningBubble()
-        self.navigateToSummary()
-        firebase.stop()
+        guard !isSessionEnded else { return }
+        isSessionEnded = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            self.stopRecording()
+            self.removeListeningBubble()
+            self.navigateToSummary()
+            self.firebase.stop()
+        }
     }
 
     func navigateToSummary() {
@@ -435,6 +442,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     // MARK: - Handlers
     func stopRecording() {
+        guard isRecording else { return }
         audioEngine.stop()
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)

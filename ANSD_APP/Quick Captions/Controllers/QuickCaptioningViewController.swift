@@ -192,6 +192,7 @@ class QuickCaptioningViewController: UIViewController,
     }
 
     private func stopRecording() {
+        guard isRecording else { return }
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
@@ -574,78 +575,80 @@ class QuickCaptioningViewController: UIViewController,
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
         
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
-            guard let self = self else { return }
-            
-            self.processBuffer()
-            
-            if !self.messages.isEmpty {
-                self.finalizeBubble(at: self.messages.count - 1)
-            }
-            
-            self.stopRecording()
-            
-            let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
-            
-            if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
-               let summaryVC = summaryNav.topViewController as? SummaryViewController {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                guard let self = self else { return }
                 
-                let transcript = self.messages.toTranscriptString()
+                self.processBuffer()
                 
-                summaryVC.rawTranscriptText = transcript
-                summaryVC.rawMessages = self.messages
-                summaryVC.conversationTitle = "Conversation 1"
-                
-                let now = Date()
-                let dateFormatter = DateFormatter()
-                
-                dateFormatter.dateFormat = "MMMM"
-                let month = dateFormatter.string(from: now)
-                
-                let calendar = Calendar.current
-                let day = calendar.component(.day, from: now)
-                let numberFormatter = NumberFormatter()
-                numberFormatter.numberStyle = .ordinal
-                let dayWithSuffix = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
-                
-                summaryVC.dateString = "\(month) \(dayWithSuffix)"
-                
-                dateFormatter.dateFormat = "h:mm a"
-                summaryVC.timeString = dateFormatter.string(from: now)
-                
-                summaryVC.locationString = self.currentLocationString
-                
-                var participants: [QuickCaptionsParticipantData] = []
-                var seenIDs = [String: Int]() // senderID -> index in participants
-                var order = [String]()
-                
-                for msg in self.messages {
-                    // Skip system and placeholder bubbles
-                    let sid = msg.senderID
-                    if sid == "system" || sid == "-1" { continue }
-                    
-                    if let idx = seenIDs[sid] {
-                        // Update to the latest display name for this speaker
-                        participants[idx] = QuickCaptionsParticipantData(
-                            name: msg.sender,
-                            senderID: sid,
-                            summary: "Waiting for analysis..."
-                        )
-                    } else {
-                        seenIDs[sid] = participants.count
-                        order.append(sid)
-                        participants.append(QuickCaptionsParticipantData(
-                            name: msg.sender,
-                            senderID: sid,
-                            summary: "Waiting for analysis..."
-                        ))
-                    }
+                if !self.messages.isEmpty {
+                    self.finalizeBubble(at: self.messages.count - 1)
                 }
                 
-                summaryVC.participantsData = participants
+                self.stopRecording()
                 
-                summaryNav.modalPresentationStyle = .pageSheet
-                summaryNav.isModalInPresentation = true
-                self.present(summaryNav, animated: true, completion: nil)
+                let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
+                
+                if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
+                   let summaryVC = summaryNav.topViewController as? SummaryViewController {
+                    
+                    let transcript = self.messages.toTranscriptString()
+                    
+                    summaryVC.rawTranscriptText = transcript
+                    summaryVC.rawMessages = self.messages
+                    summaryVC.conversationTitle = "Conversation 1"
+                    
+                    let now = Date()
+                    let dateFormatter = DateFormatter()
+                    
+                    dateFormatter.dateFormat = "MMMM"
+                    let month = dateFormatter.string(from: now)
+                    
+                    let calendar = Calendar.current
+                    let day = calendar.component(.day, from: now)
+                    let numberFormatter = NumberFormatter()
+                    numberFormatter.numberStyle = .ordinal
+                    let dayWithSuffix = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
+                    
+                    summaryVC.dateString = "\(month) \(dayWithSuffix)"
+                    
+                    dateFormatter.dateFormat = "h:mm a"
+                    summaryVC.timeString = dateFormatter.string(from: now)
+                    
+                    summaryVC.locationString = self.currentLocationString
+                    
+                    var participants: [QuickCaptionsParticipantData] = []
+                    var seenIDs = [String: Int]() // senderID -> index in participants
+                    var order = [String]()
+                    
+                    for msg in self.messages {
+                        // Skip system and placeholder bubbles
+                        let sid = msg.senderID
+                        if sid == "system" || sid == "-1" { continue }
+                        
+                        if let idx = seenIDs[sid] {
+                            // Update to the latest display name for this speaker
+                            participants[idx] = QuickCaptionsParticipantData(
+                                name: msg.sender,
+                                senderID: sid,
+                                summary: "Waiting for analysis..."
+                            )
+                        } else {
+                            seenIDs[sid] = participants.count
+                            order.append(sid)
+                            participants.append(QuickCaptionsParticipantData(
+                                name: msg.sender,
+                                senderID: sid,
+                                summary: "Waiting for analysis..."
+                            ))
+                        }
+                    }
+                    
+                    summaryVC.participantsData = participants
+                    
+                    summaryNav.modalPresentationStyle = .pageSheet
+                    summaryNav.isModalInPresentation = true
+                    self.present(summaryNav, animated: true, completion: nil)
+                }
             }
         }
         
