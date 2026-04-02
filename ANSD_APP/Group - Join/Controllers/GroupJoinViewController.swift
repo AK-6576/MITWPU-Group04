@@ -188,7 +188,8 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                     
                     if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
                         let currentText = self.messages[lastIndex].text
-                        let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
+                        let isPlaceholder = (currentText == "Listening..." || currentText == "..." || currentText == "Identifying\u{2026}" || currentText == "Identifying...")
+                        let baseText = isPlaceholder ? "" : currentText
                         let combinedText = baseText + newContent
                         
                         if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
@@ -313,6 +314,9 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        consumedTranscriptOffset = 0
         removeListeningBubble()
         startRecording()
     }

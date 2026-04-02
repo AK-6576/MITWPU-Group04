@@ -337,7 +337,7 @@ class QuickCaptioningViewController: UIViewController,
             
             // If the bubble is currently holding a placeholder, replace it entirely.
             // Otherwise, append the new text.
-            let isPlaceholder = (currentText == "..." || currentText == "Identifying\u{2026}")
+            let isPlaceholder = (currentText == "..." || currentText == "Identifying\u{2026}" || currentText == "Identifying..." || currentText == "Listening...")
             let combinedText = isPlaceholder ? text : currentText + text
             
             // Only split if we exceed the 3-line limit (~240 chars)
@@ -447,9 +447,14 @@ class QuickCaptioningViewController: UIViewController,
     }
     
     private func appendNewBubble(text: String, isBlue: Bool, name: String, id: Int?) {
-        if let last = messages.last, (last.sender == "Listening..." || last.sender == "System") {
-            messages.removeLast()
-            if !cleanupIDs.isEmpty { cleanupIDs.removeLast() }
+        // Remove any trailing placeholder bubble (Listening... / System / known placeholder text)
+        if let last = messages.last {
+            let senderIsPlaceholder = (last.sender == "Listening..." || last.sender == "System")
+            let textIsPlaceholder = (last.text == "Listening..." || last.text == "..." || last.text == "Identifying\u{2026}" || last.text == "Identifying...")
+            if senderIsPlaceholder || textIsPlaceholder {
+                messages.removeLast()
+                if !cleanupIDs.isEmpty { cleanupIDs.removeLast() }
+            }
         }
 
         let senderID = id != nil ? String(id!) : "system"

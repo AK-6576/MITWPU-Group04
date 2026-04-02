@@ -183,7 +183,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                     // Update Bubble Logic
                     if let lastIndex = self.messages.lastIndex(where: { !$0.isIncoming }) {
                         let currentText = self.messages[lastIndex].text
-                        let baseText = (currentText == "Listening..." || currentText == "...") ? "" : currentText
+                        let isPlaceholder = (currentText == "Listening..." || currentText == "..." || currentText == "Identifying\u{2026}" || currentText == "Identifying...")
+                        let baseText = isPlaceholder ? "" : currentText
                         let combinedText = baseText + newContent
                         
                         // CHECK LIMIT (3-4 Lines Logic)
@@ -318,6 +319,9 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        consumedTranscriptOffset = 0
         
         // Ensure we only remove bubbles that are strictly "Listening..." placeholders
         removeListeningBubble()
