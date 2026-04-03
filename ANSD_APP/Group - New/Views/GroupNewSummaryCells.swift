@@ -39,6 +39,8 @@ class GroupNewSummarySectionHeaderCell: UITableViewCell {
         super.awakeFromNib()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        headerIcon?.backgroundColor = .clear
+        headerLabel?.backgroundColor = .clear
     }
 }
 
@@ -58,15 +60,15 @@ class GroupNewSummaryCardCell: UITableViewCell, UITextFieldDelegate {
         contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        titleTextField.delegate = self
-        titleTextField.borderStyle = .none
+        titleTextField?.delegate = self
+        titleTextField?.borderStyle = .none
     }
     
     func configure(title: String, date: String, time: String, location: String) {
-        titleTextField.text = title
-        dateLabel.text = date
-        timeLabel.text = time
-        locationLabel.text = location
+        titleTextField?.text = title
+        dateLabel?.text = date
+        timeLabel?.text = time
+        locationLabel?.text = location
     }
     
     @IBAction func titleChanged(_ sender: UITextField) {
@@ -112,7 +114,7 @@ class GroupNewParticipantsCardCell: UITableViewCell {
         let combinedText = NSMutableAttributedString(string: "\(data.name)\n", attributes: nameAttributes)
         combinedText.append(NSAttributedString(string: data.summary, attributes: summaryAttributes))
         
-        summaryLabel.attributedText = combinedText
+        summaryLabel?.attributedText = combinedText
         
         let components = data.name.components(separatedBy: " ")
         let initials = components.compactMap { $0.first }.map { String($0) }.joined()
@@ -147,12 +149,12 @@ class GroupNewNotesCardCell: UITableViewCell, UITextViewDelegate {
         contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        notesTextView.delegate = self
-        notesTextView.isScrollEnabled = false
-        notesTextView.textContainerInset = .zero
-        notesTextView.textContainer.lineFragmentPadding = 0
-        notesTextView.font = UIFont.systemFont(ofSize: 15)
-        notesTextView.backgroundColor = .clear
+        notesTextView?.delegate = self
+        notesTextView?.isScrollEnabled = false
+        notesTextView?.textContainerInset = .zero
+        notesTextView?.textContainer.lineFragmentPadding = 0
+        notesTextView?.font = UIFont.systemFont(ofSize: 15)
+        notesTextView?.backgroundColor = .clear
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
