@@ -241,20 +241,19 @@ class QuickCaptioningViewController: UIViewController,
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
                 if !self.messages.isEmpty {
                     self.finalizeBubble(at: self.messages.count - 1)
-                    self.forceNewBubble = true
-                    self.showIdentifyingPlaceholder()
                 }
                 self.transcriptBuffer = ""
             } else {
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 0.7, repeats: false) { [weak self] _ in
                     self?.holdTimer = nil
                     self?.processBuffer()
-
-                    if let messages = self?.messages, !messages.isEmpty {
-                        self?.finalizeBubble(at: messages.count - 1)
-                        self?.forceNewBubble = true
-                        self?.showIdentifyingPlaceholder()
-                    }
+                    
+                    // We intentionally do NOT finalize or force a new bubble here. 
+                    // This allows continuous speech from the same person to remain in one cohesive bubble,
+                    // greatly improving readability. New bubbles will naturally be created via:
+                    // 1) Speaker ID changes from AudioDiarizer
+                    // 2) Semantic speaker change predictions
+                    // 3) MAX_BUBBLE_CHAR_LIMIT logic
                 }
             }
         }

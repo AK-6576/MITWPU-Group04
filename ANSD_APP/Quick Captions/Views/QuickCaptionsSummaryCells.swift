@@ -59,15 +59,15 @@ class QuickCaptionsSummaryCardCell: UITableViewCell, UITextFieldDelegate {
         contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        titleTextField.delegate = self
-        titleTextField.borderStyle = .none
+        titleTextField?.delegate = self
+        titleTextField?.borderStyle = .none
     }
     
     func configure(title: String, date: String, time: String, location: String?) {
-        titleTextField.text = title
-        dateLabel.text = date
-        timeLabel.text = time
-        locationLabel.text = location ?? "Unknown Location"
+        titleTextField?.text = title
+        dateLabel?.text = date
+        timeLabel?.text = time
+        locationLabel?.text = location ?? "Unknown Location"
     }
     
     @IBAction func titleChanged(_ sender: UITextField) {
@@ -119,7 +119,7 @@ class QuickCaptionsParticipantCardCell: UITableViewCell {
         let combinedText = NSMutableAttributedString(string: "\(data.name)\n", attributes: nameAttributes)
         combinedText.append(NSAttributedString(string: data.summary, attributes: summaryAttributes))
         
-        summaryLabel.attributedText = combinedText
+        summaryLabel?.attributedText = combinedText
         
         // Initials Logic
         let components = data.name.components(separatedBy: " ")
@@ -155,11 +155,11 @@ class QuickCaptionsNotesCardCell: UITableViewCell, UITextViewDelegate {
         contentView.backgroundColor = .clear
         styleCard(view: mainCardView)
         
-        notesTextView.delegate = self
-        notesTextView.isScrollEnabled = false // Vital for dynamic height
-        notesTextView.textContainerInset = .zero
-        notesTextView.textContainer.lineFragmentPadding = 0
-        notesTextView.backgroundColor = .clear
+        notesTextView?.delegate = self
+        notesTextView?.isScrollEnabled = false // Vital for dynamic height
+        notesTextView?.textContainerInset = .zero
+        notesTextView?.textContainer.lineFragmentPadding = 0
+        notesTextView?.backgroundColor = .clear
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {

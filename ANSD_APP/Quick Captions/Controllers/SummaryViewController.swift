@@ -104,13 +104,17 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                 You are an expert transcriber and conversation analyst. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
                 
                 STRICT CONSTRAINTS:
-                - Strictly output only the requested sections (e.g., "NOTES:", "PARTICIPANT_...:").
+                - The acoustic separation system frequently creates "ghost persons" by assigning multiple speaker numbers (e.g., "Speaker 2", "Speaker 3") to a single physical person (e.g., "Cobb").
+                - Read the context carefully to figure out who is who. If it's clear someone is just another name for an existing speaker, you will note this mapping.
+                - Strictly output only the requested sections (e.g., "GHOST_MERGES:", "NOTES:", "PARTICIPANT_...:").
                 - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
                 - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
                 - If the transcript is empty or meaningless, simply return an empty string.
                 - Provide exact sections explicitly labeled with standard capitalization. Do not output anything that doesn't belong to a section.
                 
-                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point on a new line as a standalone sentence.
+                Step 1: Write a section strictly labeled "GHOST_MERGES:". For every ghost person identified (like Speaker 3 being Cobb), write "GhostName = RealName" on a new line (e.g., "Speaker 3 = Cobb"). If none, write "None".
+                
+                Step 2: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point on a new line as a standalone sentence.
                 
                 \(participantPrompts)
                 
@@ -141,8 +145,9 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         
         var currentSection = ""
         var notesBuffer = ""
+        var ghostMappings: [String: String] = [:]
         
-        // 2. Create buffers for each participant
+        // Create buffers for each participant
         var participantBuffers: [String: String] = [:]
         for person in participantsData {
             let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
@@ -150,7 +155,11 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         }
         
         for line in components {
-            // Check for Notes Header
+            // Check for Headers
+            if line.contains("GHOST_MERGES:") {
+                currentSection = "MERGES"
+                continue
+            }
             if line.contains("NOTES:") {
                 currentSection = "NOTES"
                 continue
@@ -162,32 +171,39 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                 let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
                 if line.contains("PARTICIPANT_\(safeName):") {
                     currentSection = safeName
+                    // DO NOT continue, let it switch context
                     isParticipantHeader = true
                     break
                 }
             }
             if isParticipantHeader { continue }
             
-            // Append content to the active section
-            if currentSection == "NOTES" {
+            // Append content
+            if currentSection == "MERGES" {
+                if line.contains("=") && !line.lowercased().contains("none") {
+                    let parts = line.components(separatedBy: "=")
+                    if parts.count == 2 {
+                        let ghost = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                        let real = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                        ghostMappings[ghost] = real
+                    }
+                }
+            } else if currentSection == "NOTES" {
                 notesBuffer += line + "\n"
             } else if participantBuffers[currentSection] != nil {
                 participantBuffers[currentSection]? += line + "\n"
             }
         }
         
-        // 3. Update Notes
         self.notesContent = notesBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
         if self.notesContent.isEmpty { self.notesContent = text }
         
-        // 4. Update Participants Data
+        // Format summaries
         for i in 0..<participantsData.count {
             let person = participantsData[i]
             let safeName = person.name.replacingOccurrences(of: " ", with: "_").uppercased()
-            
             if let rawSummary = participantBuffers[safeName], !rawSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 var cleanSummary = rawSummary.trimmingCharacters(in: .whitespacesAndNewlines)
-                // Strip leading dashes or bullets if AI added them
                 if cleanSummary.hasPrefix("-") || cleanSummary.hasPrefix("•") {
                     cleanSummary.removeFirst()
                     cleanSummary = cleanSummary.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -197,6 +213,51 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                 participantsData[i].summary = "No summary available."
             }
         }
+        
+        // APPLY GHOST MERGES
+        var validParticipants: [QuickCaptionsParticipantData] = []
+        var droppedGhostNames: Set<String> = []
+        
+        // Process mappings
+        for (ghostName, realName) in ghostMappings {
+            // Find ghost in participantsData
+            if let ghostIndex = participantsData.firstIndex(where: { $0.name.lowercased() == ghostName.lowercased() }),
+               let realIndex = participantsData.firstIndex(where: { $0.name.lowercased() == realName.lowercased() }) {
+               
+                let ghostSummary = participantsData[ghostIndex].summary
+                if ghostSummary != "No summary available.", !ghostSummary.isEmpty {
+                    // Append ghost summary to real summary
+                    let currentRealSummary = participantsData[realIndex].summary
+                    if currentRealSummary == "No summary available." || currentRealSummary.isEmpty {
+                        participantsData[realIndex].summary = ghostSummary
+                    } else {
+                        participantsData[realIndex].summary = currentRealSummary + "\n" + ghostSummary
+                    }
+                }
+                droppedGhostNames.insert(participantsData[ghostIndex].name)
+                
+                // Update rawMessages so history is clean
+                let theGhostName = participantsData[ghostIndex].name
+                let theRealName = participantsData[realIndex].name
+                let theRealSenderID = participantsData[realIndex].senderID
+                
+                for m in 0..<rawMessages.count {
+                    if rawMessages[m].sender == theGhostName {
+                        rawMessages[m].sender = theRealName
+                        rawMessages[m].senderID = theRealSenderID
+                    }
+                }
+            }
+        }
+        
+        // Filter out ghosts and empty summaries
+        for p in participantsData {
+            if !droppedGhostNames.contains(p.name) {
+                validParticipants.append(p)
+            }
+        }
+        
+        self.participantsData = validParticipants
     }
     
     // MARK: - Actions
