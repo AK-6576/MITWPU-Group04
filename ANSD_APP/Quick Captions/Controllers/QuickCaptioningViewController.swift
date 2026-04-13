@@ -207,10 +207,19 @@ class QuickCaptioningViewController: UIViewController,
     private func startSpeechRecognition() {
         recognitionTask?.cancel()
         recognitionTask = nil
+        
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            print("❌ [SpeechRecognition] Recognizer not available or nil. Locale: \(LanguageManager.shared.currentLocale.identifier)")
+            return
+        }
+        
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         recognitionRequest = request
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            if let error = error {
+                print("❌ [SpeechRecognition] Error: \(error.localizedDescription)")
+            }
             guard let self = self, let result = result else { return }
             self.handleSpeechTranscript(fullText: result.bestTranscription.formattedString, isFinal: result.isFinal)
         }
@@ -223,7 +232,8 @@ class QuickCaptioningViewController: UIViewController,
             guard let self = self else { return }
             
             if self.consumedTranscriptOffset > fullText.count {
-                return
+                // Speech session likely restarted or adjusted; reset offset to avoid blocking transcript.
+                self.consumedTranscriptOffset = 0
             }
             
             let startIndex = fullText.index(fullText.startIndex, offsetBy: self.consumedTranscriptOffset)
@@ -516,14 +526,22 @@ class QuickCaptioningViewController: UIViewController,
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
+            
+            #if targetEnvironment(simulator)
+            // Simulator's virtual audio driver is more stable with .voiceChat and default mode.
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            print("✅ [AudioSession] Simulator mode active (.playAndRecord)")
+            #else
             try session.setCategory(
                 .record,
                 mode: .measurement,
                 options: [.mixWithOthers, .allowBluetooth, .allowBluetoothA2DP]
             )
             try session.setPreferredIOBufferDuration(0.02)
+            print("✅ [AudioSession] Measurement mode active (raw audio)")
+            #endif
+            
             try session.setActive(true, options: .notifyOthersOnDeactivation)
-            print("✅ [AudioSession] measurement mode active (raw audio)")
         } catch {
             print("❌ Session error: \(error)")
         }
@@ -536,6 +554,7 @@ class QuickCaptioningViewController: UIViewController,
         // VPIO strips out acoustic anomalies that the VL1004 model actually
         // uses to differentiate between speakers. Raw .measurement audio gives
         // the most reliable voiceprints.
+        #if !targetEnvironment(simulator)
         if #available(iOS 13.0, *) {
             do {
                 try inputNode.setVoiceProcessingEnabled(false)
@@ -544,6 +563,7 @@ class QuickCaptioningViewController: UIViewController,
                 print("⚠️ [AudioEngine] Could not enable voice processing: \(error)")
             }
         }
+        #endif
 
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)

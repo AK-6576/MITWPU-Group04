@@ -78,7 +78,10 @@ class AudioDiarizer: ObservableObject {
             self.model = try VL1004(configuration: config)
             print("✅ VL1004 Model Loaded Successfully")
         } catch {
-            print("❌ Model Load Error: \(error)")
+            print("❌ Model Load Error: \(error.localizedDescription)")
+            #if targetEnvironment(simulator)
+            print("💡 Note: CoreML models can sometimes fail on simulators due to architecture mismatches.")
+            #endif
         }
     }
 
@@ -113,6 +116,15 @@ class AudioDiarizer: ObservableObject {
 
     // MARK: - Audio Processing
     func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
+        #if targetEnvironment(simulator)
+        // Debug: ensure audio is actually reaching the diarizer
+        var frameCount = 0
+        frameCount += 1
+        if frameCount % 100 == 0 {
+            print("🔊 [Diarizer] Audio tap pulse check: \(frameCount) frames received")
+        }
+        #endif
+
         if soundAnalyzer == nil { setupSoundAnalyzer(format: buffer.format) }
         
         let framePos = analysisFrame
