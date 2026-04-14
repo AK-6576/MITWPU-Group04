@@ -13,7 +13,7 @@ class QuickCaptionsOutgoingCell: UICollectionViewCell {
     @IBOutlet weak var QCbubbleView: UIView!
     @IBOutlet weak var QCmessageLabel: UILabel!
     
-override func awakeFromNib() {
+    override func awakeFromNib() {
         super.awakeFromNib()
         QCbubbleView.backgroundColor = .systemBlue
         QCmessageLabel.textColor = .white
@@ -21,9 +21,26 @@ override func awakeFromNib() {
         QCbubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
     }
 
-    
-    
-            override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        QCbubbleView.layer.removeAllAnimations()
+        QCbubbleView.alpha = 1.0
+    }
+
+    /// Call with `true` while the ML model is still identifying the speaker.
+    func setIdentifying(_ identifying: Bool) {
+        QCbubbleView.layer.removeAllAnimations()
+        if identifying {
+            UIView.animate(withDuration: 0.75, delay: 0,
+                           options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut]) {
+                self.QCbubbleView.alpha = 0.45
+            }
+        } else {
+            QCbubbleView.alpha = 1.0
+        }
+    }
+
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         if widthConstraint == nil {
             widthConstraint = contentView.widthAnchor.constraint(equalToConstant: layoutAttributes.frame.width)
             widthConstraint?.isActive = true
@@ -51,7 +68,7 @@ class QuickCaptionsIncomingCell: UICollectionViewCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
     
-var onLabelTapped: (() -> Void)?
+    var onLabelTapped: (() -> Void)?
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -64,9 +81,31 @@ var onLabelTapped: (() -> Void)?
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
     }
 
-    
-    
-            override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        bubbleView.layer.removeAllAnimations()
+        bubbleView.alpha = 1.0
+        nameLabel.layer.removeAllAnimations()
+        nameLabel.alpha = 1.0
+    }
+
+    /// Call with `true` while the ML model is still identifying the speaker.
+    /// Shows a gentle pulsing glow on the name label — non-intrusive but clearly
+    /// communicates that identification is in progress.
+    func setIdentifying(_ identifying: Bool) {
+        nameLabel.layer.removeAllAnimations()
+        if identifying {
+            nameLabel.text = "Identifying speaker…"
+            UIView.animate(withDuration: 0.65, delay: 0,
+                           options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut]) {
+                self.nameLabel.alpha = 0.3
+            }
+        } else {
+            nameLabel.alpha = 1.0
+        }
+    }
+
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         if widthConstraint == nil {
             widthConstraint = contentView.widthAnchor.constraint(equalToConstant: layoutAttributes.frame.width)
             widthConstraint?.isActive = true

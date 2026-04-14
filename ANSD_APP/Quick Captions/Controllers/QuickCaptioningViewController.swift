@@ -52,12 +52,24 @@ class QuickCaptioningViewController: UIViewController,
     var hasEnrolled = false
     private var forceNewBubble = false
     private var cleanupIDs: [UUID] = []
+    /// Tracks which bubbles have already had cleanup scheduled, preventing
+    /// double-scheduling when finalizeBubble is called more than once.
+    private var cleanedBubbleIDs = Set<UUID>()
 
     // MARK: - Apple Intelligence — Semantic Diarization
     /// SemanticDiarizationAdvisor instance (iOS 18.1+ only; nil on older OS).
     private var semanticAdvisor: AnyObject? = nil
     /// Set to true by the advisor's async prediction; consumed in processBuffer.
     private var semanticSpeakerChangeExpected = false
+
+    // MARK: - Diarizer Staleness Guard
+    /// Timestamp of the most recent diarizer result. Used to detect when the
+    /// model hasn't produced a result recently; in that window we treat identity
+    /// as unknown (-1) to prevent words bleeding into the wrong speaker's bubble.
+    private var lastDiarizerFireTime: Date? = nil
+    /// How long a diarizer result is considered "fresh". The VL1004 model needs
+    /// 6 s to fill its first window, so we allow a bit more headroom.
+    private let diarizerStalenessThreshold: TimeInterval = 5.0
 
     // MARK: - Lifecycle
     
@@ -184,6 +196,8 @@ class QuickCaptioningViewController: UIViewController,
         consumedTranscriptOffset = 0
         transcriptBuffer = ""
         forceNewBubble = false
+        cleanedBubbleIDs.removeAll()
+        lastDiarizerFireTime = nil
         
         startSpeechRecognition()
         try? startAudioEngine()
@@ -232,8 +246,11 @@ class QuickCaptioningViewController: UIViewController,
             guard let self = self else { return }
             
             if self.consumedTranscriptOffset > fullText.count {
-                // Speech session likely restarted or adjusted; reset offset to avoid blocking transcript.
-                self.consumedTranscriptOffset = 0
+                // SFSpeechRecognizer revised its transcript (e.g. the final result is
+                // slightly shorter than the last partial). There is no new content here —
+                // just cap the offset and exit so we never replay already-spoken words.
+                self.consumedTranscriptOffset = fullText.count
+                return
             }
             
             let startIndex = fullText.index(fullText.startIndex, offsetBy: self.consumedTranscriptOffset)
@@ -272,11 +289,18 @@ class QuickCaptioningViewController: UIViewController,
     private func processBuffer() {
         guard !transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
-        // Use -1 as a sentinel for "diarizer hasn't fired yet".
-        // Text streams into a neutral pending bubble immediately so the user
-        // sees captions right away; handleDiarizationRefinement corrects the
-        // speaker/colour in-place once the first diarizer result arrives.
-        let speakerID = currentSpeakerID ?? -1
+        // Staleness guard: if the diarizer hasn't fired for > diarizerStalenessThreshold
+        // seconds, consider speaker identity unknown. This prevents words from the NEW
+        // speaker bleeding into the PREVIOUS speaker's bubble during the ML window.
+        let diarizerIsStale: Bool
+        if let lastFire = lastDiarizerFireTime {
+            diarizerIsStale = Date().timeIntervalSince(lastFire) > diarizerStalenessThreshold
+        } else {
+            diarizerIsStale = true // No result ever received yet.
+        }
+
+        // Use -1 as a sentinel for "diarizer hasn't fired yet / result is stale".
+        let speakerID = diarizerIsStale ? -1 : (currentSpeakerID ?? -1)
 
         // Apple Intelligence semantic override: if the on-device LLM predicted
         // a speaker change since the last bubble, honour it.
@@ -344,60 +368,55 @@ class QuickCaptioningViewController: UIViewController,
             let activeIndex = self.messages.count - 1
             let currentText = self.messages[activeIndex].text
             
-            // If the bubble is currently holding a placeholder, replace it entirely.
-            // Otherwise, append the new text.
-            let isPlaceholder = (currentText == "..." || currentText == "Identifying\u{2026}" || currentText == "Identifying..." || currentText == "Listening...")
-            let combinedText = isPlaceholder ? text : currentText + text
-            
-            // Only split if we exceed the 3-line limit (~240 chars)
-            if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                var splitIndex = combinedText.index(combinedText.startIndex, offsetBy: MAX_BUBBLE_CHAR_LIMIT)
-                
-                // Try to find the last sentence boundary before the limit
+            // If the bubble holds a placeholder, replace it; otherwise append.
+            let isPlaceholder = (currentText == "..." || currentText == "Identifying\u{2026}"
+                                 || currentText == "Identifying..." || currentText == "Listening...")
+            let baseText = isPlaceholder ? "" : currentText
+            let combinedText = baseText + text
+
+            // Once baseText has reached the 3-line limit, close the bubble at
+            // the next natural break in the incoming delta.
+            if baseText.count >= MAX_BUBBLE_CHAR_LIMIT {
+                // 1. Prefer a sentence boundary (present when AI cleanup has already
+                //    run on the previous bubble and punctuation exists).
                 let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
-                var bestBoundaryRange: Range<String.Index>? = nil
-                
-                let searchRange = combinedText.startIndex..<splitIndex
+                var splitEnd: String.Index? = nil
                 for boundary in boundaries {
-                    if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
-                        if bestBoundaryRange == nil || range.lowerBound > bestBoundaryRange!.lowerBound {
-                            bestBoundaryRange = range
-                        }
+                    if let range = text.range(of: boundary) {
+                        // Take the FIRST boundary found; include the punctuation mark.
+                        let candidate = text.index(range.lowerBound, offsetBy: 1)
+                        if splitEnd == nil { splitEnd = candidate }
                     }
                 }
-                
-                if let range = bestBoundaryRange {
-                    let firstPart = String(combinedText[...range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    let secondPart = String(combinedText[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    
+
+                // 2. Raw SFSpeechRecognizer output has no punctuation — fall back to
+                //    the first word boundary (space) in the delta so we never cut mid-word.
+                if splitEnd == nil, let spaceRange = text.range(of: " ") {
+                    splitEnd = spaceRange.upperBound
+                }
+
+                if let split = splitEnd {
+                    let firstPart = (baseText + String(text[text.startIndex..<split]))
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let remainder = String(text[split...])
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+
                     self.updateBubbleUI(at: activeIndex, text: firstPart)
                     self.finalizeBubble(at: activeIndex)
-                    
-                    if let speakerID = self.messages[activeIndex].speakerID {
-                        self.flushBufferToNewBubble(text: secondPart.isEmpty ? "..." : secondPart, speakerID: speakerID)
+
+                    if !remainder.isEmpty, let speakerID = self.messages[activeIndex].speakerID {
+                        self.flushBufferToNewBubble(text: remainder, speakerID: speakerID)
                     }
                 } else {
-                    // No sentence boundary found, keep it together for now or split at space
-                    if let spaceRange = combinedText.range(of: " ", options: .backwards, range: searchRange) {
-                        let firstPart = String(combinedText[...spaceRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        let secondPart = String(combinedText[spaceRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        
-                        self.updateBubbleUI(at: activeIndex, text: firstPart)
-                        self.finalizeBubble(at: activeIndex)
-                        
-                        if let speakerID = self.messages[activeIndex].speakerID {
-                            self.flushBufferToNewBubble(text: secondPart.isEmpty ? "..." : secondPart, speakerID: speakerID)
-                        }
-                    } else {
-                        // Hard split as last resort
-                        self.updateBubbleUI(at: activeIndex, text: combinedText)
-                    }
+                    // No word boundary in this delta (extremely rare) — keep accumulating.
+                    self.updateBubbleUI(at: activeIndex, text: combinedText)
                 }
             } else {
                 self.updateBubbleUI(at: activeIndex, text: combinedText)
             }
         }
     }
+
     
     // MARK: - Cleanup & UI Updates
     
@@ -405,11 +424,17 @@ class QuickCaptioningViewController: UIViewController,
         guard index < messages.count, index < cleanupIDs.count else { return }
         let text = messages[index].text
         let speaker = messages[index].sender
-        guard speaker != "Listening...", speaker != "System" else { return }
+        // Skip system/placeholder bubbles — they have no real content to clean.
+        guard speaker != "Listening...", speaker != "System",
+              speaker != "Identifying\u{2026}", speaker != "Identifying..." else { return }
 
         self.updateBubbleUI(at: index, text: text)
 
         let targetID = cleanupIDs[index]
+
+        // Deduplicate: never schedule AI cleanup twice for the same bubble.
+        guard !cleanedBubbleIDs.contains(targetID) else { return }
+        cleanedBubbleIDs.insert(targetID)
 
         cleanupManager.scheduleCleanup(text: text, at: index) { [weak self] _, cleaned in
             guard let self = self else { return }
@@ -424,9 +449,7 @@ class QuickCaptioningViewController: UIViewController,
         }
 
         // 🧠 Apple Intelligence: record this utterance and pre-compute whether
-        // the NEXT utterance will be a speaker change.  The LLM runs during the
-        // inter-utterance silence so the prediction is ready before the next
-        // processBuffer() call.
+        // the NEXT utterance will be a speaker change.
         if #available(iOS 18.1, *),
            let advisor = semanticAdvisor as? SemanticDiarizationAdvisor {
             advisor.record(speaker: speaker, text: text)
@@ -462,7 +485,10 @@ class QuickCaptioningViewController: UIViewController,
             let textIsPlaceholder = (last.text == "Listening..." || last.text == "..." || last.text == "Identifying\u{2026}" || last.text == "Identifying...")
             if senderIsPlaceholder || textIsPlaceholder {
                 messages.removeLast()
-                if !cleanupIDs.isEmpty { cleanupIDs.removeLast() }
+                if !cleanupIDs.isEmpty {
+                    let removedID = cleanupIDs.removeLast()
+                    cleanedBubbleIDs.remove(removedID)
+                }
             }
         }
 
@@ -495,6 +521,8 @@ class QuickCaptioningViewController: UIViewController,
             self.currentSpeakerID = id
 
             if id != nil {
+                // Record freshness timestamp every time we get a real result.
+                self.lastDiarizerFireTime = Date()
                 self.processBuffer()
             }
 
@@ -693,15 +721,23 @@ class QuickCaptioningViewController: UIViewController,
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let msg = messages[indexPath.row]
+        // A bubble is "pending" (ML still identifying) when its speakerID is -1.
+        let isPending = msg.speakerID == -1
+
         if msg.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCIncomingCell", for: indexPath) as! QuickCaptionsIncomingCell
             cell.messageLabel.text = msg.text
             cell.nameLabel.text = msg.sender
             cell.onLabelTapped = { [weak self] in self?.showRenameAlert(for: indexPath.row) }
+            // Show pulsing animation only on the last bubble while still pending.
+            let isLastBubble = (indexPath.row == messages.count - 1)
+            cell.setIdentifying(isPending && isLastBubble)
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCOutgoingCell", for: indexPath) as! QuickCaptionsOutgoingCell
             cell.QCmessageLabel.text = msg.text
+            let isLastBubble = (indexPath.row == messages.count - 1)
+            cell.setIdentifying(isPending && isLastBubble)
             return cell
         }
     }
@@ -776,6 +812,8 @@ class QuickCaptioningViewController: UIViewController,
     private func handleDiarizationRefinement(_ history: [DiarizationEvent]) {
         guard !history.isEmpty else { return }
         var hasChanges = false
+        var newlyIdentifiedIndices: [Int] = []
+
         for i in 0..<messages.count {
             if let timestamp = messages[i].timestamp {
                 // Primary: find the most recent diarizer event before this message.
@@ -785,6 +823,7 @@ class QuickCaptioningViewController: UIViewController,
                                  ?? history.first
                 if let event = matchingEvent,
                    messages[i].speakerID != event.assignedSpeakerID {
+                    let wasUnknown = messages[i].speakerID == -1
                     let sid = event.assignedSpeakerID
                     messages[i].speakerID = sid
                     messages[i].isIncoming = (sid != 0)
@@ -792,6 +831,13 @@ class QuickCaptioningViewController: UIViewController,
                         ? (diarizer.speakerNames[0] ?? "Me")
                         : (diarizer.speakerNames[sid] ?? "Speaker \(sid)")
                     hasChanges = true
+
+                    // If this bubble just got a real identity for the first time,
+                    // schedule AI cleanup now — it was skipped earlier because the
+                    // sender was still "Identifying…".
+                    if wasUnknown && i < cleanupIDs.count {
+                        newlyIdentifiedIndices.append(i)
+                    }
                 }
             }
         }
@@ -799,6 +845,10 @@ class QuickCaptioningViewController: UIViewController,
             UIView.performWithoutAnimation {
                 self.collectionView.reloadData()
             }
+        }
+        // Trigger cleanup after the UI has been refreshed.
+        for i in newlyIdentifiedIndices {
+            finalizeBubble(at: i)
         }
     }
 }

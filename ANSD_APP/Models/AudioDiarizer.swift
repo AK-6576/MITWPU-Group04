@@ -129,9 +129,9 @@ class AudioDiarizer: ObservableObject {
         }
         #endif
 
-        // Only run SoundAnalysis on device — the simulator's virtual audio driver
-        // never produces audio that scores as 'speech', so the gate stays closed.
-        #if !targetEnvironment(simulator)
+        // SoundAnalysis runs on both device and simulator for sound classification.
+        // On the simulator the speech gate result is ignored for diarization inference
+        // (gateOpen is forced true in processSamples), but classification logging still works.
         if soundAnalyzer == nil { setupSoundAnalyzer(format: buffer.format) }
         let framePos = analysisFrame
         analysisFrame += AVAudioFramePosition(buffer.frameLength)
@@ -139,7 +139,6 @@ class AudioDiarizer: ObservableObject {
         analysisQueue.async { [weak self] in
             self?.soundAnalyzer?.analyze(bufferCopy, atAudioFramePosition: framePos)
         }
-        #endif
 
         guard let converter = getConverter(from: buffer.format, to: targetFormat) else { return }
         let ratio = Float(targetFormat.sampleRate) / Float(buffer.format.sampleRate)
