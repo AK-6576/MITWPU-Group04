@@ -71,6 +71,11 @@ class AudioDiarizer: ObservableObject {
     private var pendingInferenceCount = 0
     private let maxPendingInferences  = 1
 
+    // MARK: - Simulator debug
+    #if targetEnvironment(simulator)
+    private var simFrameCount = 0
+    #endif
+
     init() {
         let config = MLModelConfiguration()
         config.computeUnits = .all
@@ -117,23 +122,24 @@ class AudioDiarizer: ObservableObject {
     // MARK: - Audio Processing
     func handleAudio(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
         #if targetEnvironment(simulator)
-        // Debug: ensure audio is actually reaching the diarizer
-        var frameCount = 0
-        frameCount += 1
-        if frameCount % 100 == 0 {
-            print("🔊 [Diarizer] Audio tap pulse check: \(frameCount) frames received")
+        // Track frames received via instance variable (local vars reset every call).
+        simFrameCount += 1
+        if simFrameCount % 200 == 0 {
+            print("🔊 [Diarizer] Simulator audio pulse: \(simFrameCount) frames received")
         }
         #endif
 
+        // Only run SoundAnalysis on device — the simulator's virtual audio driver
+        // never produces audio that scores as 'speech', so the gate stays closed.
+        #if !targetEnvironment(simulator)
         if soundAnalyzer == nil { setupSoundAnalyzer(format: buffer.format) }
-        
         let framePos = analysisFrame
         analysisFrame += AVAudioFramePosition(buffer.frameLength)
         let bufferCopy = buffer
-        
         analysisQueue.async { [weak self] in
             self?.soundAnalyzer?.analyze(bufferCopy, atAudioFramePosition: framePos)
         }
+        #endif
 
         guard let converter = getConverter(from: buffer.format, to: targetFormat) else { return }
         let ratio = Float(targetFormat.sampleRate) / Float(buffer.format.sampleRate)
@@ -149,27 +155,31 @@ class AudioDiarizer: ObservableObject {
 
         if let channelData = outputBuffer.floatChannelData {
             var samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
-            // VPIO hardware NR (voiceChat mode) already handles noise suppression.
-            // Peak-normalise whatever survived, then let the gate decide.
             normalizeAudioSignal(&samples)
             DispatchQueue.main.async { self.processSamples(samples) }
         }
     }
 
     private func processSamples(_ samples: [Float]) {
+        // On the simulator the SoundAnalysis VAD gate is bypassed (see handleAudio),
+        // so we treat all audio as speech for both enrollment and normal inference.
+        #if targetEnvironment(simulator)
+        let gateOpen = true
+        #else
+        let gateOpen = speechGate.isActive
+        #endif
+
         if isEnrolling {
-            // ONLY collect samples for enrollment if the speech gate is active.
-            // This prevents silence or background noise from being saved as the user's profile.
-            if speechGate.isActive {
+            // Collect samples only when the gate is open (i.e. always on simulator).
+            if gateOpen {
                 collectedSamples.append(contentsOf: samples)
                 if collectedSamples.count % 16000 == 0 {
                     print("🎙 Enrolling: Captured \(collectedSamples.count)/\(requiredSamples) speech samples...")
                 }
             }
         } else {
-            // ALWAYS append samples during normal session to ensure continuous inference.
+            // Always collect samples during normal session.
             collectedSamples.append(contentsOf: samples)
-            
             if collectedSamples.count % 16000 == 0 {
                 print("🎤 Collected \(collectedSamples.count)/\(requiredSamples) samples...")
             }
@@ -179,11 +189,8 @@ class AudioDiarizer: ObservableObject {
         let chunk = Array(collectedSamples.prefix(requiredSamples))
         collectedSamples.removeFirst(stride)
         
-        if speechGate.isActive {
+        if gateOpen {
             scheduleInference(on: chunk)
-        } else {
-            // Optional: You can still run inference but ignore "New Speaker" results.
-            // But skipping it is cleaner and saves battery.
         }
     }
 
