@@ -2,7 +2,7 @@
   <img src="ANSD_APP/Assets.xcassets/AppIcon.appiconset/AppLogo.png" alt="SyncWave Logo" width="120" height="120" style="border-radius: 24px;" />
 </p>
 
-<h1 align="center">Sanwād</h1>
+<h1 align="center">Samwād</h1>
 
 <p align="center">
   <b>Real-Time Speech Captioning & Speaker Identification for iOS</b>
