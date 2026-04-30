@@ -45,14 +45,10 @@ class TextCleanupManager {
     private func performAIProcessing(text: String, index: Int, completion: @escaping (Int, String) -> Void) async {
         guard !text.isEmpty, text.count > 3 else { return }
 
-        // SystemLanguageModel.isAvailable returns false on the simulator even when
-        // FoundationModels is present. Skip the check on simulator so cleanup runs.
-        #if !targetEnvironment(simulator)
         guard model.isAvailable else {
             print("⚠️ [TextCleanup] FoundationModels not available on this device.")
             return
         }
-        #endif
         
         let prompt = """
         Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 

@@ -131,15 +131,15 @@ class QuickCaptioningViewController: UIViewController,
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
         
-        if let request = MKReverseGeocodingRequest(location: loc) {
-            request.getMapItems { [weak self] mapItems, error in
-                guard let self = self else { return }
-                if let place = mapItems?.first {
-                    let city = place.addressRepresentations?.cityName ?? ""
-                    let country = place.addressRepresentations?.regionName ?? ""
-                    if !city.isEmpty {
-                        self.currentLocationString = "\(city), \(country)"
-                    }
+        CLGeocoder().reverseGeocodeLocation(loc) { [weak self] placemarks, error in
+            guard let self = self else { return }
+            if let place = placemarks?.first {
+                let city = place.locality ?? ""
+                let country = place.country ?? ""
+                if !city.isEmpty {
+                    self.currentLocationString = "\(city), \(country)"
+                    // Sync to diarizer for retroactive context boosts
+                    self.diarizer.currentLocation = self.currentLocationString
                 }
             }
         }
@@ -300,14 +300,18 @@ class QuickCaptioningViewController: UIViewController,
         }
 
         // Use -1 as a sentinel for "diarizer hasn't fired yet / result is stale".
-        let speakerID = diarizerIsStale ? -1 : (currentSpeakerID ?? -1)
+        var speakerID = diarizerIsStale ? -1 : (currentSpeakerID ?? -1)
 
         // Apple Intelligence semantic override: if the on-device LLM predicted
-        // a speaker change since the last bubble, honour it.
-        // (Skip during pending phase — speaker is unknown anyway.)
-        if speakerID != -1 && semanticSpeakerChangeExpected {
+        // a speaker change since the last bubble, honour it aggressively.
+        if semanticSpeakerChangeExpected {
             semanticSpeakerChangeExpected = false
             forceNewBubble = true
+            // If the acoustic model still claims it's the old speaker (lagging), 
+            // override it to Unknown. Retroactive refinement will fix it shortly.
+            if let lastMsg = messages.last, lastMsg.speakerID == speakerID {
+                speakerID = -1
+            }
         }
 
         let textToFlush = transcriptBuffer

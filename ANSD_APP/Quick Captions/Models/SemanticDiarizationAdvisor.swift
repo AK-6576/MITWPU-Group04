@@ -53,10 +53,6 @@ final class SemanticDiarizationAdvisor {
     /// Returns `false` immediately when Apple Intelligence is unavailable or
     /// context is too thin (< 2 utterances).
     func predictSpeakerChange() async -> Bool {
-#if targetEnvironment(simulator)
-        print("⚠️ [SemanticAdvisor] Bypassed Apple Intelligence on Simulator to prevent FoundationModels EXC_BREAKPOINT.")
-        return false
-#else
         guard SystemLanguageModel.default.isAvailable,
               context.count >= 2 else { return false }
         
@@ -65,11 +61,25 @@ final class SemanticDiarizationAdvisor {
             .joined(separator: "\n")
         
         let prompt = """
-        You are a real-time conversation-turn detector embedded in a \
-        captioning app for people with hearing loss. Analyse the dialogue \
-        below and predict whether the NEXT utterance will come from a \
-        DIFFERENT speaker than the last one shown.
+        You are a real-time conversation-turn detector embedded in a captioning \
+        app for people with hearing loss. Analyse the dialogue below and predict \
+        whether the NEXT utterance will come from a DIFFERENT speaker than the \
+        last one shown.
         
+        Examples:
+        Dialogue:
+        [Me]: Are you coming to the party?
+        Expected: change=true (Unanswered question, waiting for reply)
+        
+        Dialogue:
+        [Speaker 1]: I think we should go left.
+        [Speaker 1]: Actually, maybe right is better.
+        Expected: change=false (Continuing thought)
+        
+        Dialogue:
+        [Me]: Sounds good. Let's do it.
+        Expected: change=true (Topic hand-off / conversation turn pass)
+
         Conversation so far:
         \(dialogue)
         
@@ -93,6 +103,5 @@ final class SemanticDiarizationAdvisor {
             // LLM errors are non-fatal; acoustic model handles it alone.
             return false
         }
-#endif
     }
 }

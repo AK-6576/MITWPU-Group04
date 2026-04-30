@@ -33,14 +33,14 @@ class AudioDiarizer: ObservableObject {
     private var collectedSamples: [Float] = []
 
     // MARK: - Core Diarization Parameters
-    private let matchThreshold: Float = 0.65 // Strictly identify new speakers
-    private let deadzoneThreshold: Float = 0.45 // Noise floor
-    private let userMatchThreshold: Float = 0.48 // More lenient for enrolled user (compensation for VPIO)
-    private let learningThreshold: Float = 0.82 // Only learn from high-quality audio
+    private let matchThreshold: Float = 0.72 // Strictly identify new speakers (was 0.65)
+    private let deadzoneThreshold: Float = 0.50 // Noise floor (was 0.45)
+    private let userMatchThreshold: Float = 0.63 // Stricter match for enrolled user (was 0.48)
+    private let learningThreshold: Float = 0.85 // Only learn from high-quality audio (was 0.82)
     
     // MARK: - Temporal Continuity & Probation
     private var unknownFrameCount = 0
-    private let probationLimit = 3 // 0.9s to completely ride out transitions
+    private let probationLimit = 2 // Faster reaction to new speakers (was 3)
     private var lastMatchedSpeakerID: Int? = nil
     
     // MARK: - SoundAnalysis Speech Gate
@@ -241,7 +241,9 @@ class AudioDiarizer: ObservableObject {
         }
 
         if speakerProfiles.isEmpty {
-            lastMatchedSpeakerID = createNewSpeaker(with: normVector)
+            let newID = createNewSpeaker(with: normVector)
+            lastMatchedSpeakerID = newID
+            addToHistory(vector: normVector, id: newID, score: 1.0)
             return
         }
 
@@ -256,8 +258,8 @@ class AudioDiarizer: ObservableObject {
             let raw = max(dynScore, anchorScore)
             var score = raw
             
-            // Magnet for ID 0 (User's Voice) - Increased to 0.15 to account for mic mode drift.
-            if id == 0 { score += 0.15 }
+            // Magnet for ID 0 (User's Voice) - Reduced to prevent merging similar voices
+            if id == 0 { score += 0.05 }
             // Continuity boost
             if id == lastMatchedSpeakerID { score += 0.05 }
             
@@ -297,17 +299,23 @@ class AudioDiarizer: ObservableObject {
         } else if bestMatch.score < deadzoneThreshold {
             // POTENTIAL NEW SPEAKER (Probation Phase)
             unknownFrameCount += 1
+            currentSpeakerID = nil // Prevent bleed
             if unknownFrameCount >= probationLimit {
                 print("👽 [NEW VOICE] Persistent unknown signature. Creating New Speaker!")
-                lastMatchedSpeakerID = createNewSpeaker(with: normVector)
+                let newID = createNewSpeaker(with: normVector)
+                lastMatchedSpeakerID = newID
                 unknownFrameCount = 0
+                addToHistory(vector: normVector, id: newID, score: bestMatch.score)
             } else {
                 print("🚧 Unknown voice detected. Probation: \(unknownFrameCount)/\(probationLimit) [Score: \(String(format: "%.2f", bestMatch.score))]")
+                addToHistory(vector: normVector, id: -1, score: bestMatch.score)
             }
         } else {
             // THE DEADZONE
             unknownFrameCount = 0
+            currentSpeakerID = nil // Prevent bleed
             print("🌫 Noisy/Transition Frame (Score \(String(format: "%.2f", bestMatch.score))). Ignored.")
+            addToHistory(vector: normVector, id: -1, score: bestMatch.score)
         }
     }
 
@@ -516,10 +524,15 @@ class AudioDiarizer: ObservableObject {
                 
                 // If a significantly better match is found, update it
                 let threshold = (bestID == 0) ? self.userMatchThreshold : self.matchThreshold
-                if bestID != currentID && bestScore > (event.confidence + 0.10) && bestScore >= threshold {
+                let isUnassigned = (currentID == -1)
+                let significantImprovement = bestScore > (event.confidence + 0.10)
+                
+                if bestID != currentID && bestScore >= threshold && (isUnassigned || significantImprovement) {
                     DispatchQueue.main.async {
                         self.segmentHistory[i].assignedSpeakerID = bestID
-                        self.segmentHistory[i].confidence = bestScore
+                        if isUnassigned {
+                            self.segmentHistory[i].confidence = bestScore
+                        }
                     }
                     hasChanges = true
                 }
