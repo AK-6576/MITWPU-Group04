@@ -265,7 +265,7 @@ class GroupNewSummaryViewController: UIViewController, UITableViewDelegate, UITa
     }
     
     private func shareAsPDF() {
-        let pdfMetaData = [kCGPDFContextCreator: "ANSD App", kCGPDFContextTitle: conversationTitle]
+        let pdfMetaData = [kCGPDFContextCreator: "Sāmwaad", kCGPDFContextTitle: conversationTitle]
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = pdfMetaData as [String: Any]
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595.2, height: 841.8), format: format)

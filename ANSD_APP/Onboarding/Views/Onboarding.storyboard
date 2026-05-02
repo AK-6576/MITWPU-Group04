@@ -32,7 +32,7 @@
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="TME-AH-wMb" userLabel="TextGroupStack">
                                                 <rect key="frame" x="33.666666666666657" y="172" width="278" height="69.666666666666686"/>
                                                 <subviews>
-                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Samwād" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Z93-Cc-idf">
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sāmwaad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Z93-Cc-idf">
                                                         <rect key="frame" x="0.0" y="0.0" width="278" height="38.333333333333336"/>
                                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="32"/>
                                                         <nil key="textColor"/>
