@@ -1,20 +1,4 @@
-//
-//  SemanticDiarizationAdvisor.swift
-//  ANSD_APP
-//
-//  Created by Antigravity on 26/03/26.
-//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
-//
-//  Uses Apple Intelligence (FoundationModels, on-device LLM) to predict
-//  speaker-change points from *conversational context* — things the acoustic
-//  VL1004 model cannot know, such as question-answer pairs, topic hand-offs,
-//  or pronoun shifts.  Runs fully on-device; no network, no privacy risk.
-//
-//  Availability: iOS 18.1+ with Apple Intelligence enabled.
-//  The rest of the app degrades gracefully when unavailable.
-//
-
-import Foundation
+#if canImport(FoundationModels) && !targetEnvironment(simulator)
 import FoundationModels
 
 @available(iOS 18.1, *)
@@ -22,86 +6,62 @@ final class SemanticDiarizationAdvisor {
     
     // MARK: - Structured Output
     
-    /// The single boolean the LLM returns per prediction call.
     @Generable
     struct Prediction {
-        @Guide(description: """
-        Set to true ONLY if the next utterance in the conversation is very \
-        likely to come from a DIFFERENT speaker than the last one, based on \
-        conversational cues such as: a direct question expecting an answer, \
-        a topic hand-off, a reply word ('Yes', 'No', 'Sure', 'Right'), or a \
-        clear change in speaking style. Default to false when uncertain.
-        """)
+        @Guide(description: "True if the next utterance is likely from a different speaker based on conversation flow.")
         var expectsSpeakerChange: Bool
     }
     
     // MARK: - State
     
-    private lazy var session = LanguageModelSession()
     private var context: [(speaker: String, text: String)] = []
-    private let maxContext = 6   // last 6 utterances ≈ 30–60 s of conversation
+    private let maxContext = 6
     
     // MARK: - Public API
     
-    /// Append a finalised utterance to the rolling context window.
+    /// Records an utterance to the rolling context window for semantic analysis.
     func record(speaker: String, text: String) {
         context.append((speaker: speaker, text: text))
         if context.count > maxContext { context.removeFirst() }
     }
     
-    /// Predict whether the next utterance will come from a different speaker.
-    /// Returns `false` immediately when Apple Intelligence is unavailable or
-    /// context is too thin (< 2 utterances).
+    /// Uses on-device LLM to predict if a speaker change is imminent.
     func predictSpeakerChange() async -> Bool {
-        guard SystemLanguageModel.default.isAvailable,
-              context.count >= 2 else { return false }
+        guard SystemLanguageModel.default.isAvailable, context.count >= 2 else { return false }
         
         let dialogue = context
             .map { "[\($0.speaker)]: \($0.text)" }
             .joined(separator: "\n")
         
         let prompt = """
-        You are a real-time conversation-turn detector embedded in a captioning \
-        app for people with hearing loss. Analyse the dialogue below and predict \
-        whether the NEXT utterance will come from a DIFFERENT speaker than the \
-        last one shown.
+        Analyze the conversation context below and predict if the NEXT utterance will be from a DIFFERENT speaker.
         
-        Examples:
-        Dialogue:
-        [Me]: Are you coming to the party?
-        Expected: change=true (Unanswered question, waiting for reply)
-        
-        Dialogue:
-        [Speaker 1]: I think we should go left.
-        [Speaker 1]: Actually, maybe right is better.
-        Expected: change=false (Continuing thought)
-        
-        Dialogue:
-        [Me]: Sounds good. Let's do it.
-        Expected: change=true (Topic hand-off / conversation turn pass)
-
-        Conversation so far:
+        Context:
         \(dialogue)
         
         Rules:
-        - Predict change=true for unanswered questions, reply starters, \
-          or clear topic hand-offs.
-        - Predict change=false when the last speaker is continuing a \
-          thought, listing items, or narrating.
-        - When in doubt, predict false (acoustic model is the primary signal).
+        - Return change=true for questions awaiting answers or topic hand-offs.
+        - Return change=false if the last speaker is likely to continue their thought.
         """
         
         do {
-            let response = try await session.respond(to: prompt,
-                                                     generating: Prediction.self)
+            let session = LanguageModelSession()
+            let response = try await session.respond(to: prompt, generating: Prediction.self)
             let result = response.content.expectsSpeakerChange
             if result {
-                print("🧠 [SemanticAdvisor] Speaker change predicted by Apple Intelligence")
+                print("[SemanticAdvisor] Speaker change predicted from context.")
             }
             return result
         } catch {
-            // LLM errors are non-fatal; acoustic model handles it alone.
+            print("[SemanticAdvisor] Warning: Prediction failed: \(error)")
             return false
         }
     }
 }
+#else
+import Foundation
+final class SemanticDiarizationAdvisor {
+    func record(speaker: String, text: String) {}
+    func predictSpeakerChange() async -> Bool { return false }
+}
+#endif

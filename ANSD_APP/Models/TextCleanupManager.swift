@@ -7,69 +7,79 @@
 //
 
 import Foundation
-import FoundationModels // Apple Intelligence Framework
+
+#if canImport(FoundationModels) && !targetEnvironment(simulator)
+import FoundationModels
+#endif
 
 class TextCleanupManager {
     
     // MARK: - Properties
+    
+    #if !targetEnvironment(simulator)
     private let model = SystemLanguageModel.default
+    #endif
     private var workItems: [Int: DispatchWorkItem] = [:]
     
-    // REDUCED: 0.4 second delay for faster response
-    private let delay: TimeInterval = 0.4
+    /// Delay before triggering AI processing to allow for mid-sentence corrections.
+    private let processingDelay: TimeInterval = 0.4
     
     // MARK: - API
     
+    /// Schedules an AI-based cleanup for the given text.
     func scheduleCleanup(text: String, at index: Int, completion: @escaping (Int, String) -> Void) {
-        
         workItems[index]?.cancel()
         
         let item = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
-            
             Task {
                 await self.performAIProcessing(text: text, index: index, completion: completion)
             }
-            
             DispatchQueue.main.async {
                 self.workItems.removeValue(forKey: index)
             }
         }
         
         workItems[index] = item
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + delay, execute: item)
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + processingDelay, execute: item)
     }
     
-    // MARK: - Private AI Logic
+    func cancelAllPendingTasks() {
+        workItems.values.forEach { $0.cancel() }
+        workItems.removeAll()
+    }
+    
+    // MARK: - Private Logic
     
     private func performAIProcessing(text: String, index: Int, completion: @escaping (Int, String) -> Void) async {
         guard !text.isEmpty, text.count > 3 else { return }
 
+        #if targetEnvironment(simulator)
+        // Simulator fallback
+        await MainActor.run { completion(index, text) }
+        #else
         guard model.isAvailable else {
-            print("⚠️ [TextCleanup] FoundationModels not available on this device.")
+            print("[TextCleanup] Warning: FoundationModels not available.")
+            await MainActor.run { completion(index, text) }
             return
         }
         
         let prompt = """
-        Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+        Clean up the following conversational text by fixing grammar and punctuation.
+        Return ONLY the cleaned text in the SAME language as the input.
+        DO NOT add any commentary or explanations.
         
         Text: "\(text)"
         """
         
-        let session = LanguageModelSession(model: model)
-        
         do {
+            let session = LanguageModelSession(model: model)
             let response = try await session.respond(to: prompt)
             var cleanedText = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Safety filter: Only discard if the response matches known AI boilerplate prefixes or is suspiciously short/generic
-            let boilerplatePrefixes = ["i'm sorry", "as a language model", "as an ai", "i cannot process"]
-            let lowercaseResponse = cleanedText.lowercased()
-            let isBoilerplate = boilerplatePrefixes.contains { prefix in
-                lowercaseResponse.hasPrefix(prefix) || (lowercaseResponse.contains(prefix) && cleanedText.count < 30)
-            }
-            
-            if isBoilerplate {
+            // Boilerplate detection
+            let lower = cleanedText.lowercased()
+            if lower.contains("as an ai") || lower.contains("i'm sorry") || lower.contains("cannot process") {
                 cleanedText = text
             }
             
@@ -77,16 +87,9 @@ class TextCleanupManager {
                 completion(index, cleanedText)
             }
         } catch {
-            print("❌ [TextCleanup] AI cleanup failed: \(error.localizedDescription)")
-            // Fallback: deliver the original text so the bubble still updates.
-            await MainActor.run {
-                completion(index, text)
-            }
+            print("[TextCleanup] Error: AI cleanup failed: \(error.localizedDescription)")
+            await MainActor.run { completion(index, text) }
         }
-    }
-    
-    func cancelAllPendingTasks() {
-        workItems.values.forEach { $0.cancel() }
-        workItems.removeAll()
+        #endif
     }
 }

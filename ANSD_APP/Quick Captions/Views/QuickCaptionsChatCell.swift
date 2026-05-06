@@ -27,13 +27,12 @@ class QuickCaptionsOutgoingCell: UICollectionViewCell {
         QCbubbleView.alpha = 1.0
     }
 
-    /// Call with `true` while the ML model is still identifying the speaker.
     func setIdentifying(_ identifying: Bool) {
         QCbubbleView.layer.removeAllAnimations()
         if identifying {
-            UIView.animate(withDuration: 0.75, delay: 0,
+            UIView.animate(withDuration: 0.8, delay: 0,
                            options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut]) {
-                self.QCbubbleView.alpha = 0.45
+                self.QCbubbleView.alpha = 0.6
             }
         } else {
             QCbubbleView.alpha = 1.0
@@ -47,18 +46,12 @@ class QuickCaptionsOutgoingCell: UICollectionViewCell {
         } else {
             widthConstraint?.constant = layoutAttributes.frame.width
         }
-        
         let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
         let size = contentView.systemLayoutSizeFitting(targetSize, withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
-        
         var newFrame = layoutAttributes.frame
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
         return layoutAttributes
-    }
-    
-    func configure(with msg: QuickCaptionsChat) {
-        QCmessageLabel.text = msg.text
     }
 }
 
@@ -73,34 +66,40 @@ class QuickCaptionsIncomingCell: UICollectionViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         bubbleView.backgroundColor = .systemGray5
-        messageLabel.textColor = .black
+        messageLabel.textColor = .label
         bubbleView.layer.cornerRadius = 16
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         
+        nameLabel.textColor = .secondaryLabel
+        nameLabel.font = .systemFont(ofSize: 12, weight: .medium)
         nameLabel.isUserInteractionEnabled = true
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        bubbleView.layer.removeAllAnimations()
-        bubbleView.alpha = 1.0
         nameLabel.layer.removeAllAnimations()
         nameLabel.alpha = 1.0
+        nameLabel.textColor = .secondaryLabel
     }
 
-    /// Call with `true` while the ML model is still identifying the speaker.
-    /// Shows a gentle pulsing glow on the name label — non-intrusive but clearly
-    /// communicates that identification is in progress.
-    func setIdentifying(_ identifying: Bool) {
+    /// Fixed: Prevented double "Identifying" text and improved visibility
+    func setIdentifying(_ identifying: Bool, name: String) {
         nameLabel.layer.removeAllAnimations()
         if identifying {
-            nameLabel.text = "Identifying speaker…"
-            UIView.animate(withDuration: 0.65, delay: 0,
+            // Only append (Identifying...) if the name isn't already a placeholder
+            if name == "Identifying\u{2026}" || name == "Identifying..." || name == "..." {
+                nameLabel.text = "Identifying\u{2026}"
+            } else {
+                nameLabel.text = "\(name) (Identifying\u{2026})"
+            }
+            
+            UIView.animate(withDuration: 0.8, delay: 0,
                            options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut]) {
-                self.nameLabel.alpha = 0.3
+                self.nameLabel.alpha = 0.6
             }
         } else {
+            nameLabel.text = name
             nameLabel.alpha = 1.0
         }
     }
@@ -112,19 +111,12 @@ class QuickCaptionsIncomingCell: UICollectionViewCell {
         } else {
             widthConstraint?.constant = layoutAttributes.frame.width
         }
-        
         let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
         let size = contentView.systemLayoutSizeFitting(targetSize, withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
-        
         var newFrame = layoutAttributes.frame
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
         return layoutAttributes
-    }
-    
-    func configure(with msg: QuickCaptionsChat) {
-        nameLabel.text = msg.sender
-        messageLabel.text = msg.text
     }
     
     @objc private func handleTap() {

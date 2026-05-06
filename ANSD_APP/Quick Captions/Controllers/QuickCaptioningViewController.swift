@@ -731,11 +731,11 @@ class QuickCaptioningViewController: UIViewController,
         if msg.isIncoming {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCIncomingCell", for: indexPath) as! QuickCaptionsIncomingCell
             cell.messageLabel.text = msg.text
-            cell.nameLabel.text = msg.sender
             cell.onLabelTapped = { [weak self] in self?.showRenameAlert(for: indexPath.row) }
+            
             // Show pulsing animation only on the last bubble while still pending.
             let isLastBubble = (indexPath.row == messages.count - 1)
-            cell.setIdentifying(isPending && isLastBubble)
+            cell.setIdentifying(isPending && isLastBubble, name: msg.sender)
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "QCOutgoingCell", for: indexPath) as! QuickCaptionsOutgoingCell
