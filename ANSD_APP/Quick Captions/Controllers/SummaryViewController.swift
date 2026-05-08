@@ -8,9 +8,7 @@
 
 import UIKit
 import PDFKit
-#if canImport(FoundationModels) && !targetEnvironment(simulator)
 import FoundationModels
-#endif
 import FirebaseAuth
 
 class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, QuickCaptionsNotesCardCellDelegate, QuickCaptionsSummaryCardDelegate {
@@ -31,9 +29,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - AI Pipeline State
     
-    #if !targetEnvironment(simulator)
     private let model = SystemLanguageModel.default
-    #endif
     private var isProcessing = false
     private var notesContent: String = "Generating session summary..."
     
@@ -59,6 +55,69 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     @IBAction func shareButtonTapped(_ sender: UIBarButtonItem) {
         generateAndSharePDF()
+    }
+    
+    @IBAction func backTapped(_ sender: Any) {
+        self.view.endEditing(true)
+        self.saveSessionToHistory()
+        // Return to Home Storyboard
+        let storyboard = UIStoryboard(name: "Home", bundle: nil)
+        let homeVC = storyboard.instantiateViewController(withIdentifier: "Home")
+        
+        let navController = UINavigationController(rootViewController: homeVC)
+        navController.isNavigationBarHidden = false
+        navController.modalPresentationStyle = .fullScreen
+        
+        if let window = self.view.window {
+            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = navController
+            }, completion: nil)
+            window.makeKeyAndVisible()
+        }
+    }
+    
+    private func saveSessionToHistory() {
+        let convoID = UUID().uuidString
+        let newConvo = Conversation(
+            id: convoID,
+            title: conversationTitle,
+            details: "Session summary and transcript",
+            date: dateString,
+            startTime: timeString,
+            endTime: "", // Could be calculated if needed
+            location: locationString,
+            calendarDate: Date(),
+            notes: notesContent
+        )
+        
+        // 1. Save Participants
+        var savedParticipants: [Participant] = []
+        for p in participantsData {
+            let participant = Participant(name: p.name, summary: p.summary, image: "")
+            participant.conversation = newConvo
+            savedParticipants.append(participant)
+        }
+        newConvo.participants = savedParticipants
+        
+        // 2. Save Messages
+        var savedMessages: [Message] = []
+        for m in rawMessages {
+            let msg = Message(
+                id: UUID(),
+                text: m.text,
+                senderId: m.senderID,
+                senderName: m.sender,
+                isIncoming: m.isIncoming,
+                timestamp: m.timestamp ?? Date()
+            )
+            msg.conversation = newConvo
+            savedMessages.append(msg)
+        }
+        newConvo.messages = savedMessages
+        
+        // 3. Persist via DataManager
+        DataManager.shared.addConversation(newConvo)
+        print("[SummaryView] Successfully saved session \(convoID) to history.")
     }
     
     func didUpdateText(in cell: QuickCaptionsNotesCardCell) {
@@ -174,43 +233,49 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     // MARK: - TableView (Restored 5-Section Layout)
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 5
+        return 6
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 4 { return participantsData.count }
+        if section == 3 { return participantsData.count }
         return 1
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
-        case 0: // Main Header Card
+        case 0: // Conversation Header
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
+            cell.headerLabel?.text = "Conversation Summary"
+            cell.headerIcon?.image = UIImage(systemName: "clipboard.fill")
+            return cell
+            
+        case 1: // Main Header Card
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummaryCardCell", for: indexPath) as! QuickCaptionsSummaryCardCell
             cell.configure(title: conversationTitle, date: dateString, time: timeString, location: locationString)
             cell.delegate = self
             return cell
             
-        case 1: // Summary Section Header
+        case 2: // Participant Section Header
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
-            cell.headerLabel?.text = "SESSION SUMMARY"
-            cell.headerIcon?.image = UIImage(systemName: "text.justify.left")
-            return cell
-            
-        case 2: // Notes Card
-            let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! QuickCaptionsNotesCardCell
-            cell.notesTextView?.text = notesContent
-            cell.delegate = self
-            return cell
-            
-        case 3: // Participants Section Header
-            let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
-            cell.headerLabel?.text = "PARTICIPANTS"
+            cell.headerLabel?.text = "Participant Summary"
             cell.headerIcon?.image = UIImage(systemName: "person.2.fill")
             return cell
             
-        case 4: // Participant Cards
+        case 3: // Participant Cards
             let cell = tableView.dequeueReusableCell(withIdentifier: "ParticipantCardCell", for: indexPath) as! QuickCaptionsParticipantCardCell
             cell.configure(with: participantsData[indexPath.row])
+            return cell
+            
+        case 4: // Notes Section Header
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
+            cell.headerLabel?.text = "Notes"
+            cell.headerIcon?.image = UIImage(systemName: "list.bullet.clipboard")
+            return cell
+            
+        case 5: // Notes Card
+            let cell = tableView.dequeueReusableCell(withIdentifier: "NotesCardCell", for: indexPath) as! QuickCaptionsNotesCardCell
+            cell.notesTextView?.text = notesContent
+            cell.delegate = self
             return cell
             
         default:

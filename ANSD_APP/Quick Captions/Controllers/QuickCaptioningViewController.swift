@@ -82,6 +82,7 @@ class QuickCaptioningViewController: UIViewController,
         setupLocation()
         
         checkCalibrationStatus()
+        setupNavigationBar()
 
         // Boot Apple Intelligence semantic layer (graceful no-op on < iOS 18.1).
         if #available(iOS 18.1, *) {
@@ -144,6 +145,74 @@ class QuickCaptioningViewController: UIViewController,
             }
         }
         manager.stopUpdatingLocation()
+    }
+    
+    // MARK: - Navigation Setup
+    
+    private func setupNavigationBar() {
+        // User profile calibration is only allowed via profile screen per user request.
+        // Moving 'Add Speaker' (vocal profile for others) to the right side.
+        let addSpeakerBtn = UIBarButtonItem(image: UIImage(systemName: "person.badge.plus"), style: .plain, target: self, action: #selector(didTapAddSpeaker))
+        
+        navigationItem.leftBarButtonItems = []
+        navigationItem.rightBarButtonItems = [endButton, addSpeakerBtn]
+    }
+    
+    @objc private func didTapRecalibrate() {
+        // Method kept but button removed from nav bar per user request.
+        let alert = UIAlertController(title: "Recalibrate Your Voice", message: "This will update your primary voice profile using the Endgame sliding window. Read clearly for 6 seconds.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Start", style: .default) { [weak self] _ in
+            self?.runEnrollmentRecording()
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    @objc private func didTapAddSpeaker() {
+        let alert = UIAlertController(title: "Add New Speaker", message: "To identify a new person, they should introduce themselves for about 6 seconds. Their words will still be transcribed.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Start Introduction", style: .default) { [weak self] _ in
+            self?.startIntroCalibrationFlow()
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    private func startIntroCalibrationFlow() {
+        // 1. Show HUD
+        let hud = UIView(frame: CGRect(x: 0, y: 0, width: 220, height: 100))
+        hud.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        hud.layer.cornerRadius = 16
+        hud.center = view.center
+        hud.tag = 999
+        
+        let label = UILabel(frame: CGRect(x: 0, y: 20, width: 220, height: 30))
+        label.text = "Profiling New Speaker..."
+        label.textColor = .white
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 14, weight: .bold)
+        hud.addSubview(label)
+        
+        let progress = UIProgressView(progressViewStyle: .default)
+        progress.frame = CGRect(x: 20, y: 60, width: 180, height: 4)
+        progress.progressTintColor = .systemBlue
+        hud.addSubview(progress)
+        
+        view.addSubview(hud)
+        
+        // 2. Start Diarizer Calibration
+        diarizer.startIntroCalibration { [weak self] newID in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                hud.removeFromSuperview()
+                // FIXED: Use ID-based alert so it shows even if first bubble isn't ready
+                self.showRenameAlert(forSpeakerID: newID, currentName: "Speaker \(newID)")
+            }
+        }
+        
+        // 3. Animate Progress (Estimated 6s)
+        UIView.animate(withDuration: 6.0) {
+            progress.setProgress(1.0, animated: true)
+        }
     }
     
     // MARK: - Voice Enrollment
@@ -765,44 +834,29 @@ class QuickCaptioningViewController: UIViewController,
     
     private func showRenameAlert(for index: Int) {
         let msg = messages[index]
-        let currentName = msg.sender
+        guard let sid = msg.speakerID else { return }
+        showRenameAlert(forSpeakerID: sid, currentName: msg.sender)
+    }
+
+    private func showRenameAlert(forSpeakerID speakerID: Int, currentName: String) {
         let alert = UIAlertController(title: "Rename \(currentName)", message: "This will update past and future bubbles.", preferredStyle: .alert)
         alert.addTextField { tf in tf.text = currentName; tf.autocapitalizationType = .words }
         
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
             
-            if let eventId = msg.eventId {
+            // Update the diarizer names dictionary
+            self.diarizer.speakerNames[speakerID] = newName
+            
+            // If there's an event ID in history, apply retroactive correction (merging/etc)
+            if let eventId = self.messages.last(where: { $0.speakerID == speakerID })?.eventId {
                 self.diarizer.applyRetroactiveCorrection(forEventID: eventId, newName: newName)
-            } else if let bubbleSpeakerID = msg.speakerID {
-                self.diarizer.speakerNames[bubbleSpeakerID] = newName
-            } else {
-                if let key = self.diarizer.speakerNames.first(where: { $0.value == currentName })?.key {
-                    self.diarizer.speakerNames[key] = newName
-                }
             }
 
+            // Sync the UI messages
             for i in 0..<self.messages.count {
-                if let eid = self.messages[i].eventId,
-                   let historyEvent = self.diarizer.segmentHistory.first(where: { $0.id == eid }) {
-                    
-                    let sid = historyEvent.assignedSpeakerID
-                    self.messages[i].speakerID = sid
-                    self.messages[i].isIncoming = (sid != 0)
-                    if sid == 0 {
-                        self.messages[i].sender = self.diarizer.speakerNames[0] ?? "Me"
-                    } else {
-                        self.messages[i].sender = self.diarizer.speakerNames[sid] ?? "Speaker \(sid)"
-                    }
-                } else {
-                    if self.messages[i].sender == currentName {
-                        self.messages[i].sender = newName
-                    }
-                    if let sid = self.messages[i].speakerID,
-                       let registeredName = self.diarizer.speakerNames[sid],
-                       registeredName == newName {
-                        self.messages[i].sender = newName
-                    }
+                if self.messages[i].speakerID == speakerID {
+                    self.messages[i].sender = newName
                 }
             }
             

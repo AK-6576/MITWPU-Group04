@@ -26,7 +26,7 @@ class AudioDiarizer: ObservableObject {
     private var collectedSamples: [Float] = []
 
     private let learningRate: Float = 0.05
-    private let similarityThreshold: Float = 0.58
+    private let similarityThreshold: Float = 0.62
     private let learningThreshold: Float = 0.88
 
     private let vad = SileroVADProcessor()
@@ -46,9 +46,19 @@ class AudioDiarizer: ObservableObject {
     var speakerNames: [Int: String] = [:]
     var currentLocation: String = "Unknown"
 
+    private var isIntroCalibrating: Bool = false
+    private var introCompletion: ((Int) -> Void)?
+    
+    // Serial queue for ML inference to prevent blocking the audio thread (HALC overload)
+    private let inferenceQueue = DispatchQueue(label: "com.ansd.diarizer.inference", qos: .userInitiated)
+
     init() {
         let config = MLModelConfiguration()
+        #if targetEnvironment(simulator)
+        config.computeUnits = .cpuOnly // Prevents Espresso/MPSGraph errors in Simulator
+        #else
         config.computeUnits = .all
+        #endif
         do {
             model = try VL1004(configuration: config)
         } catch {
@@ -62,14 +72,23 @@ class AudioDiarizer: ObservableObject {
     }
 
     func enrollUser(completion: @escaping (Bool) -> Void) {
-        stop()
-        isRunning = true
+        // ENDGAME OPTIMIZATION: Don't stop/clear buffer, just set the flag
         isEnrolling = true
         enrollmentCompletion = completion
+        print("[AudioDiarizer] Starting User Enrollment (Endgame Logic)...")
     }
 
     private var isEnrolling: Bool = false
     private var enrollmentCompletion: ((Bool) -> Void)?
+
+    func startIntroCalibration(completion: @escaping (Int) -> Void) {
+        // We don't stop the diarizer, we just set a flag to intercept the next inference
+        isIntroCalibrating = true
+        introCompletion = completion
+        // Clear buffer so we get a fresh 6s of the new speaker
+        collectedSamples.removeAll()
+        print("[AudioDiarizer] Starting Seamless Intro Calibration...")
+    }
 
     func setUserName(_ name: String) {
         speakerNames[0] = name
@@ -152,24 +171,26 @@ class AudioDiarizer: ObservableObject {
                 prerollBuffer.append(contentsOf: chunk)
                 if prerollBuffer.count > prerollMaxSamples { prerollBuffer.removeFirst(chunkSize) }
                 silentFrameCount += 1
-                if silentFrameCount >= silenceResetFrames {
-                    collectedSamples.removeAll()
-                    silentFrameCount = 0
-                }
+                // ENDGAME OPTIMIZATION: We no longer wipe the buffer during silence.
+                // This keeps the 6s context alive for better stability.
             }
         }
     }
 
     private func runInference(samples: [Float]) {
         guard let model = model else { return }
-        do {
-            let input = try MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32)
-            for (i, s) in samples.enumerated() { input[i] = NSNumber(value: s) }
-            let output = try model.prediction(audio: input)
-            let vector = normalize(convertToFloat(output.embedding))
-            DispatchQueue.main.async { self.processResult(vector) }
-        } catch {
-            print("[AudioDiarizer] Inference failed: \(error)")
+        
+        // Offload to background queue to prevent HALC ProxyIOContext overload
+        inferenceQueue.async {
+            do {
+                let input = try MLMultiArray(shape: [1, NSNumber(value: self.requiredSamples)], dataType: .float32)
+                for (i, s) in samples.enumerated() { input[i] = NSNumber(value: s) }
+                let output = try model.prediction(audio: input)
+                let vector = self.normalize(self.convertToFloat(output.embedding))
+                DispatchQueue.main.async { self.processResult(vector) }
+            } catch {
+                print("[AudioDiarizer] Inference failed: \(error)")
+            }
         }
     }
 
@@ -179,6 +200,18 @@ class AudioDiarizer: ObservableObject {
             isEnrolling = false
             enrollmentCompletion?(true)
             enrollmentCompletion = nil
+            return
+        }
+
+        if isIntroCalibrating {
+            let newID = speakerProfiles.count
+            speakerProfiles[newID] = vector
+            speakerNames[newID] = "Speaker \(newID)"
+            isIntroCalibrating = false
+            introCompletion?(newID)
+            introCompletion = nil
+            currentSpeakerID = newID
+            segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: newID))
             return
         }
 

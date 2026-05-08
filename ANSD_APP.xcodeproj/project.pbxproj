@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		02D7E7C52F6D143A00C20BC2 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 02D7E7C42F6D143A00C20BC2 /* GoogleSignIn */; };
 		02D7E7C72F6D143A00C20BC2 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 02D7E7C62F6D143A00C20BC2 /* GoogleSignInSwift */; };
-		19E1B47F2FAB3016006C29E9 /* VL1004.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 19E1B47E2FAB3016006C29E9 /* VL1004.mlpackage */; };
 		BFDA3C6F2F40735600445EC1 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C6E2F40735600445EC1 /* FirebaseAI */; };
 		BFDA3C712F40735600445EC1 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C702F40735600445EC1 /* FirebaseAILogic */; };
 		BFDA3C732F40735600445EC1 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C722F40735600445EC1 /* FirebaseAnalytics */; };
@@ -34,11 +33,12 @@
 		BFDA3C992F40735600445EC1 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C982F40735600445EC1 /* FirebaseRemoteConfig */; };
 		BFDA3C9B2F40735600445EC1 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C9A2F40735600445EC1 /* FirebaseStorage */; };
 		BFDA3C9D2F40735600445EC1 /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C9C2F40735600445EC1 /* FirebaseStorageCombine-Community */; };
+		BFFA5EEF2FADD97500AC6B6A /* VL1004.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = BFFA5EEE2FADD97500AC6B6A /* VL1004.mlpackage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		02AE994B2ED5711C0079EA2B /* ANSD_APP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANSD_APP.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		19E1B47E2FAB3016006C29E9 /* VL1004.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = VL1004.mlpackage; sourceTree = "<group>"; };
+		BFFA5EEE2FADD97500AC6B6A /* VL1004.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = VL1004.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -105,7 +105,7 @@
 				02AE994D2ED5711C0079EA2B /* ANSD_APP */,
 				02AE994C2ED5711C0079EA2B /* Products */,
 				BFDA3C6C2F40729100445EC1 /* Frameworks */,
-				19E1B47E2FAB3016006C29E9 /* VL1004.mlpackage */,
+				BFFA5EEE2FADD97500AC6B6A /* VL1004.mlpackage */,
 			);
 			sourceTree = "<group>";
 		};
@@ -229,7 +229,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				19E1B47F2FAB3016006C29E9 /* VL1004.mlpackage in Sources */,
+				BFFA5EEF2FADD97500AC6B6A /* VL1004.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
