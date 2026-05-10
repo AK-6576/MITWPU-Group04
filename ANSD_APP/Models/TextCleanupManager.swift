@@ -7,18 +7,15 @@
 //
 
 import Foundation
-
-#if canImport(FoundationModels) && !targetEnvironment(simulator)
 import FoundationModels
-#endif
 
 class TextCleanupManager {
     
     // MARK: - Properties
     
-    #if !targetEnvironment(simulator)
+    // 1. Removed the #if !targetEnvironment(simulator) block here
     private let model = SystemLanguageModel.default
-    #endif
+    
     private var workItems: [Int: DispatchWorkItem] = [:]
     
     /// Delay before triggering AI processing to allow for mid-sentence corrections.
@@ -54,10 +51,8 @@ class TextCleanupManager {
     private func performAIProcessing(text: String, index: Int, completion: @escaping (Int, String) -> Void) async {
         guard !text.isEmpty, text.count > 3 else { return }
 
-        #if targetEnvironment(simulator)
-        // Simulator fallback
-        await MainActor.run { completion(index, text) }
-        #else
+        // 2. Removed the Simulator fallback block entirely.
+        
         guard model.isAvailable else {
             print("[TextCleanup] Warning: FoundationModels not available.")
             await MainActor.run { completion(index, text) }
@@ -86,10 +81,13 @@ class TextCleanupManager {
             await MainActor.run {
                 completion(index, cleanedText)
             }
-        } catch {
-            print("[TextCleanup] Error: AI cleanup failed: \(error.localizedDescription)")
-            await MainActor.run { completion(index, text) }
-        }
-        #endif
+        } catch let aiError as LanguageModelSession.GenerationError {
+                    // This forces Swift to print the exact enum case and its debug context
+                    print("[TextCleanup] AI Error Details: \(String(reflecting: aiError))")
+                    await MainActor.run { completion(index, text) }
+                } catch {
+                    print("[TextCleanup] General Error: \(error)")
+                    await MainActor.run { completion(index, text) }
+                }
     }
 }

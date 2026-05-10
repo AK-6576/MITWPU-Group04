@@ -188,25 +188,25 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     private func runPhase1(transcript: String) async throws -> String {
-        #if targetEnvironment(simulator)
-        return "GHOST_MERGES:\nNone\n\nNOTES:\nSummary unavailable in Simulator mode. Please test on a physical device with Apple Intelligence."
-        #else
+        guard model.isAvailable else {
+            return "GHOST_MERGES:\nNone\n\nNOTES:\nApple Intelligence is currently unavailable."
+        }
+        
         let prompt = "Analyze the transcript and provide GHOST_MERGES and NOTES sections.\n\nTRANSCRIPT:\n\(transcript)"
         let session = LanguageModelSession(model: model)
         let response = try await session.respond(to: prompt)
         return response.content
-        #endif
     }
-    
+        
     private func runSpeakerAnalysis(name: String, lines: String) async throws -> String {
-        #if targetEnvironment(simulator)
-        return "Simulated summary for \(name)."
-        #else
+        guard model.isAvailable else {
+            return "Participant summary unavailable."
+        }
+        
         let prompt = "Summarize \(name)'s points in 3-5 sentences:\n\(lines)"
         let session = LanguageModelSession(model: model)
         let response = try await session.respond(to: prompt)
         return response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        #endif
     }
     
     private func parsePhase1(_ text: String) -> (ghostMappings: [String: String], notes: String) {
@@ -231,7 +231,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     private func applyGhostMerges(_ mappings: [String: String]) {
-        for (ghost, real) in mappings {
+        for (ghost, _) in mappings {
             if let ghostIdx = participantsData.firstIndex(where: { $0.name == ghost }) {
                 participantsData.remove(at: ghostIdx)
             }
@@ -254,7 +254,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
         case 0: // Conversation Header
             let cell = tableView.dequeueReusableCell(withIdentifier: "SummarySectionHeaderCell", for: indexPath) as! QuickCaptionsSummarySectionHeaderCell
             cell.headerLabel?.text = "Conversation Summary"
-            cell.headerIcon?.image = UIImage(systemName: "clipboard.fill")
+            cell.headerIcon?.image = UIImage(systemName: "clipboard")
             return cell
             
         case 1: // Main Header Card

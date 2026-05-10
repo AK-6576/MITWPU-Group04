@@ -32,6 +32,9 @@ class QuickCaptioningViewController: UIViewController,
     private var transcriptBuffer: String = ""
     private var holdTimer: Timer?
     
+    // ⭐️ NEW: Tracks the exact time the current word was spoken
+    private var currentWordRealTime: Date?
+    
     let locationManager = CLLocationManager()
     var currentLocationString: String = "Location Unknown"
     
@@ -270,6 +273,7 @@ class QuickCaptioningViewController: UIViewController,
         forceNewBubble = false
         cleanedBubbleIDs.removeAll()
         lastDiarizerFireTime = nil
+        currentWordRealTime = nil
         
         startSpeechRecognition()
         try? startAudioEngine()
@@ -307,15 +311,28 @@ class QuickCaptioningViewController: UIViewController,
                 print("❌ [SpeechRecognition] Error: \(error.localizedDescription)")
             }
             guard let self = self, let result = result else { return }
-            self.handleSpeechTranscript(fullText: result.bestTranscription.formattedString, isFinal: result.isFinal)
+            
+            // ⭐️ NEW: Calculate the exact real-world time this word was spoken
+            var wordRealTime: Date? = nil
+            if let lastSegment = result.bestTranscription.segments.last,
+               let sessionStart = self.sessionStartTime {
+                wordRealTime = sessionStart.addingTimeInterval(lastSegment.timestamp)
+            }
+            
+            self.handleSpeechTranscript(fullText: result.bestTranscription.formattedString, isFinal: result.isFinal, wordRealTime: wordRealTime)
         }
     }
 
     // MARK: - Transcript Handling
     
-    private func handleSpeechTranscript(fullText: String, isFinal: Bool) {
+    private func handleSpeechTranscript(fullText: String, isFinal: Bool, wordRealTime: Date?) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            
+            // Lock in the timestamp for the current burst of text
+            if let wrt = wordRealTime {
+                self.currentWordRealTime = wrt
+            }
             
             if self.consumedTranscriptOffset > fullText.count {
                 // SFSpeechRecognizer revised its transcript (e.g. the final result is
@@ -347,7 +364,7 @@ class QuickCaptioningViewController: UIViewController,
                     self?.holdTimer = nil
                     self?.processBuffer()
                     
-                    // We intentionally do NOT finalize or force a new bubble here. 
+                    // We intentionally do NOT finalize or force a new bubble here.
                     // This allows continuous speech from the same person to remain in one cohesive bubble,
                     // greatly improving readability. New bubbles will naturally be created via:
                     // 1) Speaker ID changes from AudioDiarizer
@@ -379,7 +396,7 @@ class QuickCaptioningViewController: UIViewController,
         if semanticSpeakerChangeExpected {
             semanticSpeakerChangeExpected = false
             forceNewBubble = true
-            // If the acoustic model still claims it's the old speaker (lagging), 
+            // If the acoustic model still claims it's the old speaker (lagging),
             // override it to Unknown. Retroactive refinement will fix it shortly.
             if let lastMsg = messages.last, lastMsg.speakerID == speakerID {
                 speakerID = -1
@@ -571,12 +588,9 @@ class QuickCaptioningViewController: UIViewController,
         let senderID = id != nil ? String(id!) : "system"
         var newMessage = QuickCaptionsChat(sender: name, senderID: senderID, text: text, isIncoming: !isBlue)
         newMessage.speakerID = id
-        if let currentEvent = diarizer.segmentHistory.last {
-            newMessage.eventId = currentEvent.id
-            newMessage.timestamp = currentEvent.timestamp
-        } else {
-            newMessage.timestamp = Date()
-        }
+        
+        // ⭐️ NEW: Stamp the bubble with the exact moment the words were physically spoken
+        newMessage.timestamp = self.currentWordRealTime ?? Date()
 
         messages.append(newMessage)
         cleanupIDs.append(UUID())
@@ -880,20 +894,16 @@ class QuickCaptioningViewController: UIViewController,
 
         for i in 0..<messages.count {
             if let timestamp = messages[i].timestamp {
-                // Primary: find the most recent diarizer event before this message.
-                // Fallback: use the very first diarizer event for messages that arrived
-                // before the cold-start window closed (fixes the "other person first" case).
-                let matchingEvent = history.last(where: { $0.timestamp <= timestamp })
-                                 ?? history.first
-                if let event = matchingEvent,
-                   messages[i].speakerID != event.assignedSpeakerID {
+                // ⭐️ NEW: Ask the diarizer who was active at this EXACT absolute timestamp
+                if let exactSpeakerID = diarizer.getSpeaker(at: timestamp),
+                   messages[i].speakerID != exactSpeakerID {
+                    
                     let wasUnknown = messages[i].speakerID == -1
-                    let sid = event.assignedSpeakerID
-                    messages[i].speakerID = sid
-                    messages[i].isIncoming = (sid != 0)
-                    messages[i].sender = sid == 0
+                    messages[i].speakerID = exactSpeakerID
+                    messages[i].isIncoming = (exactSpeakerID != 0)
+                    messages[i].sender = exactSpeakerID == 0
                         ? (diarizer.speakerNames[0] ?? "Me")
-                        : (diarizer.speakerNames[sid] ?? "Speaker \(sid)")
+                        : (diarizer.speakerNames[exactSpeakerID] ?? "Speaker \(exactSpeakerID)")
                     hasChanges = true
 
                     // If this bubble just got a real identity for the first time,

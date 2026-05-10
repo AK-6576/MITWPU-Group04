@@ -72,6 +72,22 @@ class AudioDiarizer: ObservableObject {
         }
     }
 
+    // MARK: - Timestamp Lookup
+    /// Returns the active speaker ID at a specific real-world date/time
+    // MARK: - Timestamp Lookup
+        /// Returns the active speaker ID at a specific real-world date/time
+    func getSpeaker(at date: Date) -> Int? {
+        guard !segmentHistory.isEmpty else { return nil }
+        
+        if let coveringEvent = segmentHistory.first(where: { $0.timestamp >= date }) {
+            return coveringEvent.assignedSpeakerID
+        }
+        
+        // Fallback: If the word was just spoken and the Diarizer hasn't finished its 6-second
+        // math yet, we return the most recent known speaker.
+        return segmentHistory.last?.assignedSpeakerID
+    }
+
     func setPreEnrolledProfile(vector: [Float], name: String) {
         speakerProfiles[0] = vector
         speakerNames[0] = name
@@ -247,7 +263,7 @@ class AudioDiarizer: ObservableObject {
             currentSpeakerID = bestID
             segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: bestID))
         } else {
-            // PROBATION: Don't create a new speaker immediately. 
+            // PROBATION: Don't create a new speaker immediately.
             // We need 3 consecutive windows of "new" voice to be sure.
             consecutiveMismatches += 1
             
@@ -267,7 +283,7 @@ class AudioDiarizer: ObservableObject {
                 segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: newID))
                 print("[AudioDiarizer] New Speaker confirmed: \(newID). Confidence: \(maxScore)")
                 
-                // SELF-FIX: Try to merge this new speaker with any existing one 
+                // SELF-FIX: Try to merge this new speaker with any existing one
                 // if they are actually similar (Automatic Consolidation)
                 mergeSimilarSpeakers()
             }

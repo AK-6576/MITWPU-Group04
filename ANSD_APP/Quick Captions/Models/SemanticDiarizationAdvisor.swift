@@ -1,4 +1,11 @@
-#if canImport(FoundationModels) && !targetEnvironment(simulator)
+//
+//  SemanticDiarizationAdvisor.swift
+//  ANSD_APP
+//
+//  Created by Anshul Kumaria on 25/11/25.
+//  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
+//
+
 import FoundationModels
 
 @available(iOS 18.1, *)
@@ -49,19 +56,12 @@ final class SemanticDiarizationAdvisor {
             let response = try await session.respond(to: prompt, generating: Prediction.self)
             let result = response.content.expectsSpeakerChange
             if result {
-                print("[SemanticAdvisor] Speaker change predicted from context.")
+                print("🧠 [SemanticAdvisor] Speaker change predicted from context!")
             }
             return result
         } catch {
-            print("[SemanticAdvisor] Warning: Prediction failed: \(error)")
+            print("❌ [SemanticAdvisor] Warning: Prediction failed: \(error)")
             return false
         }
     }
 }
-#else
-import Foundation
-final class SemanticDiarizationAdvisor {
-    func record(speaker: String, text: String) {}
-    func predictSpeakerChange() async -> Bool { return false }
-}
-#endif
