@@ -61,6 +61,8 @@ class QuickCaptioningViewController: UIViewController,
     private var semanticAdvisor: AnyObject? = nil
     /// Set to true by the advisor's async prediction; consumed in processBuffer.
     private var semanticSpeakerChangeExpected = false
+    
+    private var sessionStartTime: Date?
 
     // MARK: - Diarizer Staleness Guard
     /// Timestamp of the most recent diarizer result. Used to detect when the
@@ -262,6 +264,7 @@ class QuickCaptioningViewController: UIViewController,
     
     private func startSession() {
         if isRecording { return }
+        sessionStartTime = Date()
         consumedTranscriptOffset = 0
         transcriptBuffer = ""
         forceNewBubble = false
@@ -722,10 +725,9 @@ class QuickCaptioningViewController: UIViewController,
                     summaryVC.rawMessages = self.messages
                     summaryVC.conversationTitle = "Conversation 1"
                     
-                    let now = Date()
                     let dateFormatter = DateFormatter()
-                    
                     dateFormatter.dateFormat = "MMMM"
+                    let now = Date()
                     let month = dateFormatter.string(from: now)
                     
                     let calendar = Calendar.current
@@ -737,7 +739,11 @@ class QuickCaptioningViewController: UIViewController,
                     summaryVC.dateString = "\(month) \(dayWithSuffix)"
                     
                     dateFormatter.dateFormat = "h:mm a"
-                    summaryVC.timeString = dateFormatter.string(from: now)
+                    if let start = self.sessionStartTime {
+                        summaryVC.timeString = dateFormatter.string(from: start)
+                    } else {
+                        summaryVC.timeString = dateFormatter.string(from: now)
+                    }
                     
                     summaryVC.locationString = self.currentLocationString
                     

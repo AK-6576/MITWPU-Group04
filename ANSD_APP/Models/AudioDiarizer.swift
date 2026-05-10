@@ -25,12 +25,18 @@ class AudioDiarizer: ObservableObject {
     private let requiredSamples = 96000
     private var collectedSamples: [Float] = []
 
-    private let learningRate: Float = 0.05
-    private let similarityThreshold: Float = 0.62
-    private let learningThreshold: Float = 0.88
+    private let learningRate: Float = 0.15 // Faster learning to keep up with music/shouting
+    private let similarityThreshold: Float = 0.42
+    private let learningThreshold: Float = 0.48
+    private let speakerBias: Float = 0.15 // 15% bonus for the current speaker to stay "sticky"
 
     private let vad = SileroVADProcessor()
     private var vadInputBuffer: [Float] = []
+    
+    // Memory & Smoothing
+    private var consecutiveMismatches = 0
+    private let mismatchThreshold = 3 // Must fail 3 times before creating a new ID
+    private var pendingNewSpeakerVector: [Float]? = nil
     private var prerollBuffer: [Float] = []
     private let prerollMaxSamples = SileroVADProcessor.chunkSize * 2
     private var silentFrameCount = 0
@@ -219,7 +225,13 @@ class AudioDiarizer: ObservableObject {
         var maxScore: Float = -1.0
 
         for (id, profile) in speakerProfiles {
-            let score = cosineSim(vector, profile)
+            var score = cosineSim(vector, profile)
+            
+            // MEMORY: Apply bias to the current speaker to prevent "jitter"
+            if id == currentSpeakerID {
+                score *= (1.0 + speakerBias)
+            }
+            
             if score > maxScore {
                 maxScore = score
                 bestID = id
@@ -227,18 +239,75 @@ class AudioDiarizer: ObservableObject {
         }
 
         if maxScore > similarityThreshold {
-            // Match found
+            // Match found - Reset mismatches
+            consecutiveMismatches = 0
+            pendingNewSpeakerVector = nil
+            
             updateSpeaker(id: bestID, vector: vector, score: maxScore)
             currentSpeakerID = bestID
             segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: bestID))
         } else {
-            // NEW SPEAKER logic added
-            let newID = speakerProfiles.count
-            speakerProfiles[newID] = vector
-            speakerNames[newID] = "Speaker \(newID)"
-            currentSpeakerID = newID
-            segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: newID))
-            print("[AudioDiarizer] Low confidence (\(maxScore)). Created new ID: \(newID)")
+            // PROBATION: Don't create a new speaker immediately. 
+            // We need 3 consecutive windows of "new" voice to be sure.
+            consecutiveMismatches += 1
+            
+            if consecutiveMismatches < mismatchThreshold {
+                // Stay on current speaker for now (smoothing)
+                if let cid = currentSpeakerID {
+                    segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: cid))
+                }
+                print("[AudioDiarizer] Smoothing mismatch (\(consecutiveMismatches)/\(mismatchThreshold))...")
+            } else {
+                // OK, it's really a new person.
+                consecutiveMismatches = 0
+                let newID = speakerProfiles.count
+                speakerProfiles[newID] = vector
+                speakerNames[newID] = "Speaker \(newID)"
+                currentSpeakerID = newID
+                segmentHistory.append(DiarizationEvent(id: UUID(), timestamp: Date(), assignedSpeakerID: newID))
+                print("[AudioDiarizer] New Speaker confirmed: \(newID). Confidence: \(maxScore)")
+                
+                // SELF-FIX: Try to merge this new speaker with any existing one 
+                // if they are actually similar (Automatic Consolidation)
+                mergeSimilarSpeakers()
+            }
+        }
+    }
+
+    private func mergeSimilarSpeakers() {
+        let keys = speakerProfiles.keys.sorted()
+        guard keys.count > 1 else { return }
+        
+        for i in 0..<keys.count {
+            for j in (i + 1)..<keys.count {
+                let id1 = keys[i]
+                let id2 = keys[j]
+                guard let p1 = speakerProfiles[id1], let p2 = speakerProfiles[id2] else { continue }
+                
+                let similarity = cosineSim(p1, p2)
+                if similarity > (similarityThreshold * 0.95) { // If they are very close
+                    print("[AudioDiarizer] SELF-FIX: Merging Speaker \(id2) into Speaker \(id1) (Similarity: \(similarity))")
+                    
+                    // Combine profiles
+                    speakerProfiles[id1] = applyRollingAvg(old: p1, new: p2)
+                    speakerProfiles.removeValue(forKey: id2)
+                    speakerNames.removeValue(forKey: id2)
+                    
+                    // Update current speaker if necessary
+                    if currentSpeakerID == id2 { currentSpeakerID = id1 }
+                    
+                    // Retroactively fix history
+                    for k in 0..<segmentHistory.count {
+                        if segmentHistory[k].assignedSpeakerID == id2 {
+                            segmentHistory[k].assignedSpeakerID = id1
+                        }
+                    }
+                    
+                    // Recursive call to catch other merges
+                    mergeSimilarSpeakers()
+                    return
+                }
+            }
         }
     }
 

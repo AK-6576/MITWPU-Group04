@@ -77,17 +77,25 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     private func saveSessionToHistory() {
+        let now = Date()
+        let endTimeFormatter = DateFormatter()
+        endTimeFormatter.dateFormat = "h:mm a"
+        let endTimeString = endTimeFormatter.string(from: now)
+        
         let convoID = UUID().uuidString
         let newConvo = Conversation(
             id: convoID,
             title: conversationTitle,
-            details: "Session summary and transcript",
+            details: notesContent.count > 50 ? String(notesContent.prefix(47)) + "..." : notesContent,
             date: dateString,
             startTime: timeString,
-            endTime: "", // Could be calculated if needed
+            endTime: endTimeString,
             location: locationString,
-            calendarDate: Date(),
-            notes: notesContent
+            category: "Quick Captions",
+            icon: "waveform",
+            calendarDate: now,
+            notes: notesContent,
+            ownerUID: Auth.auth().currentUser?.uid ?? ""
         )
         
         // 1. Save Participants
