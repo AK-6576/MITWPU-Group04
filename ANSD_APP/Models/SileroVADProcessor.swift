@@ -40,7 +40,7 @@ final class SileroVADProcessor {
 
     // MARK: - State
 
-    private var mlModel: MLModel?
+    private var model: SileroVAD?
     private var consecutiveSpeechFrames  = 0
     private var consecutiveSilenceFrames = 0
     private var currentVADState          = false
@@ -51,16 +51,23 @@ final class SileroVADProcessor {
     var isAvailable: Bool { true }
 
     /// Whether the neural Silero model is being used.
-    var usingSileroModel: Bool { mlModel != nil }
+    var usingSileroModel: Bool { model != nil }
 
     // MARK: - Init
 
     init() {
-        mlModel = Self.loadSileroModel()
-        if mlModel != nil {
+        let config = MLModelConfiguration()
+        #if targetEnvironment(simulator)
+        config.computeUnits = .cpuOnly // Prevents Espresso/MPSGraph errors in Simulator
+        #else
+        config.computeUnits = .cpuAndNeuralEngine
+        #endif
+
+        do {
+            self.model = try SileroVAD(configuration: config)
             print("[VAD] Silero neural model initialized.")
-        } else {
-            print("[VAD] Info: Silero model not found. Using adaptive energy-based VAD.")
+        } catch {
+            print("[VAD] Info: Silero model not found. Using adaptive energy-based VAD. Error: \(error)")
         }
     }
 
@@ -69,7 +76,7 @@ final class SileroVADProcessor {
     func isSpeech(samples: [Float]) -> Bool {
         guard samples.count == Self.chunkSize else { return true }
 
-        let rawProb = mlModel != nil
+        let rawProb = model != nil
             ? sileroProb(samples: samples)
             : energyProb(samples: samples)
 
@@ -86,37 +93,25 @@ final class SileroVADProcessor {
 
     // MARK: - Inference Paths
 
-    private static func loadSileroModel() -> MLModel? {
-        guard let url = Bundle.main.url(forResource: "SileroVAD", withExtension: "mlpackage") else {
-            return nil
-        }
-        do {
-            let cfg = MLModelConfiguration()
-            cfg.computeUnits = .cpuAndNeuralEngine
-            return try MLModel(contentsOf: url, configuration: cfg)
-        } catch {
-            print("[VAD] Warning: Failed to load Silero MLModel: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
     private func sileroProb(samples: [Float]) -> Float {
-        guard let model = mlModel else { return energyProb(samples: samples) }
+        guard let model = model else { return energyProb(samples: samples) }
         do {
             let audioArr = try MLMultiArray(shape: [1, 512], dataType: .float32)
             for (i, s) in samples.enumerated() { audioArr[i] = NSNumber(value: s) }
 
-            let input = try MLDictionaryFeatureProvider(
-                dictionary: ["audio": MLFeatureValue(multiArray: audioArr)]
-            )
-            let output = try model.prediction(from: input)
+            // Use the generic prediction API to be safe against property naming variations
+            let inputName = "audio_chunk" 
+            let input = try MLDictionaryFeatureProvider(dictionary: [inputName: MLFeatureValue(multiArray: audioArr)])
+            let output = try model.model.prediction(from: input)
 
-            if let arr = output.featureValue(for: "speech_prob")?.multiArrayValue {
-                return arr[0].floatValue
+            if let prob = output.featureValue(for: "speech_prob")?.multiArrayValue?[0].floatValue {
+                return prob
             }
+            
+            // Backup: search for any multi-array output if "speech_prob" isn't the key
             for name in output.featureNames {
-                if let arr = output.featureValue(for: name)?.multiArrayValue {
-                    return arr[0].floatValue
+                if let prob = output.featureValue(for: name)?.multiArrayValue?[0].floatValue {
+                    return prob
                 }
             }
             return 0.0
