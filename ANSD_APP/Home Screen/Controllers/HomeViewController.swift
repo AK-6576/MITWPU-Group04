@@ -10,6 +10,7 @@ import UIKit
 import UserNotifications
 import Foundation
 import FirebaseAuth
+import TipKit
 
 class HomeViewController: UIViewController {
     
@@ -20,6 +21,17 @@ class HomeViewController: UIViewController {
     var recentHistory: [Conversation] = []
     
     private let profileButton = UIButton(type: .custom)
+
+    // MARK: - TipKit
+    // Tip instances (one per UI feature on the Home Screen)
+    private let profileTip         = ProfileButtonTip()
+    private let quickActionsTip    = QuickActionsTip()
+    private let newConvoTip        = NewConversationTip()
+    private let joinConvoTip       = JoinConversationTip()
+    private let viewConvosTip      = ViewConversationsTip()
+
+    /// Flag: tips have been presented for this installation
+    private static let tipsShownKey = "home_tips_shown_v1"
     
     // MARK: - View Lifecycle
     
@@ -28,6 +40,7 @@ class HomeViewController: UIViewController {
         setupTableView()
         setupProfileButton()
         loadSavedProfileImage()
+        configureTipKit()      // ← TipKit: configure once per install
         
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
@@ -38,7 +51,6 @@ class HomeViewController: UIViewController {
         
         navigationItem.title = ""
         navigationItem.hidesBackButton = true
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         
         // RESTORED: Observers
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileImageUpdate(_:)), name: NSNotification.Name("ProfileImageUpdated"), object: nil)
@@ -65,6 +77,18 @@ class HomeViewController: UIViewController {
         let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.configure(name: name)
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // Wait for notification authorization before potentially showing tips.
+        // This ensures the tips don't appear in the background while the OS permission alert is up.
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] _, _ in
+            DispatchQueue.main.async {
+                self?.presentHomeTipsIfNeeded()
+            }
         }
     }
 
@@ -195,6 +219,91 @@ class HomeViewController: UIViewController {
         if let data = UserDefaults.standard.data(forKey: "profileImage"), let image = UIImage(data: data) {
             profileButton.setImage(image, for: .normal)
         }
+    }
+
+    // MARK: - TipKit Configuration & Presentation
+
+    /// Call once at app launch to configure the TipKit data store.
+    private func configureTipKit() {
+        do {
+            // In production: Tips.configure()
+            // During development/testing you can use:
+            // try Tips.resetDatastore()           // ← uncomment to reset tips during QA
+            // try Tips.configure([.displayFrequency(.immediate)])  // ← show all tips immediately for testing
+            try Tips.configure()
+        } catch {
+            print("HomeTips: TipKit configuration failed — \(error)")
+        }
+    }
+
+    /// Presents the ordered tip sequence only on the user's first session after account creation.
+    /// The flag `home_tips_shown_v1` is written by `VoiceCalibrationViewController` immediately
+    /// before navigating here, so tips fire exactly once, on first arrival at Home.
+    private func presentHomeTipsIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: Self.tipsShownKey) else { return }
+        UserDefaults.standard.set(true, forKey: Self.tipsShownKey)
+
+        // Present tips as a sequenced popover walk-through with a short delay between each.
+        Task { @MainActor in
+            // 1. Profile button tip — anchor to the nav-bar right button
+            if let barItem = navigationItem.rightBarButtonItem,
+               let anchorView = barItem.customView {
+                let profilePopover = TipUIPopoverViewController(profileTip, sourceItem: anchorView)
+                profilePopover.view.tintColor = .systemIndigo
+                present(profilePopover, animated: true)
+                try? await Task.sleep(for: .seconds(3.5))
+                profilePopover.dismiss(animated: true)
+            }
+
+            try? await Task.sleep(for: .seconds(0.4))
+
+            // 2. New & Join Conversation tips — anchor to the specific views in the header
+            if let headerView = tableView.tableHeaderView as? GreetingViewCell {
+                if let newConvoView = headerView.newConvoView {
+                    let newConvoPopover = TipUIPopoverViewController(newConvoTip, sourceItem: newConvoView)
+                    newConvoPopover.view.tintColor = .systemBlue
+                    present(newConvoPopover, animated: true)
+                    try? await Task.sleep(for: .seconds(3.5))
+                    newConvoPopover.dismiss(animated: true)
+                }
+                
+                try? await Task.sleep(for: .seconds(0.4))
+                
+                if let joinConvoView = headerView.joinConvoView {
+                    let joinConvoPopover = TipUIPopoverViewController(joinConvoTip, sourceItem: joinConvoView)
+                    joinConvoPopover.view.tintColor = .systemIndigo
+                    present(joinConvoPopover, animated: true)
+                    try? await Task.sleep(for: .seconds(3.5))
+                    joinConvoPopover.dismiss(animated: true)
+                }
+            }
+
+            try? await Task.sleep(for: .seconds(0.4))
+
+            // 3. Quick Actions tip — anchored to the section 0 header
+            let qaPopover = TipUIPopoverViewController(quickActionsTip, sourceItem: tableView)
+            qaPopover.popoverPresentationController?.sourceRect = tableView.rectForHeader(inSection: 0)
+            qaPopover.view.tintColor = .systemOrange
+            present(qaPopover, animated: true)
+            try? await Task.sleep(for: .seconds(3.5))
+            qaPopover.dismiss(animated: true)
+
+            try? await Task.sleep(for: .seconds(0.4))
+
+            // 4. View Conversations tip — anchored to the section 1 header
+            let vcPopover = TipUIPopoverViewController(viewConvosTip, sourceItem: tableView)
+            vcPopover.popoverPresentationController?.sourceRect = tableView.rectForHeader(inSection: 1)
+            vcPopover.view.tintColor = .systemTeal
+            present(vcPopover, animated: true)
+            try? await Task.sleep(for: .seconds(3.5))
+            vcPopover.dismiss(animated: true)
+        }
+    }
+
+    // MARK: - (Debug / QA) Reset Tips — call from Settings screen to replay the tip tour
+    static func resetTips() {
+        UserDefaults.standard.set(false, forKey: tipsShownKey)
+        try? Tips.resetDatastore()
     }
     
 }

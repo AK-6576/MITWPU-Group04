@@ -49,7 +49,7 @@
                                                                 </imageView>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="New Conversation" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hz4-aO-qs7">
                                                                     <rect key="frame" x="0.0" y="49.999999999999972" width="145" height="20.333333333333329" />
-                                                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17" />
+                                                                    <fontDescription key="fontDescription" type="system" weight="medium" pointSize="17" />
                                                                     <nil key="textColor" />
                                                                     <nil key="highlightedColor" />
                                                                 </label>
@@ -98,7 +98,7 @@
                                                                 </imageView>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Join Conversation" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gdB-mp-saf">
                                                                     <rect key="frame" x="0.0" y="49.999999999999972" width="142.66666666666666" height="20.333333333333329" />
-                                                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17" />
+                                                                    <fontDescription key="fontDescription" type="system" weight="medium" pointSize="17" />
                                                                     <nil key="textColor" />
                                                                     <nil key="highlightedColor" />
                                                                 </label>
@@ -211,6 +211,8 @@
                                     </constraints>
                                     <connections>
                                         <outlet property="helloLabel" destination="Owt-G6-KAH" id="W9u-pK-Wnf" />
+                                        <outlet property="newConvoView" destination="lfA-v0-jir" id="p1C-Xq-K9l" />
+                                        <outlet property="joinConvoView" destination="yl2-9K-FxZ" id="m3B-Zr-Q2b" />
                                     </connections>
                                 </view>
                                 <prototypes>

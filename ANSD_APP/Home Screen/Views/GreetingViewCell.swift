@@ -11,6 +11,8 @@ import UIKit
 class GreetingViewCell: UIView {
     
     @IBOutlet weak var helloLabel: UILabel!
+    @IBOutlet weak var newConvoView: UIView!
+    @IBOutlet weak var joinConvoView: UIView!
     
     func configure(name: String) {
         helloLabel.text = "Live Captioning"
