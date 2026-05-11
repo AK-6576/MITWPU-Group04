@@ -43,7 +43,7 @@ class QuickCaptioningViewController: UIViewController,
     private var recognitionTask: SFSpeechRecognitionTask?
     private var speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
 
-    private let diarizer = AudioDiarizer()
+    private let diarizer = FluidAudioDiarizer()
     private var diarizerCancellables = Set<AnyCancellable>()
     private var currentSpeakerID: Int?
     private let cleanupManager = TextCleanupManager()
@@ -737,7 +737,7 @@ class QuickCaptioningViewController: UIViewController,
                     
                     summaryVC.rawTranscriptText = transcript
                     summaryVC.rawMessages = self.messages
-                    summaryVC.conversationTitle = "Conversation 1"
+                    summaryVC.conversationTitle = "Quick Session"
                     
                     let dateFormatter = DateFormatter()
                     dateFormatter.dateFormat = "MMMM"

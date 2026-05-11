@@ -18,7 +18,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Data Input
     
-    var conversationTitle = "Conversation 1"
+    var conversationTitle = "Quick Session"
     var rawTranscriptText: String = ""
     var rawMessages: [QuickCaptionsChat] = []
     var participantsData: [QuickCaptionsParticipantData] = []

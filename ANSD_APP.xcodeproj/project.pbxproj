@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		02D7E7C52F6D143A00C20BC2 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 02D7E7C42F6D143A00C20BC2 /* GoogleSignIn */; };
 		02D7E7C72F6D143A00C20BC2 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 02D7E7C62F6D143A00C20BC2 /* GoogleSignInSwift */; };
+		19D1C6EE2FB19294003C0DAF /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 19D1C6ED2FB19294003C0DAF /* FluidAudio */; };
 		BF59586A2FB1063900DBBE5F /* SileroVAD.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = BF5958692FB1063900DBBE5F /* SileroVAD.mlpackage */; };
 		BF59586E2FB1077700DBBE5F /* VL1004.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = BF59586D2FB1077700DBBE5F /* VL1004.mlpackage */; };
 		BFDA3C6F2F40735600445EC1 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = BFDA3C6E2F40735600445EC1 /* FirebaseAI */; };
@@ -73,6 +74,7 @@
 				BFDA3C872F40735600445EC1 /* FirebaseFirestore in Frameworks */,
 				BFDA3C7F2F40735600445EC1 /* FirebaseAuthCombine-Community in Frameworks */,
 				BFDA3C912F40735600445EC1 /* FirebaseInstallations in Frameworks */,
+				19D1C6EE2FB19294003C0DAF /* FluidAudio in Frameworks */,
 				BFDA3C712F40735600445EC1 /* FirebaseAILogic in Frameworks */,
 				02D7E7C72F6D143A00C20BC2 /* GoogleSignInSwift in Frameworks */,
 				BFDA3C772F40735600445EC1 /* FirebaseAnalyticsIdentitySupport in Frameworks */,
@@ -173,6 +175,7 @@
 				BFDA3C9C2F40735600445EC1 /* FirebaseStorageCombine-Community */,
 				02D7E7C42F6D143A00C20BC2 /* GoogleSignIn */,
 				02D7E7C62F6D143A00C20BC2 /* GoogleSignInSwift */,
+				19D1C6ED2FB19294003C0DAF /* FluidAudio */,
 			);
 			productName = ANSD_APP;
 			productReference = 02AE994B2ED5711C0079EA2B /* ANSD_APP.app */;
@@ -206,6 +209,7 @@
 			packageReferences = (
 				BFDA3C6D2F40735600445EC1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				02D7E7C32F6D143A00C20BC2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				19D1C6EC2FB19294003C0DAF /* XCRemoteSwiftPackageReference "FluidAudio" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 02AE994C2ED5711C0079EA2B /* Products */;
@@ -247,7 +251,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = QJ5443JB92;
+				DEVELOPMENT_TEAM = GYQHC6MCD6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sāmwaad";
@@ -283,7 +287,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = QJ5443JB92;
+				DEVELOPMENT_TEAM = GYQHC6MCD6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ANSD_APP/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sāmwaad";
@@ -469,6 +473,14 @@
 				minimumVersion = 9.1.0;
 			};
 		};
+		19D1C6EC2FB19294003C0DAF /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		BFDA3C6D2F40735600445EC1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -489,6 +501,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 02D7E7C32F6D143A00C20BC2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		19D1C6ED2FB19294003C0DAF /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 19D1C6EC2FB19294003C0DAF /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
 		};
 		BFDA3C6E2F40735600445EC1 /* FirebaseAI */ = {
 			isa = XCSwiftPackageProductDependency;
