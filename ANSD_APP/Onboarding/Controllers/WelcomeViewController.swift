@@ -13,7 +13,7 @@ import FirebaseAuth
 class WelcomeViewController: UIViewController {
     
     // MARK: - Outlets
-    @IBOutlet weak var logoImageView: UIImageView!
+//    @IBOutlet weak var logoImageView: UIImageView!
     @IBOutlet weak var appleSignInButton: UIButton!
     @IBOutlet weak var googleSignInButton: UIButton!
     @IBOutlet weak var createAccountButton: UIButton!
@@ -27,8 +27,8 @@ class WelcomeViewController: UIViewController {
     
     private func setupUI() {
         // App logo styling
-        logoImageView.layer.cornerRadius = 20
-        logoImageView.clipsToBounds = true
+//        logoImageView.layer.cornerRadius = 20
+//        logoImageView.clipsToBounds = true
         
         // Apple Sign In styling
         appleSignInButton.layer.cornerRadius = 25

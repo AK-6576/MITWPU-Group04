@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24765" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Zep-Pv-dgG">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Zep-Pv-dgG">
     <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24743"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -20,17 +20,10 @@
                                 <rect key="frame" x="0.0" y="118" width="393" height="666"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="32" translatesAutoresizingMaskIntoConstraints="NO" id="y5Y-RG-9Yq" userLabel="BrandingStack">
-                                        <rect key="frame" x="24" y="59.999999999999986" width="345" height="241.66666666666663"/>
+                                        <rect key="frame" x="24" y="180" width="345" height="69.666666666666686"/>
                                         <subviews>
-                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppLogo" translatesAutoresizingMaskIntoConstraints="NO" id="dsz-bm-unE">
-                                                <rect key="frame" x="102.66666666666669" y="0.0" width="140" height="140"/>
-                                                <constraints>
-                                                    <constraint firstAttribute="width" constant="140" id="cRq-8P-8Ff"/>
-                                                    <constraint firstAttribute="height" constant="140" id="ozb-r7-Waz"/>
-                                                </constraints>
-                                            </imageView>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="TME-AH-wMb" userLabel="TextGroupStack">
-                                                <rect key="frame" x="33.666666666666657" y="172" width="278" height="69.666666666666686"/>
+                                                <rect key="frame" x="33.666666666666657" y="0.0" width="278" height="69.666666666666671"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sāmwaad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Z93-Cc-idf">
                                                         <rect key="frame" x="0.0" y="0.0" width="278" height="38.333333333333336"/>
@@ -135,7 +128,7 @@
                                 </subviews>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <constraints>
-                                    <constraint firstItem="y5Y-RG-9Yq" firstAttribute="top" secondItem="2I5-b5-oqo" secondAttribute="top" constant="60" id="L75-VT-VpH"/>
+                                    <constraint firstItem="y5Y-RG-9Yq" firstAttribute="top" secondItem="2I5-b5-oqo" secondAttribute="top" constant="180" id="L75-VT-VpH"/>
                                     <constraint firstAttribute="bottom" secondItem="u7N-SK-pS3" secondAttribute="bottom" id="SFA-ts-eBE"/>
                                     <constraint firstItem="y5Y-RG-9Yq" firstAttribute="leading" secondItem="2I5-b5-oqo" secondAttribute="leading" constant="24" id="XbU-gk-KY9"/>
                                     <constraint firstAttribute="trailing" secondItem="u7N-SK-pS3" secondAttribute="trailing" id="a23-AZ-Elc"/>
@@ -159,7 +152,6 @@
                         <outlet property="createAccountButton" destination="DUb-pC-qF2" id="ji1-CP-acO"/>
                         <outlet property="googleSignInButton" destination="K7r-LY-MiZ" id="V2W-J1-ArK"/>
                         <outlet property="loginButton" destination="m9u-Ng-ggW" id="hVv-tc-hNU"/>
-                        <outlet property="logoImageView" destination="dsz-bm-unE" id="DSB-Kc-7xS"/>
                         <segue destination="lGr-uB-ayk" kind="show" identifier="showCreateAccount" id="Hbf-qz-pNh"/>
                         <segue destination="rqB-Fu-B5g" kind="show" identifier="showLoginAccount" id="dtV-CI-Qcz"/>
                         <segue destination="KzG-rr-mfo" kind="show" identifier="googleSignInToHome" id="v8f-ta-Zn6"/>
@@ -642,20 +634,19 @@
         <segue reference="c2S-4f-B5g"/>
     </inferredMetricsTieBreakers>
     <resources>
-        <image name="AppLogo" width="1024" height="1024"/>
         <image name="Google" width="24" height="24"/>
         <image name="apple.logo" catalog="system" width="105" height="128"/>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.53333333333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
