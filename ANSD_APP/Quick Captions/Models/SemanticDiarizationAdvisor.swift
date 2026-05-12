@@ -37,7 +37,27 @@ final class SemanticDiarizationAdvisor {
     
     // MARK: - State
     
-    private lazy var session = LanguageModelSession()
+    private static let sessionInstructions = """
+    You are a real-time conversation-turn detector embedded in a captioning \
+    app for people with hearing loss. Your job is to predict whether the NEXT \
+    utterance will come from a DIFFERENT speaker than the last one shown.
+
+    GUARDRAILS:
+    - Never fabricate, hallucinate, or invent information not present in the dialogue.
+    - Never produce harmful, offensive, biased, or discriminatory content.
+    - Strictly follow the requested output format with no extra text.
+    - When in doubt, predict false (the acoustic model is the primary signal).
+    
+    Rules:
+    - Predict change=true for unanswered questions, reply starters, \
+      or clear topic hand-offs.
+    - Predict change=false when the last speaker is continuing a \
+      thought, listing items, or narrating.
+    """
+    
+    private lazy var session = LanguageModelSession(
+        instructions: SemanticDiarizationAdvisor.sessionInstructions
+    )
     private var context: [(speaker: String, text: String)] = []
     private let maxContext = 6   // last 6 utterances ≈ 30–60 s of conversation
     
@@ -61,10 +81,8 @@ final class SemanticDiarizationAdvisor {
             .joined(separator: "\n")
         
         let prompt = """
-        You are a real-time conversation-turn detector embedded in a captioning \
-        app for people with hearing loss. Analyse the dialogue below and predict \
-        whether the NEXT utterance will come from a DIFFERENT speaker than the \
-        last one shown.
+        Analyse the dialogue below and predict whether the NEXT utterance \
+        will come from a DIFFERENT speaker than the last one shown.
         
         Examples:
         Dialogue:
@@ -82,13 +100,6 @@ final class SemanticDiarizationAdvisor {
 
         Conversation so far:
         \(dialogue)
-        
-        Rules:
-        - Predict change=true for unanswered questions, reply starters, \
-          or clear topic hand-offs.
-        - Predict change=false when the last speaker is continuing a \
-          thought, listing items, or narrating.
-        - When in doubt, predict false (acoustic model is the primary signal).
         """
         
         do {

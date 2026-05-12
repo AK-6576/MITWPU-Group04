@@ -24,7 +24,8 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     // MARK: - Header Data
     var dateString: String = ""
-    var timeString: String = ""
+    var timeString: String = "" // Acts as End Time
+    var startTimeString: String = ""
     var locationString: String = ""
     
     // MARK: - AI State
@@ -99,22 +100,29 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                     
                     """
                 }
+                                let instructions = """
+                You are an expert transcriber and conversation analyst for a live captioning app designed for people with hearing loss. Analyze transcripts and provide structured summaries.
+
+                GUARDRAILS:
+                - Never fabricate, hallucinate, or invent information not present in the transcript.
+                - Never produce harmful, offensive, biased, or discriminatory content.
+                - If the transcript is empty or meaningless, return an empty string.
+                - Always respond in the SAME language as the transcript.
+                - Never include commentary, apologies, disclaimers, or boilerplate text.
+                - Strictly output only the requested sections with no extra text.
+                - Do NOT use dashes (-) for listing things.
+                """
                 
                 let prompt = """
-                You are an expert transcriber and conversation analyst. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
+                Analyze the following transcript. Provide the summary and notes in the SAME language as the transcript.
                 
                 STRICT CONSTRAINTS:
                 - The acoustic separation system frequently creates "ghost persons" by assigning multiple speaker numbers (e.g., "Speaker 2", "Speaker 3") to a single physical person (e.g., "Cobb").
                 - Read the context carefully to figure out who is who. If it's clear someone is just another name for an existing speaker, you will note this mapping.
-                - Strictly output only the requested sections (e.g., "GHOST_MERGES:", "NOTES:", "PARTICIPANT_...:").
-                - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
-                - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
-                - If the transcript is empty or meaningless, simply return an empty string.
-                - Provide exact sections explicitly labeled with standard capitalization. Do not output anything that doesn't belong to a section.
                 
                 Step 1: Write a section strictly labeled "GHOST_MERGES:". For every ghost person identified (like Speaker 3 being Cobb), write "GhostName = RealName" on a new line (e.g., "Speaker 3 = Cobb"). If none, write "None".
                 
-                Step 2: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point on a new line as a standalone sentence.
+                Step 2: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. Provide each point on a new line as a standalone sentence.
                 
                 \(participantPrompts)
                 
@@ -122,7 +130,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
                 \(rawTranscriptText)
                 """
                 
-                let session = LanguageModelSession(model: model)
+                let session = LanguageModelSession(model: model, instructions: instructions)
                 let response = try await session.respond(to: prompt)
                 
                 await MainActor.run {
@@ -437,6 +445,10 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
     
     func didChangeTitle(text: String) {
         self.conversationTitle = text
+        // If the user manually changes the title, reset the auto-incrementing counter back to 1
+        if !text.starts(with: "Conversation ") {
+            UserDefaults.standard.set(1, forKey: "quickCaptionSessionCounter")
+        }
     }
     
     // MARK: - Save to History Translator
@@ -479,7 +491,7 @@ class SummaryViewController: UIViewController, UITableViewDelegate, UITableViewD
             title: self.conversationTitle,
             details: cleanOneLiner,
             date: self.dateString,
-            startTime: self.timeString,
+            startTime: self.startTimeString.isEmpty ? self.timeString : self.startTimeString,
             endTime: self.timeString,
             location: self.locationString,
             category: "Quick Captions",

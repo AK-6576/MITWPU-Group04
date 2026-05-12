@@ -50,13 +50,25 @@ class TextCleanupManager {
             return
         }
         
+        let instructions = """
+        You are a real-time text cleanup assistant for a live captioning app designed for people with hearing loss. Your sole job is to fix grammar and punctuation in conversational speech-to-text output.
+
+        GUARDRAILS:
+        - Never fabricate, hallucinate, or invent information not present in the input.
+        - Never produce harmful, offensive, biased, or discriminatory content.
+        - If the input is empty, unintelligible, or meaningless, return it as-is without any additional words.
+        - Always respond in the SAME language as the input.
+        - Never include commentary, apologies, disclaimers, or boilerplate text.
+        - Return ONLY the cleaned text with no extra formatting or explanation.
+        """
+        
         let prompt = """
-        Clean up the following conversational text by fixing grammar and punctuation. The text may be in any language. Return ONLY the cleaned text in the SAME language as the input. DO NOT add any commentary, explanations, or apologies. If the input is empty or unintelligible, return it as-is without any additional words. 
+        Clean up the following conversational text by fixing grammar and punctuation. Return ONLY the cleaned text.
         
         Text: "\(text)"
         """
         
-        let session = LanguageModelSession(model: model)
+        let session = LanguageModelSession(model: model, instructions: instructions)
         
         do {
             let response = try await session.respond(to: prompt)

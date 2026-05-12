@@ -28,9 +28,7 @@ class ConversationCollectionViewCell: UICollectionViewCell {
         contentView.backgroundColor = .secondarySystemGroupedBackground
         layer.cornerRadius = 16
         layer.masksToBounds = true
-        layer.shadowRadius = 8
-        layer.shadowOffset = CGSize(width: 0, height: 4)
-        layer.shadowOpacity = 0
+        // Shadows removed per design spec
         layer.borderWidth = 0
         
         // HIG: Enforce strong typographic hierarchy and spacing.

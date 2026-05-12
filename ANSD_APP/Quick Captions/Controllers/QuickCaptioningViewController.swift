@@ -52,6 +52,7 @@ class QuickCaptioningViewController: UIViewController,
     var hasEnrolled = false
     private var forceNewBubble = false
     private var cleanupIDs: [UUID] = []
+    private var sessionStartTime: Date?
     /// Tracks which bubbles have already had cleanup scheduled, preventing
     /// double-scheduling when finalizeBubble is called more than once.
     private var cleanedBubbleIDs = Set<UUID>()
@@ -198,6 +199,7 @@ class QuickCaptioningViewController: UIViewController,
         forceNewBubble = false
         cleanedBubbleIDs.removeAll()
         lastDiarizerFireTime = nil
+        sessionStartTime = Date()
         
         startSpeechRecognition()
         try? startAudioEngine()
@@ -651,7 +653,12 @@ class QuickCaptioningViewController: UIViewController,
                     
                     summaryVC.rawTranscriptText = transcript
                     summaryVC.rawMessages = self.messages
-                    summaryVC.conversationTitle = "Conversation 1"
+                    
+                    // Fetch and increment Conversation Counter
+                    let currentCounter = UserDefaults.standard.integer(forKey: "quickCaptionSessionCounter")
+                    let nextCounter = currentCounter == 0 ? 1 : currentCounter
+                    summaryVC.conversationTitle = "Conversation \(nextCounter)"
+                    UserDefaults.standard.set(nextCounter + 1, forKey: "quickCaptionSessionCounter")
                     
                     let now = Date()
                     let dateFormatter = DateFormatter()
@@ -668,7 +675,13 @@ class QuickCaptioningViewController: UIViewController,
                     summaryVC.dateString = "\(month) \(dayWithSuffix)"
                     
                     dateFormatter.dateFormat = "h:mm a"
-                    summaryVC.timeString = dateFormatter.string(from: now)
+                    summaryVC.timeString = dateFormatter.string(from: now) // End time
+                    
+                    if let start = self.sessionStartTime {
+                        summaryVC.startTimeString = dateFormatter.string(from: start)
+                    } else {
+                        summaryVC.startTimeString = summaryVC.timeString
+                    }
                     
                     summaryVC.locationString = self.currentLocationString
                     

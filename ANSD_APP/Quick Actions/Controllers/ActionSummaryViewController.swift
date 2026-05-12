@@ -180,17 +180,23 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
         
         Task {
             do {
-                let prompt = """
-                You are a professional assistant specialized in conversation analysis.
-                Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript. 
-                
-                STRICT CONSTRAINTS:
-                - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
-                - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
-                - If the transcript is empty or meaningless, simply return empty notes and an empty participants array.
+                let instructions = """
+                You are a professional assistant specialized in conversation analysis for a live captioning app designed for people with hearing loss. Analyze transcripts and provide structured JSON summaries.
+
+                GUARDRAILS:
+                - Never fabricate, hallucinate, or invent information not present in the transcript.
+                - Never produce harmful, offensive, biased, or discriminatory content.
+                - If the transcript is empty or meaningless, return empty notes and an empty participants array.
+                - Always respond in the SAME language as the transcript.
+                - Never include commentary, apologies, disclaimers, or boilerplate text.
                 - The JSON output must perfectly adhere to the schema with no extra text.
+                - Do NOT use dashes (-) for listing things.
+                """
                 
-                Summarize the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point as a standalone sentence. 
+                let prompt = """
+                Analyze the following transcript. Provide the summary and notes in the SAME language as the transcript. 
+                
+                Summarize the key takeaways and action items in short, clean sentences. Provide each point as a standalone sentence. 
                 
                 The JSON must perfectly match this structure:
                 {
@@ -206,7 +212,7 @@ class BaseSummaryViewController: UIViewController, UITableViewDelegate, UITableV
                 \(fullTranscript)
                 """
                 
-                let session = LanguageModelSession(model: model)
+                let session = LanguageModelSession(model: model, instructions: instructions)
                 let response = try await session.respond(to: prompt)
                 
                 await MainActor.run {

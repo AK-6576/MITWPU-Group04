@@ -225,10 +225,7 @@ class ViewConversationCollection: UIViewController, UICollectionViewDelegate, UI
             textField.layer.cornerRadius = 24
             textField.layer.masksToBounds = true
             
-            searchBar.layer.shadowColor = UIColor.black.cgColor
-            searchBar.layer.shadowOpacity = 0.1
-            searchBar.layer.shadowOffset = CGSize(width: 0, height: 4)
-            searchBar.layer.shadowRadius = 6
+            // Shadows removed per design spec
             
             textField.attributedPlaceholder = NSAttributedString(
                 string: "Search",

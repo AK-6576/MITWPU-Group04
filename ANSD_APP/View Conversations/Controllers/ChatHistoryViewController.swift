@@ -71,11 +71,6 @@ class ViewSummaryCardCell: UITableViewCell {
         mainCardView.backgroundColor = .systemBackground
         mainCardView.layer.cornerRadius = 16
         
-        // Add shadow for "floating card" effect
-        mainCardView.layer.shadowColor = UIColor.black.cgColor
-        mainCardView.layer.shadowOpacity = 0.06
-        mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)
-        mainCardView.layer.shadowRadius = 6
         mainCardView.layer.masksToBounds = false
     }
     
@@ -98,10 +93,6 @@ class ViewParticipantsCardCell: UITableViewCell {
         // Standard Card Styling
         mainCardView.layer.cornerRadius = 16
         mainCardView.backgroundColor = .systemBackground
-        mainCardView.layer.shadowColor = UIColor.black.cgColor
-        mainCardView.layer.shadowOpacity = 0.06
-        mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)
-        mainCardView.layer.shadowRadius = 6
         mainCardView.layer.masksToBounds = false
         
         // Avatar Square Styling
@@ -151,10 +142,6 @@ class ViewNotesCardCell: UITableViewCell, UITextViewDelegate {
         
         mainCardView.backgroundColor = .secondarySystemGroupedBackground
         mainCardView.layer.cornerRadius = 12
-        mainCardView.layer.shadowColor = UIColor.black.cgColor
-        mainCardView.layer.shadowOpacity = 0.06
-        mainCardView.layer.shadowOffset = CGSize(width: 0, height: 3)
-        mainCardView.layer.shadowRadius = 6
         mainCardView.layer.masksToBounds = false
     }
     
@@ -275,17 +262,23 @@ class ChatHistoryViewController: UIViewController {
         
         Task {
             do {
+                let instructions = """
+                You are an expert transcriber and conversation analyst for a live captioning app designed for people with hearing loss. Analyze transcripts and provide structured summaries.
+
+                GUARDRAILS:
+                - Never fabricate, hallucinate, or invent information not present in the transcript.
+                - Never produce harmful, offensive, biased, or discriminatory content.
+                - If the transcript is empty or meaningless, return an empty string.
+                - Always respond in the SAME language as the transcript.
+                - Never include commentary, apologies, disclaimers, or boilerplate text.
+                - Strictly output only the requested sections with no extra text.
+                - Do NOT use dashes (-) for listing things.
+                """
+                
                 let prompt = """
-                You are an expert transcriber and conversation analyst. Analyze the following transcript, which may be in any language supported by the Speech framework. Provide the summary and notes in the SAME language as the transcript.
+                Analyze the following transcript. Provide the summary and notes in the SAME language as the transcript.
                 
-                STRICT CONSTRAINTS:
-                - Strictly output only the requested sections (e.g., "NOTES:", "SUMMARY_...:").
-                - Do NOT include any introductory or concluding remarks, conversational filler, or boilerplate text.
-                - Only provide information explicitly present in the transcript. Do NOT hallucinate or invent any details, action items, or participants.
-                - If the transcript is empty or meaningless, simply return an empty string.
-                - Provide exact sections explicitly labeled with standard capitalization. Do not output anything that doesn't belong to a section.
-                
-                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. DO NOT use dashes (-) for listing things. Provide each point on a new line as a standalone sentence.
+                Step 1: Write a section strictly labeled "NOTES:" summarizing the key takeaways and action items in short, clean sentences. Provide each point on a new line as a standalone sentence.
                 
                 Step 2: For each participant, write a section strictly labeled "SUMMARY_[Name]:" containing a short summary of what they said in the third person in 1-2 concise sentences. Do not duplicate participants!
                 
@@ -293,7 +286,7 @@ class ChatHistoryViewController: UIViewController {
                 \(fullTranscript)
                 """
                 
-                let session = LanguageModelSession(model: model)
+                let session = LanguageModelSession(model: model, instructions: instructions)
                 let response = try await session.respond(to: prompt)
                 
                 await MainActor.run {
