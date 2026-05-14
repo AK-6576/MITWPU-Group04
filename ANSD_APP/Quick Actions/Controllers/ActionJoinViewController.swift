@@ -59,6 +59,7 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
+    private let MAX_BUBBLE_CHAR_LIMIT = 180
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -117,9 +118,8 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if !isRecording {
-            startRecording()
-        }
+        // Mic is now muted by default - user must tap mic button to start.
+        
         // Set presence online
         if let code = roomCode {
             firebase.setPresence(roomCode: code, userName: myName)
@@ -137,6 +137,13 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func setupSpeech() {
         micButton.isEnabled = false
+        pauseButton.isEnabled = true
+        endButton.isEnabled = true
+        
+        // Initial muted state visuals
+        micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
+        micButton.tintColor = .label
+        
         speechRecognizer?.delegate = self
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async {
@@ -366,14 +373,38 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                     let baseText = isPlaceholder ? "" : currentText
                     let combinedText = baseText + newContent
                     
-                    if combinedText.count > MAX_BUBBLE_CHAR_LIMIT {
-                        self.messages[lastIndex].text = combinedText
-                        self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
-                        self.processTextWithAppleIntelligence(text: combinedText, index: lastIndex)
+                    if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT {
+                        // Find the last sentence boundary to split at
+                        let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
+                        var splitIndex: String.Index? = nil
                         
-                        let newMsg = GroupJoinChatMessage(text: "...", isIncoming: false, sender: self.myName, senderID: self.currentUserID)
-                        self.messages.append(newMsg)
-                        self.reloadDataAndScroll()
+                        let searchRange = combinedText.startIndex..<combinedText.index(combinedText.startIndex, offsetBy: self.MAX_BUBBLE_CHAR_LIMIT)
+                        for boundary in boundaries {
+                            if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
+                                if splitIndex == nil || range.lowerBound > splitIndex! {
+                                    splitIndex = range.lowerBound
+                                }
+                            }
+                        }
+                        
+                        if let idx = splitIndex {
+                            let endOfSentence = combinedText.index(idx, offsetBy: 1)
+                            let firstPart = String(combinedText[...endOfSentence]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            let secondPart = String(combinedText[combinedText.index(after: endOfSentence)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            
+                            self.messages[lastIndex].text = firstPart
+                            self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            self.processTextWithAppleIntelligence(text: firstPart, index: lastIndex)
+                            
+                            let newMsg = GroupJoinChatMessage(text: secondPart.isEmpty ? "..." : secondPart, isIncoming: false, sender: self.myName, senderID: self.currentUserID)
+                            self.messages.append(newMsg)
+                            self.reloadDataAndScroll()
+                        } else {
+                            // No boundary found yet, just append
+                            self.messages[lastIndex].text = combinedText
+                            self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                            self.scrollToBottom()
+                        }
                     } else {
                         self.messages[lastIndex].text = combinedText
                         self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
@@ -387,7 +418,8 @@ class ActionJoinViewController: UIViewController, UICollectionViewDelegate, UICo
                                 self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
                             }
                         }
-                        if self.isRecording { self.restartRecordingCycle() }
+                        // Silence-based restart removed as per request.
+                        // Bubble persists until manual stop or character limit reached.
                     }
                     
                 }

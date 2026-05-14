@@ -81,7 +81,7 @@ class QuickActionsViewController: UITableViewController {
         // 3. Handle Category Detail (Header Taps)
         if segue.identifier == "ActionDetail", let categoryName = sender as? String {
             if let detailVC = segue.destination as? BaseRoutineViewController {
-                // NATIVE FIX: Use the built-in rawValue initializer
+                detailVC.categoryName = categoryName
                 detailVC.category = ChatCategory(rawValue: categoryName) ?? .other
             }
         }
@@ -130,7 +130,7 @@ class QuickActionsViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return sections[section].items.count
+        return min(sections[section].items.count, 3)
     }
     
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
@@ -140,6 +140,9 @@ class QuickActionsViewController: UITableViewController {
         
         let categoryName = sections[section].category
         header.titleLabel.text = categoryName
+        
+        let itemCount = sections[section].items.count
+        header.chevronButton.isHidden = (itemCount == 0) // Always show if items exist
         
         header.onChevronTapped = { [weak self] in
             self?.didTapHeader(sectionIndex: section, categoryName: categoryName)

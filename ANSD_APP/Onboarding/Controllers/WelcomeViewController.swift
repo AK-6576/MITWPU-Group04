@@ -10,7 +10,7 @@ import UIKit
 import GoogleSignIn
 import FirebaseAuth
 
-class WelcomeViewController: UIViewController {
+class WelcomeViewController: UIViewController, UITextFieldDelegate {
     
     // MARK: - Outlets
 //    @IBOutlet weak var logoImageView: UIImageView!
@@ -26,6 +26,12 @@ class WelcomeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupKeyboardDismiss()
+        registerKeyboardNotifications()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func setupUI() {
@@ -36,6 +42,7 @@ class WelcomeViewController: UIViewController {
             textField?.layer.borderWidth = 1
             textField?.layer.borderColor = UIColor.systemGray4.cgColor
             textField?.clipsToBounds = true
+            textField?.delegate = self
         }
         
         // Ensure Google icon is sized correctly without overriding storyboard layout
@@ -484,7 +491,8 @@ class WelcomeViewController: UIViewController {
     }
     
     @IBAction func forgotPasswordTapped(_ sender: UIButton) {
-        performSegue(withIdentifier: "showForgotPassword", sender: self)
+        // The segue "showForgotPassword" is already triggered via storyboard connection,
+        // so we don't need to perform it programmatically here to avoid a double push.
     }
 }
 
@@ -494,6 +502,48 @@ extension UIImage {
     func resized(to size: CGSize) -> UIImage {
         return UIGraphicsImageRenderer(size: size).image { _ in
             draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+}
+
+// MARK: - Keyboard Handling
+extension WelcomeViewController {
+    private func setupKeyboardDismiss() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    private func registerKeyboardNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        
+        // Reset transform to calculate correct bounds
+        self.view.transform = .identity
+        
+        let bottomOfLoginButton = loginButton.convert(loginButton.bounds, to: self.view).maxY
+        let topOfKeyboard = self.view.frame.height - keyboardFrame.height
+        
+        if bottomOfLoginButton > topOfKeyboard {
+            let shiftAmount = bottomOfLoginButton - topOfKeyboard + 20
+            UIView.animate(withDuration: 0.3) {
+                self.view.transform = CGAffineTransform(translationX: 0, y: -shiftAmount)
+            }
+        }
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        UIView.animate(withDuration: 0.3) {
+            self.view.transform = .identity
         }
     }
 }

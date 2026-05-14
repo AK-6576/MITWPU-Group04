@@ -14,8 +14,16 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     
     // MARK: - Properties
     var category: ChatCategory = .other
+    var categoryName: String? // Dynamic category support
     var routineList: [RoutineConversation] = []
     var originalList: [RoutineConversation] = []
+    
+    enum FilterType {
+        case all
+        case upcoming
+        case scheduled
+    }
+    var currentFilter: FilterType = .all
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,44 +35,100 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     func setupTableView() {
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.rowHeight = 72
+        tableView.rowHeight = 75
         tableView.tableFooterView = UIView()
+        
+        // Removed manual register - let Storyboard prototype load to avoid conflicts
     }
     
     func loadData() {
         // Fetch routines for this category
         let allSections = QuickActionsRepository.shared.getGroupedSections()
-        let categoryString = category.rawValue.capitalized
         
-        if let matchingSection = allSections.first(where: { $0.category.lowercased() == categoryString.lowercased() }) {
-            let activeItems = matchingSection.items.filter { $0.status != "Done" }
-            self.routineList = activeItems
+        // Dynamic matching: More robust comparison
+        let rawTarget = (categoryName ?? category.rawValue).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        
+        // Try exact match first, then fallback to partial match
+        var matchingSection = allSections.first(where: { 
+            $0.category.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == rawTarget
+        })
+        
+        if matchingSection == nil {
+            matchingSection = allSections.first(where: { 
+                let cat = $0.category.lowercased()
+                return cat.contains(rawTarget) || rawTarget.contains(cat)
+            })
+        }
+        
+        if let section = matchingSection {
+            let activeItems = section.items.filter { $0.status != "Done" }
             self.originalList = activeItems
+            applyFilter()
         } else {
             self.routineList = []
             self.originalList = []
         }
         
         // Update UI Title
-        self.title = "\(categoryString) Routine"
-        tableView.reloadData()
+        self.title = categoryName ?? category.rawValue.capitalized
+        
+        // Ensure UI updates on main thread
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
+    }
+    
+    private func applyFilter() {
+        switch currentFilter {
+        case .all:
+            routineList = originalList
+        case .upcoming:
+            routineList = originalList.filter { QuickActionCell.isUpcoming(item: $0) }
+        case .scheduled:
+            routineList = originalList.filter { !QuickActionCell.isUpcoming(item: $0) }
+        }
     }
     
     // MARK: - Menu Setup
     func setupNavigationBarMenu() {
-     let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
+        // Sort Actions
+        let sortTitle = UIAction(title: "Title (A-Z)", image: UIImage(systemName: "textformat")) { [weak self] _ in
             self?.routineList.sort { $0.conversationTopic.lowercased() < $1.conversationTopic.lowercased() }
             self?.tableView.reloadData()
         }
         
+        // Filter Actions
+        let filterAll = UIAction(title: "Show All", image: UIImage(systemName: "list.bullet"), state: currentFilter == .all ? .on : .off) { [weak self] _ in
+            self?.currentFilter = .all
+            self?.applyFilter()
+            self?.setupNavigationBarMenu() // Refresh menu state
+            self?.tableView.reloadData()
+        }
+        
+        let filterUpcoming = UIAction(title: "Upcoming", image: UIImage(systemName: "clock.badge.checkmark"), state: currentFilter == .upcoming ? .on : .off) { [weak self] _ in
+            self?.currentFilter = .upcoming
+            self?.applyFilter()
+            self?.setupNavigationBarMenu()
+            self?.tableView.reloadData()
+        }
+        
+        let filterScheduled = UIAction(title: "Scheduled", image: UIImage(systemName: "calendar"), state: currentFilter == .scheduled ? .on : .off) { [weak self] _ in
+            self?.currentFilter = .scheduled
+            self?.applyFilter()
+            self?.setupNavigationBarMenu()
+            self?.tableView.reloadData()
+        }
+        
         let sortReset = UIAction(title: "Reset", image: UIImage(systemName: "arrow.counterclockwise")) { [weak self] _ in
+            self?.currentFilter = .all
             self?.routineList = self?.originalList ?? []
+            self?.setupNavigationBarMenu()
             self?.tableView.reloadData()
         }
 
-        let sortByMenu = UIMenu(title: "Sort By", children: [sortTitle,sortReset ])
+        let filterMenu = UIMenu(title: "Filter By Status", options: .displayInline, children: [filterAll, filterUpcoming, filterScheduled])
+        let sortByMenu = UIMenu(title: "Quick Actions", children: [sortTitle, filterMenu, sortReset])
     
-        
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "line.3.horizontal.decrease"),
                                                             target: nil, action: nil, menu: sortByMenu)
     }
@@ -75,10 +139,11 @@ class BaseRoutineViewController: UIViewController, UITableViewDataSource, UITabl
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "RoutineCell", for: indexPath) as? RoutineTableViewCell else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "QuickActionCell", for: indexPath) as? QuickActionCell else {
             return UITableViewCell()
         }
-        cell.configure(with: routineList[indexPath.row])
+        let item = routineList[indexPath.row]
+        cell.configure(with: item)
         return cell
     }
     

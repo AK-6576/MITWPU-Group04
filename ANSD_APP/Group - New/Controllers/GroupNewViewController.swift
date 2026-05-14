@@ -55,6 +55,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
         // -----------------------------------
         
         var consumedTranscriptOffset = 0
+        private let MAX_BUBBLE_CHAR_LIMIT = 180
     
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -83,9 +84,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if !isRecording {
-            startRecording()
-        }
+        // Mic is now muted by default - user must tap mic button to start.
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -115,6 +114,14 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
     }
     
     private func setupSpeechPermissions() {
+        micButton.isEnabled = false
+        pauseButton.isEnabled = true
+        endButton.isEnabled = true
+        
+        // Initial muted state visuals
+        micButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
+        micButton.tintColor = .label
+        
         speechRecognizer?.delegate = self
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async {
@@ -189,12 +196,12 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                         
                         // CHECK LIMIT (3-4 Lines Logic)
                         // --- UPDATED BUBBLE SPLITTING LOGIC ---
-                        if combinedText.count > 240 { // Match new MAX_BUBBLE_CHAR_LIMIT
+                        if combinedText.count > self.MAX_BUBBLE_CHAR_LIMIT { 
                             // Find the last sentence boundary to split at
                             let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
                             var splitIndex: String.Index? = nil
                             
-                            let searchRange = combinedText.startIndex..<combinedText.index(combinedText.startIndex, offsetBy: 240)
+                            let searchRange = combinedText.startIndex..<combinedText.index(combinedText.startIndex, offsetBy: self.MAX_BUBBLE_CHAR_LIMIT)
                             for boundary in boundaries {
                                 if let range = combinedText.range(of: boundary, options: .backwards, range: searchRange) {
                                     if splitIndex == nil || range.lowerBound > splitIndex! {
@@ -219,6 +226,7 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                                 // No boundary found yet, just append
                                 self.messages[lastIndex].text = combinedText
                                 self.collectionView.reloadItems(at: [IndexPath(item: lastIndex, section: 0)])
+                                self.scrollToBottom()
                             }
                         } else {
                             // JUST APPEND
@@ -239,10 +247,8 @@ class GroupNewViewController: UIViewController, UICollectionViewDelegate, UIColl
                                     }
                                 }
                                 
-                                // Restart Cycle (Resets engine)
-                                if self.isRecording {
-                                    self.restartRecordingCycle()
-                                }
+                                // Silence-based restart removed as per request.
+                                // Bubble persists until manual stop or character limit reached.
                             }
                         }
                     }

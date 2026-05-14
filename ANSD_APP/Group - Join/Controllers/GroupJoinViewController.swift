@@ -64,7 +64,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     var otherPersonName = "Host"
     
     // Constant for bubble splitting (Adjust based on your UI)
-    let MAX_BUBBLE_CHAR_LIMIT = 240
+    private let MAX_BUBBLE_CHAR_LIMIT = 180
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -92,9 +92,7 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if !isRecording {
-            startRecording()
-        }
+        // Mic is now muted by default - user must tap mic button to start.
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -128,6 +126,14 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     private func setupSpeechPermissions() {
+        GroupJoinMicButton.isEnabled = false
+        GroupJoinPauseButton.isEnabled = true
+        GroupJoinEndButton.isEnabled = true
+        
+        // Initial muted state visuals
+        GroupJoinMicButton.setImage(UIImage(systemName: "mic.slash.fill"), for: .normal)
+        GroupJoinMicButton.tintColor = .label
+        
         speechRecognizer?.delegate = self
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async {
@@ -237,9 +243,8 @@ class GroupJoinViewController: UIViewController, UICollectionViewDelegate, UICol
                                         self.processTextWithAppleIntelligence(text: finalText, index: finalIndex)
                                     }
                                 }
-                                if self.isRecording {
-                                    self.restartRecordingCycle()
-                                }
+                                // Silence-based restart removed as per request.
+                                // Bubble persists until manual stop or character limit reached.
                             }
                         }
                         
