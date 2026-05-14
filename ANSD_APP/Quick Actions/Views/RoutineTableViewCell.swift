@@ -14,21 +14,21 @@ class RoutineTableViewCell: UITableViewCell {
 
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var subtitleLabel: UILabel!
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         setupUI()
     }
-    
+
     private func setupUI() {
         // Ensuring labels handle multiple lines if needed
         titleLabel?.numberOfLines = 1
         subtitleLabel?.numberOfLines = 1
-        
+
         // Force left alignment (overrides any Storyboard setting)
         titleLabel?.textAlignment    = .left
         subtitleLabel?.textAlignment = .left
-        
+
         // Visual polish for a 'card' list appearance
         selectionStyle = .none
         titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
@@ -43,7 +43,7 @@ class RoutineTableViewCell: UITableViewCell {
         titleLabel.text = item.conversationTopic
         subtitleLabel.text = item.startTime
     }
-    
+
     /// Keep this for cases where you might want to manually set text (like headers)
     func configure(title: String, subtitle: String) {
         titleLabel.text = title

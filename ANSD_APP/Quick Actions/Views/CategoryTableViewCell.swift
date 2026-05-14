@@ -18,12 +18,12 @@ import UIKit
 // MARK: - Category Table View Cell
 // Custom table view cell for displaying categories with a title and interactive chevron.
 class CategoryTableViewCell: UITableViewCell {
-    
+
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var chevronButton: UIButton!
 
     var onChevronTapped: (() -> Void)?
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         self.contentView.backgroundColor = .systemBackground

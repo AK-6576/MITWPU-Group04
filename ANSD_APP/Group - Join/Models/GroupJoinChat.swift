@@ -14,7 +14,7 @@ struct GroupJoinChatMessage {
     let isIncoming: Bool
     var sender: String
     let senderID: String
-    
+
     // Converts the message to a dictionary suitable for writing to Firebase Realtime Database.
     func toDictionary() -> [String: Any] {
         return [

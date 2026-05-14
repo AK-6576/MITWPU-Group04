@@ -11,10 +11,6 @@ import UIKit
 // MARK: - Base Class (Action Logic)
 class GroupJoinBaseChatCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-    }
 
     func applyBaseBubbleStyle(view: UIView) {
         view.layer.cornerRadius = 16
@@ -29,10 +25,10 @@ class GroupJoinBaseChatCell: UICollectionViewCell {
         } else {
             widthConstraint?.constant = layoutAttributes.frame.width
         }
-        
+
         let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
         let size = contentView.systemLayoutSizeFitting(targetSize, withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
-        
+
         var newFrame = layoutAttributes.frame
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
@@ -44,19 +40,19 @@ class GroupJoinBaseChatCell: UICollectionViewCell {
 class GroupJoinOutgoingCell: GroupJoinBaseChatCell {
     @IBOutlet weak var GroupJoinBubbleView: UIView!
     @IBOutlet weak var GroupJoinMessageLabel: UILabel!
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: GroupJoinBubbleView)
-        
+
         GroupJoinBubbleView.backgroundColor = .systemBlue
         GroupJoinMessageLabel.textColor = .white
         GroupJoinMessageLabel.numberOfLines = 0
-        
+
         // Sharp Bottom-Right corner
         GroupJoinBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
     }
-    
+
     func configure(with message: GroupJoinChatMessage) {
         GroupJoinMessageLabel.text = message.text
     }
@@ -68,28 +64,28 @@ class GroupJoinIncomingCell: GroupJoinBaseChatCell {
     @IBOutlet weak var GroupJoinBubbleView: UIView!
     @IBOutlet weak var GroupJoinMessageLabel: UILabel!
     @IBOutlet weak var GroupJoinProfileImageView: UIImageView!
-    
+
     var onLabelTapped: (() -> Void)?
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: GroupJoinBubbleView)
-        
+
         GroupJoinBubbleView.backgroundColor = .systemGray5
         GroupJoinMessageLabel.textColor = .black
         GroupJoinMessageLabel.numberOfLines = 0
-        
+
         // Sharp Bottom-Left corner
         GroupJoinBubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
-        
+
         setupUI()
     }
-    
+
     private func setupUI() {
         // Name Label Interaction
         GroupJoinNameLabel.isUserInteractionEnabled = true
         GroupJoinNameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
-        
+
         // Profile Image Circle
         if let profileImg = GroupJoinProfileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
@@ -98,11 +94,11 @@ class GroupJoinIncomingCell: GroupJoinBaseChatCell {
             profileImg.backgroundColor = .systemGray4
         }
     }
-    
+
     @objc private func handleTap() {
         onLabelTapped?()
     }
-    
+
     // MARK: - Configuration
     func configure(with message: GroupJoinChatMessage) {
         GroupJoinMessageLabel.text = message.text

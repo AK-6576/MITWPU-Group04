@@ -14,15 +14,15 @@ class VoiceProfileManager {
     private var context: ModelContext? {
         return DataManager.shared.context
     }
-    
+
     private init() {}
-    
+
     // MARK: - Fetch Profile
     func getVoiceProfile(byUID ownerUID: String) -> VoiceProfile? {
         guard let context = context else { return nil }
-        
+
         let descriptor = FetchDescriptor<VoiceProfile>(predicate: #Predicate { $0.ownerUID == ownerUID })
-        
+
         do {
             let results = try context.fetch(descriptor)
             return results.first
@@ -31,11 +31,11 @@ class VoiceProfileManager {
             return nil
         }
     }
-    
+
     // MARK: - Save or Update Profile
     func saveVoiceProfile(ownerUID: String, name: String, embedding: [Float]) {
         guard let context = context else { return }
-        
+
         if let existingProfile = getVoiceProfile(byUID: ownerUID) {
             // Update existing profile
             existingProfile.name = name
@@ -46,26 +46,26 @@ class VoiceProfileManager {
             let newProfile = VoiceProfile(ownerUID: ownerUID, name: name, embedding: embedding)
             context.insert(newProfile)
         }
-        
+
         saveData()
     }
-    
+
     // MARK: - Delete Profile (For resetting calibration)
     func deleteVoiceProfile(byUID ownerUID: String) {
         guard let context = context else { return }
-        
+
         if let profileToDelete = getVoiceProfile(byUID: ownerUID) {
             context.delete(profileToDelete)
             print("VoiceProfileManager: Deleting existing voice profile for user \(ownerUID)...")
             saveData()
         }
     }
-    
+
     // MARK: - Private Save Helper
     private func saveData() {
-        guard let context = context else { 
+        guard let context = context else {
             print("VoiceProfileManager: ERROR - No ModelContext found for saveData")
-            return 
+            return
         }
         do {
             print("VoiceProfileManager: Attempting to save ModelContext...")

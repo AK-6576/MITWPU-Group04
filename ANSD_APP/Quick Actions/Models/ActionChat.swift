@@ -31,6 +31,4 @@ protocol ChatMessageProtocol {
     var isIncoming: Bool { get }
 }
 
-
-
 extension ChatMessage: ChatMessageProtocol {}

@@ -12,9 +12,9 @@ class QuickActionCell: UITableViewCell {
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var subtitleLabel: UILabel!
     @IBOutlet weak var iconImageView: UIImageView!
-    
+
     var onInfoTapped: (() -> Void)?
-    
+
     private let customIconContainer = UIView()
     private let customIconImageView = UIImageView()
     private let textStackView      = UIStackView()
@@ -24,33 +24,33 @@ class QuickActionCell: UITableViewCell {
     private let customTimeLabel    = UILabel()
     private let badgeContainer     = UIView()
     private let badgeLabel         = UILabel()
-    
+
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupDesign()
     }
-    
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
 
     override func awakeFromNib() {
         super.awakeFromNib()
-        
+
         // Hide storyboard views
         titleLabel?.isHidden = true
         subtitleLabel?.isHidden = true
         iconImageView?.isHidden = true
-        
+
         setupDesign()
     }
-    
+
     private func setupDesign() {
         self.backgroundColor = .clear
         self.contentView.backgroundColor = .clear
         self.contentView.alpha = 1.0
         self.alpha = 1.0
-        
+
         // ── Custom Icon ─────────────────────────────────
         customIconContainer.layer.cornerRadius        = 10
         customIconContainer.clipsToBounds             = true
@@ -124,39 +124,39 @@ class QuickActionCell: UITableViewCell {
             badgeLabel.trailingAnchor.constraint(equalTo: badgeContainer.trailingAnchor, constant: -8)
         ])
     }
-    
+
     func configure(with item: RoutineConversation) {
         customTitleLabel.text = item.conversationTopic
-        
+
         let paxCount = item.participantNames.count
         customSubtitleLabel.text = "\(item.categoryTitle) • \(paxCount) participants"
-        
+
         customTimeLabel.text = item.startTime
-        
+
         // Determine Upcoming vs Scheduled based on time
         let badgeText = QuickActionCell.isUpcoming(item: item) ? "Upcoming" : "Scheduled"
         badgeLabel.text = badgeText
-        
+
         let config = UIImage.SymbolConfiguration(weight: .semibold)
         if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
             customIconImageView.image = image.withRenderingMode(.alwaysTemplate)
         }
-        
+
         let tintColor = getColorForCategory(item.categoryTitle)
-        
+
         badgeContainer.backgroundColor = .secondarySystemFill
         badgeLabel.textColor = .label
-        
+
         customIconContainer.backgroundColor = tintColor.withAlphaComponent(0.15)
         customIconImageView.tintColor = tintColor
     }
-    
+
     // MARK: - Helper for filtering
     static func isUpcoming(item: RoutineConversation) -> Bool {
         let df = DateFormatter()
         df.dateFormat = "h:mm a"
         df.locale = Locale(identifier: "en_US_POSIX")
-        
+
         if let targetDate = df.date(from: item.startTime) {
             let now = Date()
             let cal = Calendar.current
@@ -165,7 +165,7 @@ class QuickActionCell: UITableViewCell {
             tComps.year = nComps.year
             tComps.month = nComps.month
             tComps.day = nComps.day
-            
+
             if let combinedTarget = cal.date(from: tComps) {
                 let diff = combinedTarget.timeIntervalSince(now)
                 // Upcoming is within next 4 hours

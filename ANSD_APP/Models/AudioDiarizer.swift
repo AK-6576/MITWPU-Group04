@@ -37,17 +37,17 @@ class AudioDiarizer: ObservableObject {
     private let deadzoneThreshold: Float = 0.50 // Noise floor (was 0.45)
     private let userMatchThreshold: Float = 0.63 // Stricter match for enrolled user (was 0.48)
     private let learningThreshold: Float = 0.85 // Only learn from high-quality audio (was 0.82)
-    
+
     // MARK: - Temporal Continuity & Probation
     private var unknownFrameCount = 0
     private let probationLimit = 2 // Faster reaction to new speakers (was 3)
-    private var lastMatchedSpeakerID: Int? = nil
-    
+    private var lastMatchedSpeakerID: Int?
+
     // MARK: - SoundAnalysis Speech Gate
     private let speechGate     = SpeechActivityGate()
-    private var soundAnalyzer:  SNAudioStreamAnalyzer?
+    private var soundAnalyzer: SNAudioStreamAnalyzer?
     private let analysisQueue  = DispatchQueue(label: "com.ansd.soundanalysis", qos: .userInitiated)
-    private var analysisFrame:  AVAudioFramePosition = 0
+    private var analysisFrame: AVAudioFramePosition = 0
 
     // MARK: - Published State (60/40 Centroid Architecture)
     @Published var speakerProfiles: [Int: [Float]] = [:] // The Active Scoring Profile
@@ -55,14 +55,14 @@ class AudioDiarizer: ObservableObject {
     private var activeClusters: [Int: [[Float]]] = [:]   // ⭐️ 40% Recent Adaptation (Last 15 clean frames)
     private let maxClusterSize = 15                      // ~4.5 seconds of memory
 
-    @Published var speakerNames:    [Int: String] = [:]
-    @Published var currentStatus:   String = "Ready"
-    @Published var confidence:      String = "--"
+    @Published var speakerNames: [Int: String] = [:]
+    @Published var currentStatus: String = "Ready"
+    @Published var confidence: String = "--"
     @Published var isRunning               = false
-    @Published var currentSpeakerID: Int?  = nil
+    @Published var currentSpeakerID: Int?
     @Published var segmentHistory: [DiarizationEvent] = []
 
-    public var currentLocation: String? = nil
+    public var currentLocation: String?
     private var isEnrolling = false
     private var enrollmentCompletion: ((Bool) -> Void)?
 
@@ -96,16 +96,16 @@ class AudioDiarizer: ObservableObject {
         self.isEnrolling = true
         self.enrollmentCompletion = completion
         self.collectedSamples.removeAll()
-        
+
         self.speakerProfiles.removeAll()
         self.baseAnchors.removeAll()
         self.activeClusters.removeAll()
-        
+
         self.speakerNames.removeAll()
         self.lastMatchedSpeakerID = nil
         self.unknownFrameCount = 0
     }
-    
+
     // Helper for the VC to inject profiles cleanly into all 3 dictionaries
     func setPreEnrolledProfile(vector: [Float], name: String) {
         self.speakerProfiles[0] = vector
@@ -114,7 +114,7 @@ class AudioDiarizer: ObservableObject {
         self.speakerNames[0] = name
         print("✅ Pre-Enrolled Profile Loaded and Anchored for: \(name)")
     }
-    
+
     func setUserName(_ name: String) {
         speakerNames[0] = name
     }
@@ -143,7 +143,7 @@ class AudioDiarizer: ObservableObject {
         guard let converter = getConverter(from: buffer.format, to: targetFormat) else { return }
         let ratio = Float(targetFormat.sampleRate) / Float(buffer.format.sampleRate)
         let capacity = UInt32(Float(buffer.frameLength) * ratio)
-        
+
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: capacity) else { return }
 
         var error: NSError?
@@ -183,11 +183,11 @@ class AudioDiarizer: ObservableObject {
                 print("🎤 Collected \(collectedSamples.count)/\(requiredSamples) samples...")
             }
         }
-        
+
         guard collectedSamples.count >= requiredSamples else { return }
         let chunk = Array(collectedSamples.prefix(requiredSamples))
         collectedSamples.removeFirst(stride)
-        
+
         if gateOpen {
             scheduleInference(on: chunk)
         }
@@ -206,16 +206,16 @@ class AudioDiarizer: ObservableObject {
     private func runInference(on samples: [Float]) {
         guard let model = model,
               let input = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else { return }
-        
+
         for (i, s) in samples.enumerated() { input[i] = NSNumber(value: s) }
-        
+
         do {
             let startTime  = CFAbsoluteTimeGetCurrent()
             let prediction = try model.prediction(audio: input)
             let elapsed    = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            
+
             let vector = extractVector(from: prediction.embedding)
-            
+
             DispatchQueue.main.async {
                 print("⚡️ Inference: \(String(format: "%.1f", elapsed))ms")
                 self.processEmbedding(vector)
@@ -250,26 +250,26 @@ class AudioDiarizer: ObservableObject {
         var scoredSpeakers: [(id: Int, score: Float, raw: Float)] = []
         for id in speakerProfiles.keys {
             guard let dynamicProfile = speakerProfiles[id], let anchorProfile = baseAnchors[id] else { continue }
-            
+
             // Score against BOTH the adaptive profile and the permanent anchor
             let dynScore = cosineSim(normVector, dynamicProfile)
             let anchorScore = cosineSim(normVector, anchorProfile)
-            
+
             let raw = max(dynScore, anchorScore)
             var score = raw
-            
+
             // Magnet for ID 0 (User's Voice) - Reduced to prevent merging similar voices
             if id == 0 { score += 0.05 }
             // Continuity boost
             if id == lastMatchedSpeakerID { score += 0.05 }
-            
+
             score = min(score, 1.0)
             scoredSpeakers.append((id: id, score: score, raw: raw))
         }
 
         scoredSpeakers.sort { $0.score > $1.score }
         let bestMatch = scoredSpeakers[0]
-        
+
         let threshold = (bestMatch.id == 0) ? userMatchThreshold : matchThreshold
 
         if bestMatch.score >= threshold {
@@ -277,9 +277,9 @@ class AudioDiarizer: ObservableObject {
             unknownFrameCount = 0
             lastMatchedSpeakerID = bestMatch.id
             self.confidence = String(format: "%.0f%%", bestMatch.score * 100)
-            
+
             print("🎯 Match: Speaker \(bestMatch.id) (\(String(format: "%.0f%%", bestMatch.score * 100))) [Raw: \(String(format: "%.2f", bestMatch.raw))]")
-            
+
             // Only update the room-adaptation cluster if the audio is exceedingly clean
             if bestMatch.raw > learningThreshold && speechGate.isActive {
                 print("🧠 Clean speech detected. Updating Centroid for Speaker \(bestMatch.id).")
@@ -287,15 +287,15 @@ class AudioDiarizer: ObservableObject {
             } else if bestMatch.raw > learningThreshold {
                 print("🧠 Match confirmed, but gate rejected learning (VAD low).")
             }
-            
+
             currentSpeakerID = bestMatch.id
             addToHistory(vector: normVector, id: bestMatch.id, score: bestMatch.score)
-            
+
             // Periodically run background refinement
             if segmentHistory.count % 10 == 0 {
                 performRetroactiveRefinement()
             }
-            
+
         } else if bestMatch.score < deadzoneThreshold {
             // POTENTIAL NEW SPEAKER (Probation Phase)
             unknownFrameCount += 1
@@ -332,36 +332,36 @@ class AudioDiarizer: ObservableObject {
 
     private func updateProfile(id: Int, vector: [Float]) {
         guard let anchor = baseAnchors[id] else { return }
-        
+
         if activeClusters[id] == nil { activeClusters[id] = [] }
         activeClusters[id]?.append(vector)
-        
+
         // Keep only the most recent N clean frames
         if activeClusters[id]!.count > maxClusterSize {
             activeClusters[id]?.removeFirst()
         }
-        
+
         guard let cluster = activeClusters[id], !cluster.isEmpty else { return }
-        
+
         // 1. Calculate the average of the recent clean frames (The 40% Room Adapter)
         var clusterSum = [Float](repeating: 0, count: vector.count)
         for v in cluster {
             vDSP_vadd(clusterSum, 1, v, 1, &clusterSum, 1, vDSP_Length(vector.count))
         }
-        
+
         var clusterAvg = [Float](repeating: 0, count: vector.count)
         let countFloat = Float(cluster.count)
         vDSP_vsdiv(clusterSum, 1, [countFloat], &clusterAvg, 1, vDSP_Length(vector.count))
         clusterAvg = normalize(clusterAvg)
-        
+
         // 2. Combine with the Anchor (The 60% Permanent Identity)
         var combined = [Float](repeating: 0, count: vector.count)
         var wAnchor: Float = 0.60
         var wCluster: Float = 0.40
-        
+
         vDSP_vsmul(anchor, 1, &wAnchor, &combined, 1, vDSP_Length(vector.count))
         vDSP_vsma(clusterAvg, 1, &wCluster, combined, 1, &combined, 1, vDSP_Length(vector.count))
-        
+
         // 3. Save as the active scoring profile
         speakerProfiles[id] = normalize(combined)
     }
@@ -494,39 +494,39 @@ class AudioDiarizer: ObservableObject {
         segmentHistory.append(DiarizationEvent(timestamp: Date(), vector: vector, assignedSpeakerID: id, confidence: score, locationTag: currentLocation))
         if segmentHistory.count > 500 { segmentHistory.removeFirst() }
     }
-    
+
     // MARK: - Proactive Refinement
     func performRetroactiveRefinement() {
         // Run on background thread to prevent session lag
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self else { return }
-            
+
             var hasChanges = false
             let profiles = self.speakerProfiles
-            
+
             for i in 0..<self.segmentHistory.count {
                 let event = self.segmentHistory[i]
                 let currentID = event.assignedSpeakerID
                 let vector = event.vector
-                
+
                 var bestScore: Float = -1.0
                 var bestID: Int = currentID
-                
+
                 for (id, profile) in profiles {
                     var score = self.cosineSim(vector, profile)
                     if id == 0 { score += 0.10 } // Maintain restored user bias
-                    
+
                     if score > bestScore {
                         bestScore = score
                         bestID = id
                     }
                 }
-                
+
                 // If a significantly better match is found, update it
                 let threshold = (bestID == 0) ? self.userMatchThreshold : self.matchThreshold
                 let isUnassigned = (currentID == -1)
                 let significantImprovement = bestScore > (event.confidence + 0.10)
-                
+
                 if bestID != currentID && bestScore >= threshold && (isUnassigned || significantImprovement) {
                     DispatchQueue.main.async {
                         self.segmentHistory[i].assignedSpeakerID = bestID
@@ -537,7 +537,7 @@ class AudioDiarizer: ObservableObject {
                     hasChanges = true
                 }
             }
-            
+
             if hasChanges {
                 DispatchQueue.main.async {
                     self.objectWillChange.send()
@@ -631,4 +631,3 @@ private class SpeechActivityGate: NSObject, SNResultsObserving {
         lock.unlock()
     }
 }
-

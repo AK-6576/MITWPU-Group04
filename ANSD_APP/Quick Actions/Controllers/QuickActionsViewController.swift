@@ -10,7 +10,7 @@ import UIKit
 
 // MARK: - Quick Actions View Controller
 class QuickActionsViewController: UITableViewController {
-    
+
     var sections: [RoutineSection] = []
 
     override func viewDidLoad() {
@@ -18,51 +18,51 @@ class QuickActionsViewController: UITableViewController {
         self.title = "Quick Actions"
         tableView.tableHeaderView = UIView()
         tableView.sectionHeaderTopPadding = 0
-        
+
         // Override the Storyboard native Push Segue with a programmatic Modal presentation
         let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(didTapAddButton))
         self.navigationItem.rightBarButtonItem = addButton
-        
+
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
     }
-    
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
+
     @objc private func handleDataUpdate() {
         DispatchQueue.main.async { [weak self] in
             self?.loadData()
         }
     }
-    
+
     @objc private func didTapAddButton() {
         if let addVC = self.storyboard?.instantiateViewController(withIdentifier: "AddCategoryVC") as? AddActionTableViewController {
             let nav = UINavigationController(rootViewController: addVC)
             self.present(nav, animated: true, completion: nil)
         }
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadData()
     }
-    
+
     private func loadData() {
         let allSections = QuickActionsRepository.shared.getGroupedSections()
         self.sections = allSections.compactMap { section in
             let activeItems = section.items.filter { $0.status != "Done" }
             if activeItems.isEmpty { return nil }
-            
+
             var filteredSection = section
             filteredSection.items = activeItems
             return filteredSection
         }
         tableView.reloadData()
     }
-    
+
     // MARK: - Navigation & Segues
-    
+
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         // 1. Handle Chat Screen Navigation
         let chatSegueIDs = ["officeChat", "familyChat", "friendChat", "genericChat"]
@@ -77,7 +77,7 @@ class QuickActionsViewController: UITableViewController {
                 }
             }
         }
-        
+
         // 3. Handle Category Detail (Header Taps)
         if segue.identifier == "ActionDetail", let categoryName = sender as? String {
             if let detailVC = segue.destination as? BaseRoutineViewController {
@@ -86,19 +86,19 @@ class QuickActionsViewController: UITableViewController {
             }
         }
     }
-    
+
     // MARK: - TableView Delegate (Selection)
-    
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        
+
         let sectionData = sections[indexPath.section]
         let item = sectionData.items[indexPath.row]
-        
+
         QuickActionAccess.verifyAccess(for: item, over: self) { [weak self] in
             // NATIVE FIX: Use the built-in rawValue initializer
             let category = ChatCategory(rawValue: sectionData.category) ?? .other
-            
+
             let segueID: String
             switch category {
             case .family:  segueID = "familyChat"
@@ -106,55 +106,55 @@ class QuickActionsViewController: UITableViewController {
             case .office:  segueID = "officeChat"
             case .other:   segueID = "genericChat"
             }
-            
+
             self?.performSegue(withIdentifier: segueID, sender: item)
         }
     }
-    
+
     // MARK: - Header Navigation
-    
+
     func didTapHeader(sectionIndex: Int, categoryName: String) {
         let segueID = "ActionDetail"
-        
+
         if shouldPerformSegue(withIdentifier: segueID, sender: self) {
             performSegue(withIdentifier: segueID, sender: categoryName)
         } else {
             print("Error: Segue identifier '\(segueID)' not found.")
         }
     }
-    
+
     // MARK: - TableView Data Source
-    
+
     override func numberOfSections(in tableView: UITableView) -> Int {
         return sections.count
     }
-    
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return min(sections[section].items.count, 3)
     }
-    
+
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard let header = tableView.dequeueReusableCell(withIdentifier: "CategoryTableViewCell") as? CategoryTableViewCell else {
             return nil
         }
-        
+
         let categoryName = sections[section].category
         header.titleLabel.text = categoryName
-        
+
         let itemCount = sections[section].items.count
         header.chevronButton.isHidden = (itemCount == 0) // Always show if items exist
-        
+
         header.onChevronTapped = { [weak self] in
             self?.didTapHeader(sectionIndex: section, categoryName: categoryName)
         }
-        
+
         return header
     }
-    
+
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return UITableView.automaticDimension
     }
-    
+
     override func tableView(_ tableView: UITableView, estimatedHeightForHeaderInSection section: Int) -> CGFloat {
         return 50
     }
@@ -170,10 +170,10 @@ class QuickActionsViewController: UITableViewController {
         cell.onInfoTapped = { [weak self] in self?.showActionDetails(for: item) }
         return cell
     }
-    
+
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let item = self.sections[indexPath.section].items[indexPath.row]
-        
+
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             guard let self = self else { return }
             QuickActionsRepository.shared.deleteAction(item)
@@ -184,38 +184,38 @@ class QuickActionsViewController: UITableViewController {
         }
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
-        
+
         let renameAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
             self?.showRenameAlert(for: item, section: indexPath.section, row: indexPath.row)
             completion(true)
         }
         renameAction.backgroundColor = .systemOrange
         renameAction.image = UIImage(systemName: "pencil")
-        
+
         let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction])
         config.performsFirstActionWithFullSwipe = false
         return config
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func showActionDetails(for item: RoutineConversation) {
         let message = item.description ?? "Status: \(item.status)"
         let alert = UIAlertController(title: item.conversationTopic, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-    
+
     private func showRenameAlert(for item: RoutineConversation, section: Int, row: Int) {
         let alert = UIAlertController(title: "Rename", message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = item.conversationTopic }
         let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
-            
+
             var updatedItem = item
             updatedItem.conversationTopic = newName
             QuickActionsRepository.shared.updateAction(updatedItem)
-            
+
             self.sections[section].items[row] = updatedItem
             self.tableView.reloadRows(at: [IndexPath(row: row, section: section)], with: .automatic)
         }

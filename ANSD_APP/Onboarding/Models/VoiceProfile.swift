@@ -14,7 +14,7 @@ class VoiceProfile {
     var name: String
     var embedding: [Float]
     var createdAt: Date
-    
+
     init(ownerUID: String, name: String, embedding: [Float], createdAt: Date = Date()) {
         self.ownerUID = ownerUID
         self.name = name

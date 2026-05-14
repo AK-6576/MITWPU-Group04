@@ -27,14 +27,14 @@ class QuickCaptioningViewController: UIViewController,
     @IBOutlet weak var endButton: UIBarButtonItem!
 
     var messages: [QuickCaptionsChat] = []
-    
+
     // MARK: - Buffering & Logic State
     private var transcriptBuffer: String = ""
     private var holdTimer: Timer?
-    
+
     let locationManager = CLLocationManager()
     var currentLocationString: String = "Location Unknown"
-    
+
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
@@ -47,7 +47,7 @@ class QuickCaptioningViewController: UIViewController,
 
     var isRecording = false
     var currentMessageIndex: Int?
-    
+
     var consumedTranscriptOffset = 0
     var hasEnrolled = false
     private var forceNewBubble = false
@@ -59,7 +59,7 @@ class QuickCaptioningViewController: UIViewController,
 
     // MARK: - Apple Intelligence — Semantic Diarization
     /// SemanticDiarizationAdvisor instance (iOS 18.1+ only; nil on older OS).
-    private var semanticAdvisor: AnyObject? = nil
+    private var semanticAdvisor: AnyObject?
     /// Set to true by the advisor's async prediction; consumed in processBuffer.
     private var semanticSpeakerChangeExpected = false
 
@@ -67,13 +67,13 @@ class QuickCaptioningViewController: UIViewController,
     /// Timestamp of the most recent diarizer result. Used to detect when the
     /// model hasn't produced a result recently; in that window we treat identity
     /// as unknown (-1) to prevent words bleeding into the wrong speaker's bubble.
-    private var lastDiarizerFireTime: Date? = nil
+    private var lastDiarizerFireTime: Date?
     /// How long a diarizer result is considered "fresh". The VL1004 model needs
     /// 6 s to fill its first window, so we allow a bit more headroom.
     private let diarizerStalenessThreshold: TimeInterval = 5.0
 
     // MARK: - Lifecycle
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupCollectionView()
@@ -81,7 +81,7 @@ class QuickCaptioningViewController: UIViewController,
         setupAudioSession()
         bindDiarizer()
         setupLocation()
-        
+
         checkCalibrationStatus()
 
         // Boot Apple Intelligence semantic layer (graceful no-op on < iOS 18.1).
@@ -92,18 +92,18 @@ class QuickCaptioningViewController: UIViewController,
 
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
     }
-    
+
     @objc private func handleLanguageChange() {
         speechRecognizer = SFSpeechRecognizer(locale: LanguageManager.shared.currentLocale)
     }
-            
+
     // MARK: - Voice Profile Check
     private func checkCalibrationStatus() {
         if let uid = Auth.auth().currentUser?.uid, let savedProfile = VoiceProfileManager.shared.getVoiceProfile(byUID: uid) {
-            
+
             // ⭐️ Uses the new helper to lock your absolute anchor into the Diarizer
             diarizer.setPreEnrolledProfile(vector: savedProfile.embedding, name: savedProfile.name)
-            
+
             hasEnrolled = true
             startSession()
         } else {
@@ -119,20 +119,20 @@ class QuickCaptioningViewController: UIViewController,
         stopRecording()
         NotificationCenter.default.removeObserver(self, name: .languageDidChange, object: nil)
     }
-    
+
     // MARK: - Location Services
-    
+
     func setupLocation() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
     }
-    
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
-        
-        CLGeocoder().reverseGeocodeLocation(loc) { [weak self] placemarks, error in
+
+        CLGeocoder().reverseGeocodeLocation(loc) { [weak self] placemarks, _ in
             guard let self = self else { return }
             if let place = placemarks?.first {
                 let city = place.locality ?? ""
@@ -146,9 +146,9 @@ class QuickCaptioningViewController: UIViewController,
         }
         manager.stopUpdatingLocation()
     }
-    
+
     // MARK: - Voice Enrollment
-    
+
     private func promptForEnrollment() {
         let message = "We use your voice profile to accurately transcribe your speech and differentiate it from other speakers in a conversation. It's stored securely on your device."
         let alert = UIAlertController(title: "Voice Calibration", message: message, preferredStyle: .alert)
@@ -173,9 +173,9 @@ class QuickCaptioningViewController: UIViewController,
             }
         }
     }
-    
+
     private func runEnrollmentRecording() {
-        diarizer.enrollUser { [weak self] success in
+        diarizer.enrollUser { [weak self] _ in
             guard let self = self else { return }
             DispatchQueue.main.async { self.stopRecording(); self.promptForUserName() }
         }
@@ -183,21 +183,21 @@ class QuickCaptioningViewController: UIViewController,
         // VL1004 embedding is captured at a consistent amplitude.
         try? startAudioEngine(forEnrollment: true)
     }
-    
+
     private func promptForUserName() {
         let alert = UIAlertController(title: "Voice Saved", message: "What is your name?", preferredStyle: .alert)
         alert.addTextField { tf in tf.placeholder = "Your Name"; tf.autocapitalizationType = .words }
         alert.addAction(UIAlertAction(title: "Save & Start", style: .default) { [weak self] _ in
             guard let self = self else { return }
-            
+
             let name = alert.textFields?.first?.text ?? "Me"
-            
+
             self.diarizer.setUserName(name)
-            
+
             if let userVector = self.diarizer.speakerProfiles[0], let uid = Auth.auth().currentUser?.uid {
                 VoiceProfileManager.shared.saveVoiceProfile(ownerUID: uid, name: name, embedding: userVector)
             }
-            
+
             self.hasEnrolled = true
             self.startSession()
         })
@@ -205,7 +205,7 @@ class QuickCaptioningViewController: UIViewController,
     }
 
     // MARK: - Session Management
-    
+
     private func startSession() {
         if isRecording { return }
         consumedTranscriptOffset = 0
@@ -214,7 +214,7 @@ class QuickCaptioningViewController: UIViewController,
         cleanedBubbleIDs.removeAll()
         lastDiarizerFireTime = nil
         sessionStartTime = Date()
-        
+
         startSpeechRecognition()
         try? startAudioEngine()
         appendNewBubble(text: "Listening...", isBlue: false, name: "System", id: nil)
@@ -233,16 +233,16 @@ class QuickCaptioningViewController: UIViewController,
     }
 
     // MARK: - Speech Recognition
-    
+
     private func startSpeechRecognition() {
         recognitionTask?.cancel()
         recognitionTask = nil
-        
+
         guard let recognizer = speechRecognizer, recognizer.isAvailable else {
             print("❌ [SpeechRecognition] Recognizer not available or nil. Locale: \(LanguageManager.shared.currentLocale.identifier)")
             return
         }
-        
+
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         recognitionRequest = request
@@ -256,11 +256,11 @@ class QuickCaptioningViewController: UIViewController,
     }
 
     // MARK: - Transcript Handling
-    
+
     private func handleSpeechTranscript(fullText: String, isFinal: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
+
             if self.consumedTranscriptOffset > fullText.count {
                 // SFSpeechRecognizer revised its transcript (e.g. the final result is
                 // slightly shorter than the last partial). There is no new content here —
@@ -268,18 +268,18 @@ class QuickCaptioningViewController: UIViewController,
                 self.consumedTranscriptOffset = fullText.count
                 return
             }
-            
+
             let startIndex = fullText.index(fullText.startIndex, offsetBy: self.consumedTranscriptOffset)
             let newContent = String(fullText[startIndex...])
-            
+
             guard !newContent.isEmpty else { return }
-            
+
             self.transcriptBuffer += newContent
             self.consumedTranscriptOffset = fullText.count
-            
+
             self.holdTimer?.invalidate()
             self.holdTimer = nil
-            
+
             if isFinal {
                 if !self.transcriptBuffer.isEmpty { self.processBuffer() }
                 if !self.messages.isEmpty {
@@ -290,7 +290,7 @@ class QuickCaptioningViewController: UIViewController,
                 self.holdTimer = Timer.scheduledTimer(withTimeInterval: 0.7, repeats: false) { [weak self] _ in
                     self?.holdTimer = nil
                     self?.processBuffer()
-                    
+
                     // We intentionally do NOT finalize or force a new bubble here. 
                     // This allows continuous speech from the same person to remain in one cohesive bubble,
                     // greatly improving readability. New bubbles will naturally be created via:
@@ -301,7 +301,7 @@ class QuickCaptioningViewController: UIViewController,
             }
         }
     }
-    
+
     private func processBuffer() {
         guard !transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
@@ -351,7 +351,7 @@ class QuickCaptioningViewController: UIViewController,
 
         transcriptBuffer = ""
     }
-    
+
     // MARK: - Identifying Placeholder
 
     /// Appends a transient neutral bubble labelled "Identifying…" so the user
@@ -380,14 +380,14 @@ class QuickCaptioningViewController: UIViewController,
         }
         self.appendNewBubble(text: text, isBlue: isBlue, name: name, id: speakerID)
     }
-    
+
     private func updateLastBubble(with text: String) {
         DispatchQueue.main.async {
             guard !self.messages.isEmpty else { return }
-            
+
             let activeIndex = self.messages.count - 1
             let currentText = self.messages[activeIndex].text
-            
+
             // If the bubble holds a placeholder, replace it; otherwise append.
             let isPlaceholder = (currentText == "..." || currentText == "Identifying\u{2026}"
                                  || currentText == "Identifying..." || currentText == "Listening...")
@@ -400,7 +400,7 @@ class QuickCaptioningViewController: UIViewController,
                 // 1. Prefer a sentence boundary (present when AI cleanup has already
                 //    run on the previous bubble and punctuation exists).
                 let boundaries = [". ", "? ", "! ", ".\n", "?\n", "!\n"]
-                var splitEnd: String.Index? = nil
+                var splitEnd: String.Index?
                 for boundary in boundaries {
                     if let range = text.range(of: boundary) {
                         // Take the FIRST boundary found; include the punctuation mark.
@@ -437,9 +437,8 @@ class QuickCaptioningViewController: UIViewController,
         }
     }
 
-    
     // MARK: - Cleanup & UI Updates
-    
+
     private func finalizeBubble(at index: Int) {
         guard index < messages.count, index < cleanupIDs.count else { return }
         let text = messages[index].text
@@ -481,11 +480,11 @@ class QuickCaptioningViewController: UIViewController,
             }
         }
     }
-    
+
     private func updateBubbleUI(at index: Int, text: String) {
         DispatchQueue.main.async {
             guard index < self.messages.count else { return }
-            
+
             if self.messages[index].text != text {
                 self.messages[index].text = text
                 UIView.performWithoutAnimation {
@@ -497,7 +496,7 @@ class QuickCaptioningViewController: UIViewController,
             }
         }
     }
-    
+
     private func appendNewBubble(text: String, isBlue: Bool, name: String, id: Int?) {
         // Remove any trailing placeholder bubble (Listening... / System / known placeholder text)
         if let last = messages.last {
@@ -533,7 +532,7 @@ class QuickCaptioningViewController: UIViewController,
     }
 
     // MARK: - Diarizer Binding
-    
+
     private func bindDiarizer() {
         diarizer.$currentSpeakerID.receive(on: DispatchQueue.main).sink { [weak self] id in
             guard let self = self else { return }
@@ -550,8 +549,7 @@ class QuickCaptioningViewController: UIViewController,
                 let lastIdx = self.messages.count - 1
                 if self.messages[lastIdx].speakerID == validID {
                     var newName = "..."
-                    if validID == 0 { newName = self.diarizer.speakerNames[0] ?? "Me" }
-                    else { newName = self.diarizer.speakerNames[validID] ?? "Speaker \(validID)" }
+                    if validID == 0 { newName = self.diarizer.speakerNames[0] ?? "Me" } else { newName = self.diarizer.speakerNames[validID] ?? "Speaker \(validID)" }
 
                     if self.messages[lastIdx].sender != newName {
                         self.messages[lastIdx].sender = newName
@@ -570,11 +568,11 @@ class QuickCaptioningViewController: UIViewController,
     }
 
     // MARK: - Audio Configuration (🚨 FIXED VPIO ERRORS HERE)
-    
+
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            
+
             #if targetEnvironment(simulator)
             // Simulator's virtual audio driver is more stable with .voiceChat and default mode.
             try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
@@ -588,13 +586,13 @@ class QuickCaptioningViewController: UIViewController,
             try session.setPreferredIOBufferDuration(0.02)
             print("✅ [AudioSession] Measurement mode active (raw audio)")
             #endif
-            
+
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("❌ Session error: \(error)")
         }
     }
-    
+
     private func startAudioEngine(forEnrollment: Bool = false) throws {
         let inputNode = audioEngine.inputNode
 
@@ -631,83 +629,83 @@ class QuickCaptioningViewController: UIViewController,
         audioEngine.prepare()
         try audioEngine.start()
     }
-    
+
     // MARK: - UI Setup
-    
+
     private func setupCollectionView() {
         collectionView.dataSource = self
         collectionView.delegate = self
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout { layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize }
         collectionView.keyboardDismissMode = .interactive
     }
-    
+
     // MARK: - End Session & Summary
-    
+
     @IBAction func didTapStopButton(_ sender: UIBarButtonItem) {
         let actionSheet = UIAlertController(title: "End Session?", message: "Are you sure?", preferredStyle: .alert)
-        
+
         let endAction = UIAlertAction(title: "End Session", style: .destructive) { [weak self] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 guard let self = self else { return }
-                
+
                 self.processBuffer()
-                
+
                 if !self.messages.isEmpty {
                     self.finalizeBubble(at: self.messages.count - 1)
                 }
-                
+
                 self.stopRecording()
-                
+
                 let storyboard = UIStoryboard(name: "Quick Captions", bundle: nil)
-                
+
                 if let summaryNav = storyboard.instantiateViewController(withIdentifier: "SummaryNavController") as? UINavigationController,
                    let summaryVC = summaryNav.topViewController as? SummaryViewController {
-                    
+
                     let transcript = self.messages.toTranscriptString()
-                    
+
                     summaryVC.rawTranscriptText = transcript
                     summaryVC.rawMessages = self.messages
-                    
+
                     // Fetch and increment Conversation Counter
                     let currentCounter = UserDefaults.standard.integer(forKey: "quickCaptionSessionCounter")
                     let nextCounter = currentCounter == 0 ? 1 : currentCounter
                     summaryVC.conversationTitle = "Conversation \(nextCounter)"
                     UserDefaults.standard.set(nextCounter + 1, forKey: "quickCaptionSessionCounter")
-                    
+
                     let now = Date()
                     let dateFormatter = DateFormatter()
-                    
+
                     dateFormatter.dateFormat = "MMMM"
                     let month = dateFormatter.string(from: now)
-                    
+
                     let calendar = Calendar.current
                     let day = calendar.component(.day, from: now)
                     let numberFormatter = NumberFormatter()
                     numberFormatter.numberStyle = .ordinal
                     let dayWithSuffix = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
-                    
+
                     summaryVC.dateString = "\(month) \(dayWithSuffix)"
-                    
+
                     dateFormatter.dateFormat = "h:mm a"
                     summaryVC.timeString = dateFormatter.string(from: now) // End time
-                    
+
                     if let start = self.sessionStartTime {
                         summaryVC.startTimeString = dateFormatter.string(from: start)
                     } else {
                         summaryVC.startTimeString = summaryVC.timeString
                     }
-                    
+
                     summaryVC.locationString = self.currentLocationString
-                    
+
                     var participants: [QuickCaptionsParticipantData] = []
                     var seenIDs = [String: Int]() // senderID -> index in participants
                     var order = [String]()
-                    
+
                     for msg in self.messages {
                         // Skip system and placeholder bubbles
                         let sid = msg.senderID
                         if sid == "system" || sid == "-1" { continue }
-                        
+
                         if let idx = seenIDs[sid] {
                             // Update to the latest display name for this speaker
                             participants[idx] = QuickCaptionsParticipantData(
@@ -725,31 +723,31 @@ class QuickCaptioningViewController: UIViewController,
                             ))
                         }
                     }
-                    
+
                     summaryVC.participantsData = participants
-                    
+
                     summaryNav.modalPresentationStyle = .pageSheet
                     summaryNav.isModalInPresentation = true
                     self.present(summaryNav, animated: true, completion: nil)
                 }
             }
         }
-        
+
         actionSheet.addAction(endAction)
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        
+
         self.present(actionSheet, animated: true)
     }
-    
+
     // MARK: - CollectionView Delegate & DataSource
-    
+
     private func scrollToBottom() {
         guard messages.count > 0 else { return }
         collectionView.scrollToItem(at: IndexPath(item: messages.count - 1, section: 0), at: .bottom, animated: true)
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int { return messages.count }
-    
+
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let msg = messages[indexPath.row]
         // A bubble is "pending" (ML still identifying) when its speakerID is -1.
@@ -772,33 +770,33 @@ class QuickCaptioningViewController: UIViewController,
             return cell
         }
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 50)
     }
-    
+
     // MARK: - Permissions
-    
+
     private func setupPermission() {
         if #available(iOS 17.0, *) {
-            AVAudioApplication.requestRecordPermission { allowed in }
+            AVAudioApplication.requestRecordPermission { _ in }
         } else {
-            AVAudioSession.sharedInstance().requestRecordPermission { allowed in }
+            AVAudioSession.sharedInstance().requestRecordPermission { _ in }
         }
         SFSpeechRecognizer.requestAuthorization { _ in }
     }
-    
+
     // MARK: - Rename & Time Machine
-    
+
     private func showRenameAlert(for index: Int) {
         let msg = messages[index]
         let currentName = msg.sender
         let alert = UIAlertController(title: "Rename \(currentName)", message: "This will update past and future bubbles.", preferredStyle: .alert)
         alert.addTextField { tf in tf.text = currentName; tf.autocapitalizationType = .words }
-        
+
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
-            
+
             if let eventId = msg.eventId {
                 self.diarizer.applyRetroactiveCorrection(forEventID: eventId, newName: newName)
             } else if let bubbleSpeakerID = msg.speakerID {
@@ -812,7 +810,7 @@ class QuickCaptioningViewController: UIViewController,
             for i in 0..<self.messages.count {
                 if let eid = self.messages[i].eventId,
                    let historyEvent = self.diarizer.segmentHistory.first(where: { $0.id == eid }) {
-                    
+
                     let sid = historyEvent.assignedSpeakerID
                     self.messages[i].speakerID = sid
                     self.messages[i].isIncoming = (sid != 0)
@@ -832,10 +830,10 @@ class QuickCaptioningViewController: UIViewController,
                     }
                 }
             }
-            
+
             self.collectionView.reloadData()
         })
-        
+
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }

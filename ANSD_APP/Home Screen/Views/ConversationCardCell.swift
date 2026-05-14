@@ -157,20 +157,19 @@ class QuickActionTableViewCell: UITableViewCell {
             separator.leadingAnchor.constraint(equalTo: textStackView.leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: cardContainer.trailingAnchor),
             separator.bottomAnchor.constraint(equalTo: cardContainer.bottomAnchor),
-            separator.heightAnchor.constraint(equalToConstant: 0.5),
+            separator.heightAnchor.constraint(equalToConstant: 0.5)
         ])
     }
 
     // MARK: - Corner Rounding + Border
 
-    
     func applyCornerRounding(isFirst: Bool, isLast: Bool) {
         self.isFirstRow = isFirst
         self.isLastRow = isLast
-        
+
         var corners: CACornerMask = []
         if isFirst { corners.insert([.layerMinXMinYCorner, .layerMaxXMinYCorner]) }
-        if isLast  { corners.insert([.layerMinXMaxYCorner, .layerMaxXMaxYCorner]) }
+        if isLast { corners.insert([.layerMinXMaxYCorner, .layerMaxXMaxYCorner]) }
 
         cardContainer.layer.cornerRadius    = (isFirst || isLast) ? 16 : 0
         cardContainer.layer.maskedCorners   = corners
@@ -185,22 +184,22 @@ class QuickActionTableViewCell: UITableViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        
+
         if outlinelayer.superlayer == nil {
             outlinelayer.fillColor = UIColor.clear.cgColor
             outlinelayer.strokeColor = UIColor.systemGray3.cgColor
             outlinelayer.lineWidth = 0.5
             cardContainer.layer.addSublayer(outlinelayer)
         }
-        
+
         let path = UIBezierPath()
         let bounds = cardContainer.bounds
         let r = cardContainer.layer.cornerRadius
-        
+
         // Left line
         path.move(to: CGPoint(x: 0, y: isFirstRow ? r : 0))
         path.addLine(to: CGPoint(x: 0, y: isLastRow ? bounds.height - r : bounds.height))
-        
+
         // Bottom-left, bottom, bottom-right
         if isLastRow {
             path.addArc(withCenter: CGPoint(x: r, y: bounds.height - r), radius: r, startAngle: .pi, endAngle: .pi / 2, clockwise: false)
@@ -209,31 +208,31 @@ class QuickActionTableViewCell: UITableViewCell {
         } else {
             path.move(to: CGPoint(x: bounds.width, y: bounds.height))
         }
-        
+
         // Right line
         path.addLine(to: CGPoint(x: bounds.width, y: isFirstRow ? r : 0))
-        
+
         // Top-right, top, top-left
         if isFirstRow {
             path.addArc(withCenter: CGPoint(x: bounds.width - r, y: r), radius: r, startAngle: 0, endAngle: -.pi / 2, clockwise: false)
             path.addLine(to: CGPoint(x: r, y: 0))
             path.addArc(withCenter: CGPoint(x: r, y: r), radius: r, startAngle: -.pi / 2, endAngle: -.pi, clockwise: false)
         }
-        
+
         outlinelayer.path = path.cgPath
     }
 
     func configure(with item: RoutineConversation?, isFirst: Bool, isLast: Bool, isAddRow: Bool) {
         applyCornerRounding(isFirst: isFirst, isLast: isLast)
-        
+
         let config = UIImage.SymbolConfiguration(weight: .semibold)
-        
+
         if isAddRow {
             customTitleLabel.text = "Add Quick Action"
             customTitleLabel.textColor = .systemBlue
             subtitleLabel.isHidden = true
             rightStackView.isHidden = true
-            
+
             customIconContainer.backgroundColor = UIColor.secondarySystemFill
             if let image = UIImage(systemName: "plus", withConfiguration: config) {
                 customIconImageView.image = image.withRenderingMode(.alwaysTemplate)
@@ -244,18 +243,18 @@ class QuickActionTableViewCell: UITableViewCell {
             customTitleLabel.textColor = .label
             subtitleLabel.isHidden = false
             rightStackView.isHidden = false
-            
+
             let paxCount = item.participantNames.count
             subtitleLabel.text = "\(item.categoryTitle) • \(paxCount) participants"
-            
+
             customTimeLabel.text = item.startTime
-            
+
             // Determine Upcoming vs Scheduled based on time
             let df = DateFormatter()
             df.dateFormat = "h:mm a"
             df.locale = Locale(identifier: "en_US_POSIX")
             var badgeText = "Scheduled"
-            
+
             if let targetDate = df.date(from: item.startTime) {
                 let now = Date()
                 let cal = Calendar.current
@@ -264,7 +263,7 @@ class QuickActionTableViewCell: UITableViewCell {
                 tComps.year = nComps.year
                 tComps.month = nComps.month
                 tComps.day = nComps.day
-                
+
                 if let combinedTarget = cal.date(from: tComps) {
                     let diff = combinedTarget.timeIntervalSince(now)
                     if diff > 0 && diff <= 3600 * 4 {
@@ -273,17 +272,17 @@ class QuickActionTableViewCell: UITableViewCell {
                 }
             }
             badgeLabel.text = badgeText
-            
+
             if let image = UIImage(systemName: item.iconName, withConfiguration: config) {
                 customIconImageView.image = image.withRenderingMode(.alwaysTemplate)
             }
-            
+
             let tintColor = getColorForCategory(item.categoryTitle)
-            
+
             // Add custom distinction color for 'Upcoming' status
             badgeContainer.backgroundColor = .secondarySystemFill
             badgeLabel.textColor = .label
-            
+
             customIconContainer.backgroundColor = tintColor.withAlphaComponent(0.15)
             customIconImageView.tintColor = tintColor
         }
@@ -292,39 +291,39 @@ class QuickActionTableViewCell: UITableViewCell {
 
 // MARK: - Conversation Card Cell (Detailed List - Bottom Cards)
 class ConversationCardCell: UITableViewCell {
-    
+
     // MARK: - Outlets
     @IBOutlet weak var cardContainer: UIView!
     @IBOutlet weak var topicLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
-    
+
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
     @IBOutlet weak var categoryContainer: UIView!
-    
+
     @IBOutlet weak var calendarIcon: UIImageView!
     @IBOutlet weak var clockIcon: UIImageView!
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         setupDesign()
     }
-    
+
     func setupDesign() {
-        
+
         self.backgroundColor = .clear
         self.contentView.backgroundColor = .clear
         self.selectionStyle = .none
-        
+
         cardContainer.backgroundColor = .secondarySystemGroupedBackground
         cardContainer.layer.cornerRadius = 16
         cardContainer.layer.cornerCurve = .continuous
-        
+
         // Add subtle border to make the card more distinct against the background
         cardContainer.layer.borderWidth = 1
         cardContainer.layer.borderColor = UIColor.systemGray5.cgColor
-        
+
         // Shadow styling - SLIGHTLY increase opacity since it's "barely perceptible"
         cardContainer.layer.shadowColor = UIColor.black.cgColor
         cardContainer.layer.shadowOpacity = 0.08
@@ -332,7 +331,7 @@ class ConversationCardCell: UITableViewCell {
         cardContainer.layer.shadowOffset = CGSize(width: 0, height: 4)
         cardContainer.layer.masksToBounds = false
     }
-    
+
     func configure(with conversation: Conversation) {
         if conversation.isPinned {
             let fullString = NSMutableAttributedString()
@@ -345,33 +344,33 @@ class ConversationCardCell: UITableViewCell {
             fullString.append(NSAttributedString(attachment: imageAttachment))
             fullString.append(NSAttributedString(string: " " + conversation.title))
             topicLabel.attributedText = fullString
-            
+
             descriptionLabel.numberOfLines = 1
         } else {
             topicLabel.text = conversation.title
             descriptionLabel.numberOfLines = 2
         }
         descriptionLabel.text = conversation.details
-        
+
         // Slot 1 (Left): Participants
         let paxCount = max(1, conversation.participants?.count ?? 0)
         dateLabel.text = paxCount == 1 ? "1 Person" : "\(paxCount) People"
         calendarIcon.image = UIImage(systemName: "person.2.fill")
         calendarIcon.tintColor = .secondaryLabel
-        
+
         // Slot 2 (Middle): Time Range
         let timeRangeStr = "\(conversation.startTime) - \(conversation.endTime)"
         timeLabel.text = timeRangeStr
         clockIcon.image = UIImage(systemName: "clock")
         clockIcon.tintColor = .secondaryLabel
-        
+
         // Slot 3 (Right): Category Badge
         let categoryString = conversation.category
         let capitalizedCategory = categoryString.prefix(1).uppercased() + categoryString.dropFirst()
         categoryLabel.text = capitalizedCategory
-        
+
         let txtColor = conversation.categoryTintColor
-        
+
         categoryContainer.backgroundColor = txtColor.withAlphaComponent(0.15)
         categoryLabel.textColor = txtColor
     }

@@ -22,19 +22,19 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     @IBOutlet weak var saveButton: UIBarButtonItem!
     @IBOutlet weak var daysCell: UITableViewCell!
     @IBOutlet weak var categoryCell: UITableViewCell!
-    
+
     private var dayPopupButton: UIButton?
     private var categoryPopupButton: UIButton?
-    
-    var selectedCategory: String? = nil
+
+    var selectedCategory: String?
     var selectedDays: Set<String> = ["Monday"]
     var selectedParticipants: [CNContact] = []
-    
+
     var availableCategories: [String] = ["Friends", "Family", "Office"]
     let allDaysOrdered = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
     // MARK: - Lifecycle
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupNavigationBar()
@@ -47,7 +47,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         nameTextField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
         updateSaveButtonState()
     }
-    
+
     private func setupNavigationBar() {
         let dismissButton = UIBarButtonItem(image: UIImage(systemName: "xmark"), style: .plain, target: self, action: #selector(closeScreen))
         dismissButton.tintColor = .label
@@ -61,7 +61,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
     }
 
     // MARK: - Day Selection Setup
-    
+
     private func setupDayCell() {
         dayPopupButton = createPopupButton()
         dayPopupButton?.tintColor = .systemBlue
@@ -72,7 +72,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         updateDayMenu()
         daysCell.accessoryView = dayPopupButton
     }
-    
+
     private func updateDayMenu() {
         var actions: [UIAction] = []
         for day in allDaysOrdered {
@@ -89,7 +89,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         dayPopupButton?.menu = menu
         updateDayButtonText()
     }
-    
+
     private func toggleDay(_ day: String) {
         if selectedDays.contains(day) {
             if selectedDays.count > 1 { selectedDays.remove(day) }
@@ -97,18 +97,18 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             selectedDays.insert(day)
         }
     }
-    
+
     private func updateDayButtonText() {
         dayPopupButton?.configuration?.title = getFormattedDateString()
     }
 
     // MARK: - Category Selection Setup
-    
+
     private func setupCategoryCell() {
         categoryPopupButton = createPopupButton()
         setupCategoryMenu()
         categoryCell.accessoryView = categoryPopupButton
-        
+
         if let category = selectedCategory {
             updateCategory(category)
         } else {
@@ -121,36 +121,36 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             }
         }
     }
-    
+
     private func setupCategoryMenu() {
         let selectionHandler: (UIAction) -> Void = { [weak self] action in
             self?.updateCategory(action.title)
         }
-        
+
         var actions: [UIAction] = []
         for cat in availableCategories {
             let iconName = getSymbolForCategory(cat)
             let color = getColorForCategory(cat)
             let coloredImage = UIImage(systemName: iconName)?.withTintColor(color, renderingMode: .alwaysOriginal)
-            
+
             let action = UIAction(title: cat, image: coloredImage, state: (cat == selectedCategory) ? .on : .off, handler: selectionHandler)
             actions.append(action)
         }
-        
+
         let plusImage = UIImage(systemName: "plus")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
         let createOwnAction = UIAction(title: "Create", image: plusImage) { [weak self] _ in
             self?.showCustomCategoryAlert()
         }
-        
+
         let menu = UIMenu(title: "Choose Category", children: actions + [createOwnAction])
         categoryPopupButton?.menu = menu
     }
-    
+
     private func updateCategory(_ category: String) {
         self.selectedCategory = category
         let iconName = getSymbolForCategory(category)
         let color = getColorForCategory(category)
-        
+
         if var config = categoryPopupButton?.configuration {
             config.baseForegroundColor = .label
             config.title = category
@@ -165,7 +165,7 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         setupCategoryMenu() // Rebuild menu so the checkmark moves to the new selection
         updateSaveButtonState()
     }
-    
+
     @objc private func closeScreen() {
         if let nav = navigationController, nav.viewControllers.count > 1 {
             nav.popViewController(animated: true)
@@ -173,51 +173,51 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             dismiss(animated: true, completion: nil)
         }
     }
-    
+
     // MARK: - Save Action (Notification & Data)
-    
+
     @IBAction func didTapSaveButton(_ sender: UIBarButtonItem) {
         guard let name = nameTextField.text, !name.isEmpty,
               let selectedCategory = self.selectedCategory else { return }
-        
+
         // Prevent double saving
         saveButton.isEnabled = false
-        
+
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
         timeFormatter.amSymbol = "AM"
         timeFormatter.pmSymbol = "PM"
         timeFormatter.locale = Locale(identifier: "en_US_POSIX")
         let timeString = timeFormatter.string(from: startTimePicker.date)
-        
+
         var dayStringForNotification = ""
         if selectedDays.count == 1, let singleDay = selectedDays.first {
             dayStringForNotification = singleDay
         } else {
             dayStringForNotification = getFormattedDateString()
         }
-        
+
         let iconName = getSymbolForCategory(selectedCategory)
 
         let content = UNMutableNotificationContent()
         content.title = "Session Scheduled"
         content.body = "Meet is set for \(dayStringForNotification) at \(timeString)."
         content.sound = .default
-        
+
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
+
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling confirmation: \(error)")
             }
         }
-        
+
         let participantNames = selectedParticipants.map { "\($0.givenName) \($0.familyName)".trimmingCharacters(in: .whitespaces) }
-        
+
         var participantEmails: [String] = []
         var participantPhones: [String] = []
-        
+
         for contact in selectedParticipants {
             // Extract emails
             for email in contact.emailAddresses {
@@ -228,10 +228,10 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
                 participantPhones.append(phone.value.stringValue)
             }
         }
-        
+
         // Generate a 4-digit room code for this quick action
         let roomCode = String(Int.random(in: 1000...9999))
-        
+
         let newAction = RoutineConversation(
             id: UUID().uuidString,
             iconName: iconName,
@@ -249,19 +249,19 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             participantPhones: participantPhones,
             hostUID: Auth.auth().currentUser?.uid
         )
-        
+
         // 1. Save to Repository (The Source of Truth)
         QuickActionsRepository.shared.addAction(newAction)
-        
+
         // 2. Post notification so HomeViewController reloads its data from the repository
         NotificationCenter.default.post(name: NSNotification.Name("ActionsUpdated"), object: nil)
-        
+
         // 3. Present SMS integration if there are participants
         if !selectedParticipants.isEmpty {
             if MFMessageComposeViewController.canSendText() {
                 let composeVC = MFMessageComposeViewController()
                 composeVC.messageComposeDelegate = self
-                
+
                 // Extract phone numbers or explicitly fallback to name
                 var phoneNumbers: [String] = []
                 for contact in selectedParticipants {
@@ -274,10 +274,10 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
                         }
                     }
                 }
-                
+
                 composeVC.recipients = phoneNumbers
                 composeVC.body = "Join my \(selectedCategory) Quick Action session on \(dayStringForNotification) at \(timeString). Room Code: \(roomCode) - Generated by Sāmwaad"
-                
+
                 self.present(composeVC, animated: true, completion: nil)
             } else {
                 // Feature unavailable on Simulators or devices without Messages
@@ -291,21 +291,21 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
             closeScreen()
         }
     }
-    
+
     // MARK: - Message Composer Delegate
     func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
         controller.dismiss(animated: true) {
             self.closeScreen()
         }
     }
-    
+
     // MARK: - Participants Selection
-    
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.section == 0 && indexPath.row == 1 { openParticipantsModal() }
     }
-    
+
     private func openParticipantsModal() {
         let pickerVC = ParticipantsViewController()
         pickerVC.delegate = self
@@ -321,9 +321,9 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         participantsLabel.text = names.isEmpty ? "Add" : names.joined(separator: ", ")
         participantsLabel.textColor = names.isEmpty ? .secondaryLabel : .label
     }
-    
+
     // MARK: - Helpers
-    
+
     private func createPopupButton() -> UIButton {
         var config = UIButton.Configuration.plain()
         config.image = UIImage(systemName: "chevron.up.chevron.down")
@@ -341,20 +341,20 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         button.contentHorizontalAlignment = .trailing
         return button
     }
-    
+
     private func getFormattedDateString() -> String {
         let weekdays: Set<String> = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
         let weekends: Set<String> = ["Saturday", "Sunday"]
-        
+
         if selectedDays.isEmpty { return "Select" }
         if selectedDays.count == 7 { return "Every Day" }
         if selectedDays == weekdays { return "Every Weekday" }
         if selectedDays == weekends { return "Every Weekend" }
-        
+
         let sorted = allDaysOrdered.filter { selectedDays.contains($0) }
         return sorted.map { String($0.prefix(3)) }.joined(separator: ", ")
     }
-    
+
     private func showCustomCategoryAlert() {
         let alert = UIAlertController(title: "New Category", message: "Enter category name", preferredStyle: .alert)
         alert.addTextField { $0.placeholder = "Category Name"; $0.autocapitalizationType = .words }
@@ -368,13 +368,13 @@ class AddActionTableViewController: UITableViewController, ParticipantsSelection
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
-    
+
     private func setupKeyboardDismissal() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
-    
+
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }

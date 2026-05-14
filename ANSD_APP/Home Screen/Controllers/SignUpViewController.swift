@@ -57,18 +57,18 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
         tableView.delegate = self
         tableView.dataSource = self
         tableView.separatorStyle = .none
-        
+
         // Ensure table respects storyboard heights
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 100
-        
+
         setupHideKeyboardOnTap()
     }
 
     // MARK: - Validation Helpers
     private func isValidEmail(_ email: String) -> Bool {
         let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+        let emailPred = NSPredicate(format: "SELF MATCHES %@", emailRegEx)
         return emailPred.evaluate(with: email)
     }
 
@@ -81,7 +81,7 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
     // MARK: - Sign Up Action
     @IBAction func didTapSignUp(_ sender: Any) {
         view.endEditing(true)
-        
+
         // 1. Validation Guards
         guard let firstName = userAnswers[UserKeys.firstName] as? String, !firstName.isEmpty,
               let email = userAnswers[UserKeys.email] as? String, !email.isEmpty,
@@ -89,21 +89,21 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
             showAlert(message: "First Name, Email, and Password are required.")
             return
         }
-        
+
         // 2. Format Validation
         if !isValidEmail(email) {
             showAlert(message: "Please enter a valid email address.")
             return
         }
-        
+
         if password.count < 6 {
             showAlert(message: "Password must be at least 6 characters long.")
             return
         }
-        
+
         // 3. Save and Proceed
         UserDefaults.standard.set(userAnswers, forKey: UserKeys.profile)
-        
+
         print("Success: Saved profile: ", userAnswers)
         performSegue(withIdentifier: "toProfile", sender: self)
     }
@@ -126,7 +126,7 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
         case .gender:
             let cell = tableView.dequeueReusableCell(withIdentifier: "GenderCell", for: indexPath)
             cell.textLabel?.text = field.title
-            
+
             if let selectedGender = userAnswers[field.key] as? String {
                 cell.detailTextLabel?.text = selectedGender
                 cell.detailTextLabel?.textColor = .black
@@ -139,13 +139,13 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
         case .impairment:
             // Ensure you have a Slider in this cell connected to an action
             let cell = tableView.dequeueReusableCell(withIdentifier: "SliderCell", for: indexPath)
-            
+
             // Find the slider in the cell and add a listener if not using a custom cell class
             if let slider = cell.viewWithTag(100) as? UISlider { // Assuming tag 100 in Storyboard
                 slider.addTarget(self, action: #selector(sliderValueChanged(_:)), for: .valueChanged)
             }
             return cell
-            
+
         case .date:
             let cell = tableView.dequeueReusableCell(withIdentifier: "DOBCell", for: indexPath)
             // If you placed a UIDatePicker in this cell in Storyboard,
@@ -156,18 +156,18 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
             return cell
         }
     }
-    
+
     // MARK: - Slider Logic
     @objc func sliderValueChanged(_ sender: UISlider) {
         userAnswers[UserKeys.impairment] = sender.value
     }
-    
+
     @objc func datePickerChanged(_ sender: UIDatePicker) {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         userAnswers[UserKeys.dob] = formatter.string(from: sender.date)
     }
-    
+
     // MARK: - TableView Delegate
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let field = formFields[indexPath.row]
@@ -180,7 +180,7 @@ class SignUpViewController: UIViewController, UITableViewDelegate, UITableViewDa
     private func showGenderPicker(key: String) {
         let alert = UIAlertController(title: "Select Gender", message: nil, preferredStyle: .actionSheet)
         let options = ["Male", "Female", "Prefer not to Say"]
-        
+
         for option in options {
             alert.addAction(UIAlertAction(title: option, style: .default, handler: { _ in
                 self.userAnswers[key] = option

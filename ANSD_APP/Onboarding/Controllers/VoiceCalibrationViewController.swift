@@ -1,5 +1,3 @@
-
-
 //
 //  VoiceCalibrationViewController.swift
 //  ANSD_APP
@@ -55,7 +53,7 @@ class VoiceCalibrationViewController: UIViewController {
 
     // MARK: - Voice Embeddings
     private var sentenceEmbeddings: [[Float]] = []
-    
+
     // MARK: - Sentence Status Indicators
     private var statusLabels: [UILabel] = []
     private var statusStack: UIStackView!
@@ -71,7 +69,7 @@ class VoiceCalibrationViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         // Navigation bar title
         title = "Voice Setup"
         navigationController?.navigationBar.prefersLargeTitles = true
@@ -155,7 +153,7 @@ class VoiceCalibrationViewController: UIViewController {
             stack.addArrangedSubview(bar)
         }
     }
-    
+
     private func setupSentenceStatusIndicators() {
         statusStack = UIStackView()
         statusStack.axis = .horizontal
@@ -163,14 +161,14 @@ class VoiceCalibrationViewController: UIViewController {
         statusStack.spacing = 12
         statusStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusStack)
-        
+
         NSLayoutConstraint.activate([
             statusStack.topAnchor.constraint(equalTo: promptCardView.bottomAnchor, constant: 16),
             statusStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 40),
             statusStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -40),
             statusStack.heightAnchor.constraint(equalToConstant: 30)
         ])
-        
+
         statusLabels.removeAll()
         for i in 0..<sentences.count {
             let label = UILabel()
@@ -185,7 +183,7 @@ class VoiceCalibrationViewController: UIViewController {
             statusStack.addArrangedSubview(label)
         }
     }
-    
+
     private func updateSentenceStatus(index: Int, verified: Bool) {
         guard index < statusLabels.count else { return }
         UIView.animate(withDuration: 0.3) {
@@ -200,7 +198,7 @@ class VoiceCalibrationViewController: UIViewController {
             }
         }
     }
-    
+
     private func resetSentenceStatuses() {
         for (i, label) in statusLabels.enumerated() {
             UIView.animate(withDuration: 0.3) {
@@ -417,18 +415,18 @@ class VoiceCalibrationViewController: UIViewController {
             self.verifySentence(index: index)
         }
     }
-    
+
     // MARK: - Voice Verification
-    
+
     /// Extract embedding from recorded audio and verify it matches previous sentences
     private func verifySentence(index: Int) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let url = docs.appendingPathComponent("VoiceProfile_Sentence\(index).m4a")
-        
+
         // Extract audio samples from recorded file
         extractAudioSamples(from: url) { [weak self] samples in
             guard let self = self else { return }
-            
+
             guard let samples = samples else {
                 print("VoiceCalibration: Failed to extract samples for sentence \(index)")
                 DispatchQueue.main.async {
@@ -436,7 +434,7 @@ class VoiceCalibrationViewController: UIViewController {
                 }
                 return
             }
-            
+
             // Run ML inference to get voice embedding
             guard let embedding = self.runVoiceInference(on: samples) else {
                 print("VoiceCalibration: ML inference failed for sentence \(index)")
@@ -445,9 +443,9 @@ class VoiceCalibrationViewController: UIViewController {
                 }
                 return
             }
-            
+
             let normalizedEmbedding = self.normalize(embedding)
-            
+
             DispatchQueue.main.async {
                 // First sentence — always accept as baseline
                 if self.sentenceEmbeddings.isEmpty {
@@ -456,13 +454,13 @@ class VoiceCalibrationViewController: UIViewController {
                     self.proceedAfterVerification(index: index)
                     return
                 }
-                
+
                 // Compare with the first sentence (baseline voice)
                 let baselineEmbedding = self.sentenceEmbeddings[0]
                 let similarity = self.cosineSim(normalizedEmbedding, baselineEmbedding)
-                
+
                 print("VoiceCalibration: Sentence \(index + 1) similarity = \(String(format: "%.3f", similarity)) (threshold: \(self.similarityThreshold))")
-                
+
                 if similarity >= self.similarityThreshold {
                     // Voice matches — accept this sentence
                     self.sentenceEmbeddings.append(normalizedEmbedding)
@@ -472,7 +470,7 @@ class VoiceCalibrationViewController: UIViewController {
                     // Voice MISMATCH — reject and require restart
                     self.updateSentenceStatus(index: index, verified: false)
                     self.sentenceEmbeddings.removeAll()
-                    
+
                     // Brief delay so user can see the mismatch indicator
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                         self.phase = .mismatch
@@ -481,7 +479,7 @@ class VoiceCalibrationViewController: UIViewController {
             }
         }
     }
-    
+
     private func proceedAfterVerification(index: Int) {
         if index + 1 < sentences.count {
             // Pause for 2 seconds then move to next sentence
@@ -501,36 +499,36 @@ class VoiceCalibrationViewController: UIViewController {
             }
         }
     }
-    
+
     // MARK: - Audio Sample Extraction
-    
+
     /// Read the recorded .m4a file and convert to 96,000 float samples at 16kHz
     private func extractAudioSamples(from url: URL, completion: @escaping ([Float]?) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let audioFile = try AVAudioFile(forReading: url)
                 let processingFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
-                
+
                 let frameCount = AVAudioFrameCount(audioFile.length)
                 guard let fileBuffer = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat, frameCapacity: frameCount) else {
                     completion(nil)
                     return
                 }
                 try audioFile.read(into: fileBuffer)
-                
+
                 // Convert to 16kHz mono if needed
                 let converter = AVAudioConverter(from: audioFile.processingFormat, to: processingFormat)
                 let ratio = Float(processingFormat.sampleRate) / Float(audioFile.processingFormat.sampleRate)
                 let outputCapacity = AVAudioFrameCount(Float(frameCount) * ratio) + 100
-                
+
                 guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: processingFormat, frameCapacity: outputCapacity) else {
                     completion(nil)
                     return
                 }
-                
+
                 var error: NSError?
                 var inputConsumed = false
-                converter?.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
+                converter?.convert(to: outputBuffer, error: &error) { _, outStatus in
                     if inputConsumed {
                         outStatus.pointee = .endOfStream
                         return nil
@@ -539,14 +537,14 @@ class VoiceCalibrationViewController: UIViewController {
                     inputConsumed = true
                     return fileBuffer
                 }
-                
+
                 guard let channelData = outputBuffer.floatChannelData else {
                     completion(nil)
                     return
                 }
-                
+
                 var samples = Array(UnsafeBufferPointer(start: channelData[0], count: Int(outputBuffer.frameLength)))
-                
+
                 // Pad or truncate to exactly 96,000 samples (model requirement)
                 let required = 96000
                 if samples.count < required {
@@ -554,7 +552,7 @@ class VoiceCalibrationViewController: UIViewController {
                 } else if samples.count > required {
                     samples = Array(samples.prefix(required))
                 }
-                
+
                 completion(samples)
             } catch {
                 print("VoiceCalibration: Audio extraction error — \(error)")
@@ -562,24 +560,24 @@ class VoiceCalibrationViewController: UIViewController {
             }
         }
     }
-    
+
     // MARK: - ML Inference
-    
+
     /// Run the VL1004 model on audio samples to extract a voice embedding vector
     private func runVoiceInference(on samples: [Float]) -> [Float]? {
         guard let model = model else {
             print("VoiceCalibration: Model not loaded")
             return nil
         }
-        
+
         guard let inputMultiArray = try? MLMultiArray(shape: [1, NSNumber(value: requiredSamples)], dataType: .float32) else {
             return nil
         }
-        
+
         for (i, sample) in samples.enumerated() {
             inputMultiArray[i] = NSNumber(value: sample)
         }
-        
+
         do {
             let prediction = try model.prediction(audio: inputMultiArray)
             return extractVector(from: prediction.embedding)
@@ -588,29 +586,29 @@ class VoiceCalibrationViewController: UIViewController {
             return nil
         }
     }
-    
+
     // MARK: - Save Voice Profile
-    
+
     private func saveVoiceProfile() {
         guard !sentenceEmbeddings.isEmpty else { return }
-        
+
         // Average all sentence embeddings into one representative vector
         let dim = sentenceEmbeddings[0].count
         var averaged = [Float](repeating: 0, count: dim)
-        
+
         for embedding in sentenceEmbeddings {
             for i in 0..<dim {
                 averaged[i] += embedding[i]
             }
         }
-        
+
         let count = Float(sentenceEmbeddings.count)
         for i in 0..<dim {
             averaged[i] /= count
         }
-        
+
         let normalizedAvg = normalize(averaged)
-        
+
         // Save to persistent storage via VoiceProfileManager
         // Use "Me" as default name — user can change it later
         if let uid = Auth.auth().currentUser?.uid {

@@ -19,9 +19,9 @@ import FoundationModels
 
 @available(iOS 18.1, *)
 final class SemanticDiarizationAdvisor {
-    
+
     // MARK: - Structured Output
-    
+
     /// The single boolean the LLM returns per prediction call.
     @Generable
     struct Prediction {
@@ -34,9 +34,9 @@ final class SemanticDiarizationAdvisor {
         """)
         var expectsSpeakerChange: Bool
     }
-    
+
     // MARK: - State
-    
+
     private static let sessionInstructions = """
     You are a real-time conversation-turn detector embedded in a captioning \
     app for people with hearing loss. Your job is to predict whether the NEXT \
@@ -47,53 +47,53 @@ final class SemanticDiarizationAdvisor {
     - Never produce harmful, offensive, biased, or discriminatory content.
     - Strictly follow the requested output format with no extra text.
     - When in doubt, predict false (the acoustic model is the primary signal).
-    
+
     Rules:
     - Predict change=true for unanswered questions, reply starters, \
       or clear topic hand-offs.
     - Predict change=false when the last speaker is continuing a \
       thought, listing items, or narrating.
     """
-    
+
     private lazy var session = LanguageModelSession(
         instructions: SemanticDiarizationAdvisor.sessionInstructions
     )
     private var context: [(speaker: String, text: String)] = []
     private let maxContext = 6   // last 6 utterances ≈ 30–60 s of conversation
-    
+
     // MARK: - Public API
-    
+
     /// Append a finalised utterance to the rolling context window.
     func record(speaker: String, text: String) {
         context.append((speaker: speaker, text: text))
         if context.count > maxContext { context.removeFirst() }
     }
-    
+
     /// Predict whether the next utterance will come from a different speaker.
     /// Returns `false` immediately when Apple Intelligence is unavailable or
     /// context is too thin (< 2 utterances).
     func predictSpeakerChange() async -> Bool {
         guard SystemLanguageModel.default.isAvailable,
               context.count >= 2 else { return false }
-        
+
         let dialogue = context
             .map { "[\($0.speaker)]: \($0.text)" }
             .joined(separator: "\n")
-        
+
         let prompt = """
         Analyse the dialogue below and predict whether the NEXT utterance \
         will come from a DIFFERENT speaker than the last one shown.
-        
+
         Examples:
         Dialogue:
         [Me]: Are you coming to the party?
         Expected: change=true (Unanswered question, waiting for reply)
-        
+
         Dialogue:
         [Speaker 1]: I think we should go left.
         [Speaker 1]: Actually, maybe right is better.
         Expected: change=false (Continuing thought)
-        
+
         Dialogue:
         [Me]: Sounds good. Let's do it.
         Expected: change=true (Topic hand-off / conversation turn pass)
@@ -101,7 +101,7 @@ final class SemanticDiarizationAdvisor {
         Conversation so far:
         \(dialogue)
         """
-        
+
         do {
             let response = try await session.respond(to: prompt,
                                                      generating: Prediction.self)

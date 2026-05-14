@@ -11,10 +11,6 @@ import UIKit
 // MARK: - Base Class (Logic from ActionChatCell)
 class GroupNewBaseChatCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-    }
 
     func applyBaseBubbleStyle(view: UIView) {
         view.layer.cornerRadius = 16
@@ -29,10 +25,10 @@ class GroupNewBaseChatCell: UICollectionViewCell {
         } else {
             widthConstraint?.constant = layoutAttributes.frame.width
         }
-        
+
         let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
         let size = contentView.systemLayoutSizeFitting(targetSize, withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
-        
+
         var newFrame = layoutAttributes.frame
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
@@ -44,19 +40,19 @@ class GroupNewBaseChatCell: UICollectionViewCell {
 class GroupNewOutgoingCell: GroupNewBaseChatCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: bubbleView)
-        
+
         bubbleView.backgroundColor = .systemBlue
         messageLabel.textColor = .white
         messageLabel.numberOfLines = 0
-        
+
         // Masked Corners: Top-Left, Top-Right, Bottom-Left rounded. Bottom-Right sharp.
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
     }
-    
+
     func configure(with message: GroupNewChatMessage) {
         messageLabel.text = message.text
     }
@@ -68,28 +64,28 @@ class GroupNewIncomingCell: GroupNewBaseChatCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
     @IBOutlet weak var profileImageView: UIImageView!
-    
+
     var onLabelTapped: (() -> Void)?
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: bubbleView)
-        
+
         bubbleView.backgroundColor = .systemGray5
         messageLabel.textColor = .black
         messageLabel.numberOfLines = 0
-        
+
         // Masked Corners: Top-Left, Top-Right, Bottom-Right rounded. Bottom-Left sharp.
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
-        
+
         setupUI()
     }
-    
+
     private func setupUI() {
         // Tap Setup
         nameLabel.isUserInteractionEnabled = true
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
-        
+
         // Profile Image Setup
         if let profileImg = profileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
@@ -98,11 +94,11 @@ class GroupNewIncomingCell: GroupNewBaseChatCell {
             profileImg.backgroundColor = .systemGray4
         }
     }
-    
+
     @objc private func handleTap() {
         onLabelTapped?()
     }
-    
+
     // MARK: - Configuration
     func configure(with message: GroupNewChatMessage) {
         messageLabel.text = message.text

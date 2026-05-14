@@ -10,9 +10,6 @@ import UIKit
 
 class BaseChatCell: UICollectionViewCell {
     private var widthConstraint: NSLayoutConstraint?
-    override func awakeFromNib() {
-        super.awakeFromNib()
-    }
 
     func applyBaseBubbleStyle(view: UIView) {
         view.layer.cornerRadius = 16
@@ -26,10 +23,10 @@ class BaseChatCell: UICollectionViewCell {
         } else {
             widthConstraint?.constant = layoutAttributes.frame.width
         }
-        
+
         let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
         let size = contentView.systemLayoutSizeFitting(targetSize, withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
-        
+
         var newFrame = layoutAttributes.frame
         newFrame.size.height = ceil(size.height)
         layoutAttributes.frame = newFrame
@@ -40,7 +37,7 @@ class BaseChatCell: UICollectionViewCell {
 class OutgoingCell: BaseChatCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: bubbleView)
@@ -55,9 +52,9 @@ class IncomingCell: BaseChatCell {
     @IBOutlet weak var bubbleView: UIView!
     @IBOutlet weak var messageLabel: UILabel!
     @IBOutlet weak var profileImageView: UIImageView!
-    
+
     var onLabelTapped: (() -> Void)?
-    
+
     override func awakeFromNib() {
         super.awakeFromNib()
         applyBaseBubbleStyle(view: bubbleView)
@@ -66,11 +63,11 @@ class IncomingCell: BaseChatCell {
         bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
         setupUI()
     }
-    
+
     private func setupUI() {
         nameLabel.isUserInteractionEnabled = true
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
-        
+
         if let profileImg = profileImageView {
             profileImg.layer.cornerRadius = profileImg.frame.height / 2
             profileImg.clipsToBounds = true
@@ -78,7 +75,7 @@ class IncomingCell: BaseChatCell {
             profileImg.backgroundColor = .systemGray4
         }
     }
-    
+
     @objc private func handleTap() {
         onLabelTapped?()
     }

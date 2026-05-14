@@ -15,4 +15,3 @@ struct ParticipantData {
     var summary: String
     var isCurrentUser: Bool = false
 }
-

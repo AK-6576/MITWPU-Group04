@@ -11,7 +11,7 @@ import GoogleSignIn
 import FirebaseAuth
 
 class WelcomeViewController: UIViewController, UITextFieldDelegate {
-    
+
     // MARK: - Outlets
 //    @IBOutlet weak var logoImageView: UIImageView!
     @IBOutlet weak var appleSignInButton: UIButton!
@@ -21,7 +21,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var forgotPasswordButton: UIButton!
-    
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,11 +29,11 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
         setupKeyboardDismiss()
         registerKeyboardNotifications()
     }
-    
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
+
     private func setupUI() {
         // Text field styling - rounded corners with subtle border
         let textFields = [emailTextField, passwordTextField]
@@ -44,55 +44,55 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
             textField?.clipsToBounds = true
             textField?.delegate = self
         }
-        
+
         // Ensure Google icon is sized correctly without overriding storyboard layout
         if let googleIcon = UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal) {
             let resizedIcon = googleIcon.resized(to: CGSize(width: 24, height: 24))
             googleSignInButton.configuration?.image = resizedIcon
         }
-        
+
         // Sign In button styling - capsule
         loginButton.layer.cornerRadius = 28
         loginButton.clipsToBounds = true
-        
+
         loginButton.setTitle("Sign In", for: .normal)
-        
+
         // Fix text field alignments and colors
         emailTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 52))
         emailTextField.leftViewMode = .always
         passwordTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 52))
         passwordTextField.leftViewMode = .always
-        
+
         emailTextField.textColor = .label
         passwordTextField.textColor = .label
-        
+
         appleSignInButton.tintAdjustmentMode = .normal
         googleSignInButton.tintAdjustmentMode = .normal
-        
+
         // Signup label attributed text
         setupSignupLabel()
     }
-    
+
     private func setupSignupLabel() {
         let fullText = "Don't have an account yet? Create Now"
         let attributedString = NSMutableAttributedString(string: fullText)
         let fullRange = NSRange(location: 0, length: fullText.count)
-        
+
         // Default style: black label color, system font 14
         attributedString.addAttribute(.foregroundColor, value: UIColor.black, range: fullRange)
         attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 14), range: fullRange)
-        
+
         // "Signup Now" in blue
         if let signupRange = fullText.range(of: "Create Now") {
             let nsRange = NSRange(signupRange, in: fullText)
             attributedString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: nsRange)
             attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 14, weight: .semibold), range: nsRange)
         }
-        
+
         signupLabel.attributedText = attributedString
         signupLabel.textAlignment = .center
         signupLabel.isUserInteractionEnabled = true
-        
+
         let tap = UITapGestureRecognizer(target: self, action: #selector(signupLabelTapped(_:)))
         signupLabel.addGestureRecognizer(tap)
     }
@@ -101,29 +101,29 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
     @IBAction func appleSignInTapped(_ sender: UIButton) {
         // Handle Apple Sign In
     }
-    
+
     @IBAction func googleSignInTapped(_ sender: UIButton) {
         // Show loading if possible (optional, but good practice)
         googleSignInButton.isEnabled = false
-        
+
         FirebaseManager.shared.signInWithGoogle(presenting: self) { [weak self] result in
             DispatchQueue.main.async {
                 self?.googleSignInButton.isEnabled = true
-                
+
                 switch result {
                 case .success(let (user, isNewUser)):
                     self?.restoreUserAndNavigate(user: user, isNewUser: isNewUser)
-                    
+
                 case .failure(let error):
                     self?.showAlert(title: "Sign In Failed", message: error.localizedDescription)
                 }
             }
         }
     }
-    
+
     private func restoreUserAndNavigate(user: User, isNewUser: Bool) {
         let uid = user.uid
-        
+
         // Fetch user profile from Realtime Database
         FirebaseManager.shared.fetchUserProfile(uid: uid) { profileData in
             DispatchQueue.main.async {
@@ -137,24 +137,24 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                         UserDefaults.standard.set(lastName, forKey: "user_last_name")
                     }
                 }
-                
+
                 // Restore conversation history
                 FirebaseManager.shared.fetchConversationHistory(uid: uid) { conversations in
                     DispatchQueue.main.async {
                         for dict in conversations {
                             guard let id = dict["id"] as? String,
                                   let title = dict["title"] as? String else { continue }
-                            
+
                             // Skip if already exists locally
                             if DataManager.shared.fetchConversation(byId: id) != nil { continue }
-                            
+
                             // Fetch FULL DATA (Messages + Participants)
                             FirebaseManager.shared.fetchFullConversation(uid: uid, conversationID: id) { fullData in
                                 DispatchQueue.main.async {
                                     let metadata = fullData?["metadata"] as? [String: Any] ?? dict
                                     let participantsDict = fullData?["participants"] as? [String: [String: Any]] ?? [:]
                                     let messagesDict = fullData?["messages"] as? [String: [String: Any]] ?? [:]
-                                    
+
                                     // 1. Create Participants
                                     var historyParticipants: [Participant] = []
                                     for (_, pData) in participantsDict {
@@ -165,7 +165,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                         )
                                         historyParticipants.append(p)
                                     }
-                                    
+
                                     // 2. Create Messages
                                     var historyMessages: [Message] = []
                                     for (_, mData) in messagesDict {
@@ -181,7 +181,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                         )
                                         historyMessages.append(m)
                                     }
-                                    
+
                                     // 3. Create Conversation
                                     let convo = Conversation(
                                         id: id,
@@ -201,12 +201,12 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                         participants: historyParticipants,
                                         messages: historyMessages
                                     )
-                                    
+
                                     DataManager.shared.addConversation(convo)
                                 }
                             }
                         }
-                        
+
                         // Restore Quick Actions
                         FirebaseManager.shared.fetchQuickActions(uid: uid) { actions in
                             DispatchQueue.main.async {
@@ -220,10 +220,10 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                           let iconName = dict["iconName"] as? String,
                                           let topicImage = dict["topicImage"] as? String,
                                           let timeImage = dict["timeImage"] as? String else { continue }
-                                    
+
                                     let existing = QuickActionsRepository.shared.getAllActions()
                                     if existing.contains(where: { $0.id == id }) { continue }
-                                    
+
                                     let action = RoutineConversation(
                                         id: id,
                                         iconName: iconName,
@@ -240,7 +240,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                     )
                                     QuickActionsRepository.shared.addAction(action)
                                 }
-                                
+
                                 // Handle navigation based on user status
                                 DispatchQueue.main.async {
                                     if isNewUser || VoiceProfileManager.shared.getVoiceProfile(byUID: uid) == nil {
@@ -256,20 +256,20 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
             }
         }
     }
-    
+
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-    
+
     @objc private func signupLabelTapped(_ gesture: UITapGestureRecognizer) {
         guard let text = signupLabel.text,
               let range = text.range(of: "Create Now") else { return }
-        
+
         let nsRange = NSRange(range, in: text)
         let tapLocation = gesture.location(in: signupLabel)
-        
+
         // Use text storage to check if tap is within "Signup Now" range
         let textStorage = NSTextStorage(attributedString: signupLabel.attributedText ?? NSAttributedString(string: text))
         let layoutManager = NSLayoutManager()
@@ -277,23 +277,19 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
         textContainer.lineFragmentPadding = 0
         textContainer.maximumNumberOfLines = signupLabel.numberOfLines
         textContainer.lineBreakMode = signupLabel.lineBreakMode
-        
+
         layoutManager.addTextContainer(textContainer)
         textStorage.addLayoutManager(layoutManager)
-        
+
         let characterIndex = layoutManager.characterIndex(for: tapLocation, in: textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
-        
+
         if NSLocationInRange(characterIndex, nsRange) {
             performSegue(withIdentifier: "showCreateAccount", sender: self)
         }
     }
-    
-    
-    
-  
-    
+
     // MARK: - UITextFieldDelegate
-    
+
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == emailTextField {
             passwordTextField.becomeFirstResponder()
@@ -309,19 +305,19 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
     @IBAction func loginTapped(_ sender: UIButton) {
         // Dismiss keyboard
         view.endEditing(true)
-        
+
         // Validation
         guard let email = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
               !email.isEmpty else {
             showAlert(title: "Missing Field", message: "Please enter your email address.")
             return
         }
-        
+
         guard let password = passwordTextField.text, !password.isEmpty else {
             showAlert(title: "Missing Field", message: "Please enter your password.")
             return
         }
-        
+
         // Show loading state
         loginButton.isEnabled = false
         loginButton.configuration?.showsActivityIndicator = true
@@ -333,7 +329,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
             DispatchQueue.main.async {
                 self?.loginButton.isEnabled = true
                 self?.loginButton.configuration?.showsActivityIndicator = false
-                
+
                 switch result {
                 case .success(let user):
                     let uid = user.uid
@@ -357,24 +353,24 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                     UserDefaults.standard.set(firstName, forKey: "user_first_name")
                                 }
                             }
-                            
+
                             // Restore conversation history
                             FirebaseManager.shared.fetchConversationHistory(uid: uid) { conversations in
                                 DispatchQueue.main.async {
                                     for dict in conversations {
                                         guard let id = dict["id"] as? String,
                                               let title = dict["title"] as? String else { continue }
-                                        
+
                                         // Skip if conversation already exists locally
                                         if DataManager.shared.fetchConversation(byId: id) != nil { continue }
-                                        
+
                                         // Fetch FULL DATA (Messages + Participants)
                                         FirebaseManager.shared.fetchFullConversation(uid: uid, conversationID: id) { fullData in
                                             DispatchQueue.main.async {
                                                 let metadata = fullData?["metadata"] as? [String: Any] ?? dict
                                                 let participantsDict = fullData?["participants"] as? [String: [String: Any]] ?? [:]
                                                 let messagesDict = fullData?["messages"] as? [String: [String: Any]] ?? [:]
-                                                
+
                                                 // 1. Create Participants
                                                 var historyParticipants: [Participant] = []
                                                 for (_, pData) in participantsDict {
@@ -385,7 +381,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                                     )
                                                     historyParticipants.append(p)
                                                 }
-                                                
+
                                                 // 2. Create Messages
                                                 var historyMessages: [Message] = []
                                                 for (_, mData) in messagesDict {
@@ -401,7 +397,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                                     )
                                                     historyMessages.append(m)
                                                 }
-                                                
+
                                                 // 3. Create Conversation
                                                 let convo = Conversation(
                                                     id: id,
@@ -421,12 +417,12 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                                     participants: historyParticipants,
                                                     messages: historyMessages
                                                 )
-                                                
+
                                                 DataManager.shared.addConversation(convo)
                                             }
                                         }
                                     }
-                                    
+
                                     // Restore Quick Actions
                                     FirebaseManager.shared.fetchQuickActions(uid: uid) { actions in
                                         DispatchQueue.main.async {
@@ -440,10 +436,10 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                                       let iconName = dict["iconName"] as? String,
                                                       let topicImage = dict["topicImage"] as? String,
                                                       let timeImage = dict["timeImage"] as? String else { continue }
-                                                
+
                                                 let existing = QuickActionsRepository.shared.getAllActions()
                                                 if existing.contains(where: { $0.id == id }) { continue }
-                                                
+
                                                 let action = RoutineConversation(
                                                     id: id,
                                                     iconName: iconName,
@@ -460,7 +456,7 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                                                 )
                                                 QuickActionsRepository.shared.addAction(action)
                                             }
-                                            
+
                                             DispatchQueue.main.async {
                                                 // Navigate to Home by resetting the window root for a clean state
                                                 let storyboard = UIStoryboard(name: "Home", bundle: nil)
@@ -482,20 +478,19 @@ class WelcomeViewController: UIViewController, UITextFieldDelegate {
                             }
                         }
                     }
-                    
+
                 case .failure(let error):
                     self?.showAlert(title: "Sign In Failed", message: error.localizedDescription)
                 }
             }
         }
     }
-    
+
     @IBAction func forgotPasswordTapped(_ sender: UIButton) {
         // The segue "showForgotPassword" is already triggered via storyboard connection,
         // so we don't need to perform it programmatically here to avoid a double push.
     }
 }
-
 
 // MARK: - UIImage Extension
 extension UIImage {
@@ -513,26 +508,26 @@ extension WelcomeViewController {
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
-    
+
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
-    
+
     private func registerKeyboardNotifications() {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
-    
+
     @objc private func keyboardWillShow(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-        
+
         // Reset transform to calculate correct bounds
         self.view.transform = .identity
-        
+
         let bottomOfLoginButton = loginButton.convert(loginButton.bounds, to: self.view).maxY
         let topOfKeyboard = self.view.frame.height - keyboardFrame.height
-        
+
         if bottomOfLoginButton > topOfKeyboard {
             let shiftAmount = bottomOfLoginButton - topOfKeyboard + 20
             UIView.animate(withDuration: 0.3) {
@@ -540,7 +535,7 @@ extension WelcomeViewController {
             }
         }
     }
-    
+
     @objc private func keyboardWillHide(_ notification: Notification) {
         UIView.animate(withDuration: 0.3) {
             self.view.transform = .identity

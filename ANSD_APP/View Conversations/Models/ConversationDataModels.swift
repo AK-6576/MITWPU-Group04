@@ -6,7 +6,6 @@
 //  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
-
 import Foundation
 import SwiftData
 
@@ -17,10 +16,9 @@ class Participant {
     var name: String
     var summary: String
     var image: String
-  
-  
+
     var conversation: Conversation?
-    
+
     init(name: String, summary: String, image: String) {
         self.name = name
         self.summary = summary
@@ -39,9 +37,9 @@ class Message {
     var senderId: String
     var timestamp: Date
     var isEdited: Bool
-    
+
     var conversation: Conversation?
-    
+
     init(id: UUID = UUID(), text: String, senderId: String, senderName: String, isIncoming: Bool, timestamp: Date = Date(), isHighlighted: Bool = false, isEdited: Bool = false) {
         self.id = id
         self.text = text
@@ -71,7 +69,7 @@ class Conversation {
     var notes: String?
     var isPinned: Bool
     var ownerUID: String = ""
-    
+
     @Relationship(deleteRule: .cascade, inverse: \Participant.conversation) var participants: [Participant]?
     @Relationship(deleteRule: .cascade, inverse: \Message.conversation) var messages: [Message]?
 

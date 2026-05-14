@@ -13,13 +13,13 @@ import Foundation
 import FirebaseAuth
 
 class HomeViewController: UIViewController {
-    
+
     // MARK: - Outlets & Properties
     @IBOutlet weak var tableView: UITableView!
 
     var quickActions: [RoutineConversation] = []
     var recentHistory: [Conversation] = []
-    
+
     private let profileButton = UIButton(type: .custom)
 
     // MARK: - TipKit
@@ -33,26 +33,26 @@ class HomeViewController: UIViewController {
 
     /// Flag: tips have been presented for this installation
     private static let tipsShownKey = "home_tips_shown_v1"
-    
+
     // MARK: - View Lifecycle
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
         setupProfileButton()
         loadSavedProfileImage()
         configureTipKit()      // ← TipKit: configure once per install
-        
+
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
-        
+
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.helloLabel.isHidden = false
         }
-        
+
         navigationItem.title = ""
         navigationItem.hidesBackButton = true
-        
+
         // RESTORED: Observers
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileImageUpdate(_:)), name: NSNotification.Name("ProfileImageUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileNameUpdate(_:)), name: NSNotification.Name("ProfileNameUpdated"), object: nil)
@@ -60,14 +60,14 @@ class HomeViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ConversationHistoryUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(triggerWalkthrough), name: NSNotification.Name("ReplayHomeTips"), object: nil)
     }
-    
+
     @objc private func triggerWalkthrough() {
         presentHomeTipsIfNeeded()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
+
         // Wait for notification authorization before potentially showing tips.
         // This ensures the tips don't appear in the background while the OS permission alert is up.
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] _, _ in
@@ -76,22 +76,22 @@ class HomeViewController: UIViewController {
             }
         }
     }
-    
+
     @objc func handleDataUpdate() {
         print("HomeViewController: Received ConversationHistoryUpdated notification.")
         DispatchQueue.main.async { [weak self] in
             self?.loadData()
         }
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadData()
         loadSavedProfileImage()
-        
+
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
-        
+
         let name = UserDefaults.standard.string(forKey: "user_first_name") ?? "User"
         if let headerView = tableView.tableHeaderView as? GreetingViewCell {
             headerView.configure(name: name)
@@ -101,9 +101,9 @@ class HomeViewController: UIViewController {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
+
     // MARK: - RESTORED: Profile Handlers
-    
+
     @objc func handleProfileNameUpdate(_ notification: Notification) {
         if let userInfo = notification.userInfo, let newName = userInfo["name"] as? String {
             DispatchQueue.main.async { [weak self] in
@@ -115,7 +115,7 @@ class HomeViewController: UIViewController {
             }
         }
     }
-    
+
     @objc func handleProfileImageUpdate(_ notification: Notification) {
         DispatchQueue.main.async { [weak self] in
             if let newImage = notification.object as? UIImage {
@@ -123,25 +123,25 @@ class HomeViewController: UIViewController {
             }
         }
     }
-    
+
     // MARK: - Queue Logic & Data Loading
-    
+
     func loadData() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             print("HomeViewController: loadData() called on Main Thread. Fetching...")
-            
+
             // 1. Quick Actions Queue: Fetched via Repository (Top 3 Upcoming)
             self.quickActions = QuickActionsRepository.shared.getUpcomingActions(limit: 3)
-            
+
             // 2. Recent History Queue: Limit visible to TOP 2
             let allConversations = DataManager.shared.fetchConversations()
             self.recentHistory = Array(allConversations.prefix(2))
-            
+
             self.tableView.reloadData()
         }
     }
-    
+
     // Queue Deletion Logic
     private func performQueueDeletion(for section: Int, at indexPath: IndexPath) {
         if section == 0 {
@@ -151,19 +151,19 @@ class HomeViewController: UIViewController {
             let historyItem = recentHistory[indexPath.row]
             DataManager.shared.deleteConversation(historyItem)
         }
-        
+
         loadData()
-        
+
         DispatchQueue.main.async {
             self.tableView.reloadSections(IndexSet(integer: section), with: .automatic)
         }
     }
 
     // MARK: - Navigation Handlers
-    
+
     @IBAction func didTapNewConversation(_ sender: UITapGestureRecognizer) { performSegue(withIdentifier: "showNewConversation", sender: self) }
     @IBAction func didTapJoinConversation(_ sender: UITapGestureRecognizer) { performSegue(withIdentifier: "showJoinConversation", sender: self) }
-    
+
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showProfile" {
             if let destVC = segue.destination as? ProfileTableViewController {
@@ -197,16 +197,16 @@ class HomeViewController: UIViewController {
     }
 
     // MARK: - UI Support Methods
-    
+
     private func setupTableView() {
         tableView.delegate = self
         tableView.dataSource = self
         if #available(iOS 15.0, *) { tableView.sectionHeaderTopPadding = 0 }
-        
+
         tableView.separatorStyle = .none
         tableView.estimatedRowHeight = 80
     }
-    
+
     private func setupProfileButton() {
         let size: CGFloat = 36
         let containerView = UIView(frame: CGRect(x: 0, y: 0, width: size, height: size))
@@ -218,7 +218,7 @@ class HomeViewController: UIViewController {
         containerView.addSubview(profileButton)
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: containerView)
     }
-    
+
     @objc private func profileTapped() { performSegue(withIdentifier: "showProfile", sender: self) }
 
     private func loadSavedProfileImage() {
@@ -255,7 +255,7 @@ class HomeViewController: UIViewController {
 
         // 2. Only show if explicitly set to false (by VoiceCalibration flow or Replay trigger)
         guard UserDefaults.standard.bool(forKey: Self.tipsShownKey) == false else { return }
-        
+
         // 3. Mark as shown immediately to prevent double-firing
         UserDefaults.standard.set(true, forKey: Self.tipsShownKey)
 
@@ -266,7 +266,7 @@ class HomeViewController: UIViewController {
                 let continued = await presentTipStep(profileTip, source: anchorView, tint: .systemIndigo)
                 if !continued { return }
             }
-            
+
             try? await Task.sleep(for: .seconds(0.5))
 
             // Step 2: Quick Captioning
@@ -286,7 +286,7 @@ class HomeViewController: UIViewController {
             }
 
             try? await Task.sleep(for: .seconds(0.5))
-            
+
             // Step 4: Join Conversation
             if let headerView = tableView.tableHeaderView as? GreetingViewCell,
                let joinView = headerView.joinConvoView {
@@ -306,12 +306,12 @@ class HomeViewController: UIViewController {
             _ = await presentTipStep(viewConvosTip, source: tableView, tint: .systemTeal, isHeader: true, section: 1)
         }
     }
-    
+
     /// Helper to present a tip and wait for either a timeout or manual dismissal.
     /// Returns true if the tour should continue, false if the user dismissed it.
     private func presentTipStep(_ tip: any Tip, source: Any, tint: UIColor, duration: Double = 3.5, isHeader: Bool = false, section: Int = 0) async -> Bool {
         let popover: TipUIPopoverViewController
-        
+
         if let view = source as? UIView {
             popover = TipUIPopoverViewController(tip, sourceItem: view)
             if isHeader {
@@ -322,16 +322,16 @@ class HomeViewController: UIViewController {
         } else {
             return true
         }
-        
+
         popover.view.tintColor = tint
-        
+
         // Present and wait
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             present(popover, animated: true) {
                 continuation.resume()
             }
         }
-        
+
         // Poll for dismissal or wait for duration
         let pollCount = Int(duration * 10)
         for _ in 0..<pollCount {
@@ -341,14 +341,14 @@ class HomeViewController: UIViewController {
                 return false // User dismissed, exit tour
             }
         }
-        
+
         // Dismiss automatically if still showing
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             popover.dismiss(animated: true) {
                 continuation.resume()
             }
         }
-        
+
         return true
     }
 
@@ -357,14 +357,14 @@ class HomeViewController: UIViewController {
         UserDefaults.standard.set(false, forKey: tipsShownKey)
         try? Tips.resetDatastore()
     }
-    
+
 }
 
 // MARK: - TableView Delegate & DataSource (RESTORED HEADERS)
 extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
-    
+
     func numberOfSections(in tableView: UITableView) -> Int { return 2 }
-    
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
             return quickActions.count >= 3 ? 3 : quickActions.count + 1
@@ -377,7 +377,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let cellID = (section == 0) ? "QAHeaderCell" : "VCHeaderCell"
         guard let header = tableView.dequeueReusableCell(withIdentifier: cellID) as? HeaderCells else { return nil }
-        
+
         // Failsafe for disconnected Storyboard Outlets
         if header.titleLabel != nil {
             header.titleLabel.text = (section == 0) ? "Quick Actions" : "View Conversations"
@@ -385,18 +385,18 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         } else {
             // Programmatic fallback
             header.contentView.subviews.forEach { $0.removeFromSuperview() } // Clear broken IB elements
-            
+
             let titleLbl = UILabel()
             titleLbl.text = (section == 0) ? "Quick Actions" : "View Conversations"
             titleLbl.font = UIFont.systemFont(ofSize: 22, weight: .bold)
             titleLbl.translatesAutoresizingMaskIntoConstraints = false
             header.contentView.addSubview(titleLbl)
-            
+
             NSLayoutConstraint.activate([
                 titleLbl.leadingAnchor.constraint(equalTo: header.contentView.leadingAnchor, constant: 16),
                 titleLbl.centerYAnchor.constraint(equalTo: header.contentView.centerYAnchor)
             ])
-            
+
             if section == 0 {
                 let subLbl = UILabel()
                 subLbl.text = "Upcoming"
@@ -404,30 +404,30 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 subLbl.textColor = .label
                 subLbl.translatesAutoresizingMaskIntoConstraints = false
                 header.contentView.addSubview(subLbl)
-                
+
                 NSLayoutConstraint.activate([
                     subLbl.leadingAnchor.constraint(equalTo: titleLbl.trailingAnchor, constant: 8),
                     subLbl.bottomAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: -2)
                 ])
             }
         }
-        
+
         return header.contentView
     }
-    
+
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 50
     }
-    
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: "routineCell", for: indexPath) as? QuickActionTableViewCell else { return UITableViewCell() }
-            
+
             let isAddRowVisible = quickActions.count < 3
             let isLast = (indexPath.row == (isAddRowVisible ? quickActions.count : 2))
             let isAddRow = isAddRowVisible && (indexPath.row == quickActions.count)
             let isFirst = (indexPath.row == 0)
-            
+
             if isAddRow {
                 cell.configure(with: nil, isFirst: isFirst, isLast: true, isAddRow: true)
             } else {
@@ -449,7 +449,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             }
         }
     }
-    
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.section == 0 {
@@ -461,7 +461,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
                 }
             } else {
                 let item = quickActions[indexPath.row]
-                
+
                 // ROLE-BASED NAVIGATION
                 let currentUID = Auth.auth().currentUser?.uid
                 if let host = item.hostUID, host != currentUID {
@@ -499,36 +499,36 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard indexPath.section == 0, indexPath.row < quickActions.count else { return nil }
         let item = quickActions[indexPath.row]
-        
+
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (_, _, completion) in
             self?.performQueueDeletion(for: 0, at: indexPath)
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
-        
+
         let renameAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (_, _, completion) in
             self?.showRenameAlert(for: item, row: indexPath.row)
             completion(true)
         }
         renameAction.backgroundColor = .systemOrange
         renameAction.image = UIImage(systemName: "pencil")
-        
+
         let config = UISwipeActionsConfiguration(actions: [deleteAction, renameAction])
         config.performsFirstActionWithFullSwipe = false
         return config
     }
-    
+
     private func showRenameAlert(for item: RoutineConversation, row: Int) {
         let alert = UIAlertController(title: "Rename", message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = item.conversationTopic }
         let saveAction = UIAlertAction(title: "Save", style: .default) { [weak self] _ in
             guard let self = self, let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
-            
+
             var updatedItem = item
             updatedItem.conversationTopic = newName
             QuickActionsRepository.shared.updateAction(updatedItem)
-            
+
             self.quickActions[row] = updatedItem
             self.tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
         }
@@ -536,7 +536,7 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
-    
+
     // MARK: - Queue Deletion (Context Menu for History)
     func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         guard indexPath.section == 1 && !recentHistory.isEmpty else { return nil }

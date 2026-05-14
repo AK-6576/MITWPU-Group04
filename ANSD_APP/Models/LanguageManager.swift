@@ -15,12 +15,12 @@ extension NSNotification.Name {
 
 class LanguageManager {
     static let shared = LanguageManager()
-    
+
     // Key used to store the user's preference
     private let languageKey = "selected_speech_language"
-    
+
     private init() {}
-    
+
     /// Returns the currently selected Locale, defaulting to "en-US" if none is selected or available.
     var currentLocale: Locale {
         get {
@@ -34,18 +34,18 @@ class LanguageManager {
             NotificationCenter.default.post(name: .languageDidChange, object: nil)
         }
     }
-    
+
     /// Returns the display name of the current language (e.g., "English (United States)")
     var currentLanguageDisplayName: String {
         return Locale.current.localizedString(forIdentifier: currentLocale.identifier) ?? currentLocale.identifier
     }
-    
+
     /// Returns a list of supported languages as objects containing the name and locale.
     var supportedLanguages: [(name: String, locale: Locale)] {
         let locales = SFSpeechRecognizer.supportedLocales()
-        
+
         var languageList: [(name: String, locale: Locale)] = []
-        
+
         for locale in locales {
             // Get the localized display name for the locale (e.g., "English (United States)")
             if let displayName = Locale.current.localizedString(forIdentifier: locale.identifier) {
@@ -54,10 +54,10 @@ class LanguageManager {
                 languageList.append((name: locale.identifier, locale: locale))
             }
         }
-        
+
         // Sort alphabetically by the localized display name
         languageList.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        
+
         return languageList
     }
 }

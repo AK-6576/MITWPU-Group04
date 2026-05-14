@@ -1,0 +1,13 @@
+disabled_rules: # rule identifiers to exclude from running
+  - trailing_whitespace
+  - force_cast
+  - line_length
+
+opt_in_rules: # some rules are turned off by default, so you need to opt-in
+  - empty_count
+  - missing_docs
+
+# configurable rules can be customized from this configuration file
+line_length:
+  warning: 150
+  error: 200

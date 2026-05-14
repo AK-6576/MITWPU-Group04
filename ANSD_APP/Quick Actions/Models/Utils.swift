@@ -12,7 +12,7 @@ import UIKit
 // Function - Determines and returns a specific UIColor based on the provided category name string, using a hash fallback for unknown categories.
 func getColorForCategory(_ name: String) -> UIColor {
     let lower = name.lowercased().trimmingCharacters(in: .whitespaces)
-    
+
     switch lower {
     case "family", "date", "partner", "home": return .systemPink
     case "office", "work", "coding":          return .systemBlue
@@ -23,7 +23,7 @@ func getColorForCategory(_ name: String) -> UIColor {
     case "quick captions", "quick captioning": return .systemBlue
     case "group-join", "group join":           return .black
     case "group-new", "group new":             return .black
-        
+
     default:
         let palette: [UIColor] = [
             .systemYellow, .systemGreen, .systemTeal, .systemBlue,
@@ -39,7 +39,7 @@ func getColorForCategory(_ name: String) -> UIColor {
 // Function - Retrieves the corresponding SF Symbol string identifier based on the provided category name, defaulting to a tag icon if no match is found.
 func getSymbolForCategory(_ name: String) -> String {
     let lower = name.lowercased().trimmingCharacters(in: .whitespaces)
-    
+
     switch lower {
     case "friends", "hangout": return "person.2.fill"
     case "family", "home", "house": return "figure.2.and.child.holdinghands"
@@ -72,17 +72,17 @@ func getSymbolForCategory(_ name: String) -> String {
 func compareTimes(time1: String, time2: String) -> Bool {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US_POSIX")
-    
+
     formatter.dateFormat = "h:mm a"
     if let date1 = formatter.date(from: time1), let date2 = formatter.date(from: time2) {
         return date1 < date2
     }
-    
+
     formatter.dateFormat = "HH:mm"
     if let date1 = formatter.date(from: time1), let date2 = formatter.date(from: time2) {
         return date1 < date2
     }
-    
+
     return false
 }
 
@@ -107,26 +107,26 @@ class QuickActionAccess {
             onSuccess() // Host bypasses room code
             return
         }
-        
+
         let safeCode = item.roomCode ?? ""
         if safeCode.isEmpty {
             onSuccess()
             return
         }
-        
+
         let defaultsKey = "joined_qa_\(item.id)"
         if UserDefaults.standard.bool(forKey: defaultsKey) {
             onSuccess()
             return
         }
-        
+
         let alert = UIAlertController(title: "Enter Room Code", message: "Please enter the room code to join this Quick Action session.", preferredStyle: .alert)
         alert.addTextField { tf in
             tf.placeholder = "Room Code"
             tf.keyboardType = .default
             tf.autocapitalizationType = .allCharacters
         }
-        
+
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         alert.addAction(UIAlertAction(title: "Join", style: .default) { _ in
             let enteredCode = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -139,7 +139,7 @@ class QuickActionAccess {
                 vc.present(errorAlert, animated: true)
             }
         })
-        
+
         vc.present(alert, animated: true)
     }
 }

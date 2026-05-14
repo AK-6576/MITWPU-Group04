@@ -1,26 +1,26 @@
 import UIKit
 
 extension Conversation {
-    
+
     /// Returns a formatted date string (e.g., "January 15th")
     var formattedDisplayDate: String {
         if let date = self.calendarDate {
             let calendar = Calendar.current
             let day = calendar.component(.day, from: date)
-            
+
             let monthFormatter = DateFormatter()
             monthFormatter.dateFormat = "MMMM"
             let month = monthFormatter.string(from: date)
-            
+
             let numberFormatter = NumberFormatter()
             numberFormatter.numberStyle = .ordinal
             let dayString = numberFormatter.string(from: NSNumber(value: day)) ?? "\(day)"
-            
+
             return "\(month) \(dayString)"
         }
         return self.date
     }
-    
+
     /// Returns the system icon name based on the category
     var categoryIconName: String {
         switch category {
@@ -42,7 +42,7 @@ extension Conversation {
             return "folder.fill"
         }
     }
-    
+
     /// Returns the theme color for the category
     var categoryTintColor: UIColor {
         switch category {
@@ -64,7 +64,7 @@ extension Conversation {
             return .systemGray
         }
     }
-    
+
     /// Returns the capitalized category name
     var displayCategory: String {
         return category.prefix(1).uppercased() + category.dropFirst()
