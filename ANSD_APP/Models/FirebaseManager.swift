@@ -42,8 +42,8 @@ class FirebaseManager {
     ///   - conversationID: The Room Code/ID.
     ///   - isHost: Boolean to determine if current user is starting the session.
     func setupSession(hostUID: String, conversationID: String, isHost: Bool) {
-        let safeUID = sanitizeKey(hostUID)
-        let safeConvID = sanitizeKey(conversationID)
+        let safeUID = CryptoHelper.hashIdentifier(hostUID)
+        let safeConvID = CryptoHelper.hashIdentifier(conversationID)
         
         guard !safeUID.isEmpty, !safeConvID.isEmpty else {
             // print("DEBUG: Firebase - Cannot setup session with empty IDs")
@@ -87,11 +87,11 @@ class FirebaseManager {
         sessionRef.observe(.childAdded) { snapshot, _ in
             if var value = snapshot.value as? [String: Any] {
                 // Decrypt PII
-                if let encryptedText = value["text"] as? String, let decryptedText = CryptoHelper.decrypt(encryptedText) {
-                    value["text"] = decryptedText
+                if let encryptedText = value["text"] as? String {
+                    value["text"] = CryptoHelper.decrypt(encryptedText) ?? ""
                 }
-                if let encryptedSender = value["sender"] as? String, let decryptedSender = CryptoHelper.decrypt(encryptedSender) {
-                    value["sender"] = decryptedSender
+                if let encryptedSender = value["sender"] as? String {
+                    value["sender"] = CryptoHelper.decrypt(encryptedSender) ?? ""
                 }
                 
                 completion(value)
@@ -101,8 +101,8 @@ class FirebaseManager {
     
     func send(text: String, sender: String, senderID: String) {
         let dict: [String: Any] = [
-            "text": CryptoHelper.encrypt(text) ?? text,
-            "sender": CryptoHelper.encrypt(sender) ?? sender,
+            "text": CryptoHelper.encrypt(text) ?? "",
+            "sender": CryptoHelper.encrypt(sender) ?? "",
             "senderID": senderID,
             "timestamp": ServerValue.timestamp()
         ]
@@ -117,15 +117,15 @@ class FirebaseManager {
         guard let myUID = currentUID else { return }
         
         let linkData: [String: Any] = [
-            "id": conversationID,
-            "title": CryptoHelper.encrypt(conversationTitle) ?? conversationTitle,
+            "id": CryptoHelper.encrypt(conversationID) ?? "",
+            "title": CryptoHelper.encrypt(conversationTitle) ?? "",
             "isJoined": true,
             "sourceHostUID": hostUID, // Pointer back to the host's folder
             "lastUpdated": ServerValue.timestamp()
         ]
         
-        let safeMyUID = sanitizeKey(myUID)
-        let safeConvID = sanitizeKey(conversationID)
+        let safeMyUID = CryptoHelper.hashIdentifier(myUID)
+        let safeConvID = CryptoHelper.hashIdentifier(conversationID)
         
         // Save to the JOINER'S personal node: users/{joinerUID}/conversations/{roomID}
         databaseRef.child("users").child(safeMyUID).child("conversations").child(safeConvID).updateChildValues(linkData)
@@ -135,14 +135,14 @@ class FirebaseManager {
     
     func saveConversationMetadata(_ conversation: Conversation) {
         guard let uid = currentUID else { return }
-        let safeUID = sanitizeKey(uid)
-        let safeConvID = sanitizeKey(conversation.id)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
+        let safeConvID = CryptoHelper.hashIdentifier(conversation.id)
         
         let metadata: [String: Any] = [
-            "id": conversation.id,
-            "title": CryptoHelper.encrypt(conversation.title) ?? conversation.title,
-            "details": CryptoHelper.encrypt(conversation.details) ?? conversation.details,
-            "category": CryptoHelper.encrypt(conversation.category) ?? conversation.category,
+            "id": CryptoHelper.encrypt(conversation.id) ?? "",
+            "title": CryptoHelper.encrypt(conversation.title) ?? "",
+            "details": CryptoHelper.encrypt(conversation.details) ?? "",
+            "category": CryptoHelper.encrypt(conversation.category) ?? "",
             "icon": conversation.icon,
             "date": conversation.date,
             "startTime": conversation.startTime,
@@ -158,8 +158,8 @@ class FirebaseManager {
     /// NEW: Deletes conversation metadata from Firebase to ensure permanent deletion.
     func deleteConversationMetadata(convoID: String) {
         guard let uid = currentUID else { return }
-        let safeUID = sanitizeKey(uid)
-        let safeConvID = sanitizeKey(convoID)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
+        let safeConvID = CryptoHelper.hashIdentifier(convoID)
         databaseRef.child("users").child(safeUID).child("conversations").child(safeConvID).removeValue()
         // Also remove from the "history" node used for full transcripts
         databaseRef.child("users").child(safeUID).child("history").child(safeConvID).removeValue()
@@ -168,8 +168,8 @@ class FirebaseManager {
     /// NEW: Deletes a Quick Action from Firebase.
     func deleteQuickAction(actionID: String) {
         guard let uid = currentUID else { return }
-        let safeUID = sanitizeKey(uid)
-        let safeCode = sanitizeKey(actionID)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
+        let safeCode = CryptoHelper.hashIdentifier(actionID)
         
         // 1. Remove from global registry
         databaseRef.child("quick_actions").child(safeCode).removeValue()
@@ -193,15 +193,15 @@ class FirebaseManager {
     /// Saves a COMPLETE conversation including all messages and participants to history.
     func saveFullConversation(_ conversation: Conversation) {
         guard let uid = currentUID else { return }
-        let safeUID = sanitizeKey(uid)
-        let safeConvID = sanitizeKey(conversation.id)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
+        let safeConvID = CryptoHelper.hashIdentifier(conversation.id)
         
         // 1. Prepare Metadata
         var metadata: [String: Any] = [
-            "id": conversation.id,
-            "title": CryptoHelper.encrypt(conversation.title) ?? conversation.title,
-            "details": CryptoHelper.encrypt(conversation.details) ?? conversation.details,
-            "category": CryptoHelper.encrypt(conversation.category) ?? conversation.category,
+            "id": CryptoHelper.encrypt(conversation.id) ?? "",
+            "title": CryptoHelper.encrypt(conversation.title) ?? "",
+            "details": CryptoHelper.encrypt(conversation.details) ?? "",
+            "category": CryptoHelper.encrypt(conversation.category) ?? "",
             "icon": conversation.icon,
             "date": conversation.date,
             "startTime": conversation.startTime,
@@ -216,7 +216,7 @@ class FirebaseManager {
         }
         
         if let notes = conversation.notes {
-            metadata["notes"] = CryptoHelper.encrypt(notes) ?? notes
+            metadata["notes"] = CryptoHelper.encrypt(notes) ?? ""
         }
         
         // 2. Prepare Participants
@@ -224,8 +224,8 @@ class FirebaseManager {
         if let participants = conversation.participants {
             for participant in participants {
                 participantsDict[participant.id.uuidString] = [
-                    "name": CryptoHelper.encrypt(participant.name) ?? participant.name,
-                    "summary": CryptoHelper.encrypt(participant.summary) ?? participant.summary,
+                    "name": CryptoHelper.encrypt(participant.name) ?? "",
+                    "summary": CryptoHelper.encrypt(participant.summary) ?? "",
                     "image": participant.image
                 ]
             }
@@ -236,8 +236,8 @@ class FirebaseManager {
         if let messages = conversation.messages {
             for message in messages {
                 messagesDict[message.id.uuidString] = [
-                    "text": CryptoHelper.encrypt(message.text) ?? message.text,
-                    "senderName": CryptoHelper.encrypt(message.senderName) ?? message.senderName,
+                    "text": CryptoHelper.encrypt(message.text) ?? "",
+                    "senderName": CryptoHelper.encrypt(message.senderName) ?? "",
                     "senderId": message.senderId,
                     "isIncoming": message.isIncoming,
                     "isHighlighted": message.isHighlighted,
@@ -267,8 +267,8 @@ class FirebaseManager {
     
     /// Restores full conversation history (messages + participants) for a given ID
     func fetchFullConversation(uid: String, conversationID: String, completion: @escaping ([String: Any]?) -> Void) {
-        let safeUID = sanitizeKey(uid)
-        let safeConvID = sanitizeKey(conversationID)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
+        let safeConvID = CryptoHelper.hashIdentifier(conversationID)
         databaseRef.child("users").child(safeUID).child("history").child(safeConvID).observeSingleEvent(of: .value) { snapshot in
             guard var data = snapshot.value as? [String: Any] else {
                 completion(nil)
@@ -276,18 +276,19 @@ class FirebaseManager {
             }
             
             if var metadata = data["metadata"] as? [String: Any] {
-                if let t = metadata["title"] as? String { metadata["title"] = CryptoHelper.decrypt(t) ?? t }
-                if let d = metadata["details"] as? String { metadata["details"] = CryptoHelper.decrypt(d) ?? d }
-                if let c = metadata["category"] as? String { metadata["category"] = CryptoHelper.decrypt(c) ?? c }
-                if let l = metadata["location"] as? String { metadata["location"] = CryptoHelper.decrypt(l) ?? l }
-                if let n = metadata["notes"] as? String { metadata["notes"] = CryptoHelper.decrypt(n) ?? n }
+                if let id = metadata["id"] as? String { metadata["id"] = CryptoHelper.decrypt(id) ?? "" }
+                if let t = metadata["title"] as? String { metadata["title"] = CryptoHelper.decrypt(t) ?? "" }
+                if let d = metadata["details"] as? String { metadata["details"] = CryptoHelper.decrypt(d) ?? "" }
+                if let c = metadata["category"] as? String { metadata["category"] = CryptoHelper.decrypt(c) ?? "" }
+                if let l = metadata["location"] as? String { metadata["location"] = CryptoHelper.decrypt(l) ?? "" }
+                if let n = metadata["notes"] as? String { metadata["notes"] = CryptoHelper.decrypt(n) ?? "" }
                 data["metadata"] = metadata
             }
             
             if var participants = data["participants"] as? [String: [String: Any]] {
                 for (key, var p) in participants {
-                    if let n = p["name"] as? String { p["name"] = CryptoHelper.decrypt(n) ?? n }
-                    if let s = p["summary"] as? String { p["summary"] = CryptoHelper.decrypt(s) ?? s }
+                    if let n = p["name"] as? String { p["name"] = CryptoHelper.decrypt(n) ?? "" }
+                    if let s = p["summary"] as? String { p["summary"] = CryptoHelper.decrypt(s) ?? "" }
                     participants[key] = p
                 }
                 data["participants"] = participants
@@ -295,8 +296,8 @@ class FirebaseManager {
             
             if var messages = data["messages"] as? [String: [String: Any]] {
                 for (key, var m) in messages {
-                    if let t = m["text"] as? String { m["text"] = CryptoHelper.decrypt(t) ?? t }
-                    if let sn = m["senderName"] as? String { m["senderName"] = CryptoHelper.decrypt(sn) ?? sn }
+                    if let t = m["text"] as? String { m["text"] = CryptoHelper.decrypt(t) ?? "" }
+                    if let sn = m["senderName"] as? String { m["senderName"] = CryptoHelper.decrypt(sn) ?? "" }
                     messages[key] = m
                 }
                 data["messages"] = messages
@@ -312,19 +313,18 @@ class FirebaseManager {
     }
     
     // MARK: - Quick Action Sync Integration
-    func saveQuickActionMetadata(_ action: RoutineConversation, hostUID: String) {
-        let safeHost = sanitizeKey(hostUID)
+    func saveQuickActionMetadata(_ action: RoutineConversation, hostUID: String) {        let safeHost = CryptoHelper.hashIdentifier(hostUID)
         guard let code = action.roomCode else { return }
-        let safeCode = sanitizeKey(code)
+        let safeCode = CryptoHelper.hashIdentifier(code)
         
         let metadata: [String: Any] = [
-            "id": action.id,
-            "categoryTitle": CryptoHelper.encrypt(action.categoryTitle) ?? action.categoryTitle,
-            "conversationTopic": CryptoHelper.encrypt(action.conversationTopic) ?? action.conversationTopic,
+            "id": CryptoHelper.encrypt(action.id) ?? "",
+            "categoryTitle": CryptoHelper.encrypt(action.categoryTitle) ?? "",
+            "conversationTopic": CryptoHelper.encrypt(action.conversationTopic) ?? "",
             "startTime": action.startTime,
             "status": action.status,
-            "roomCode": code,
-            "hostUID": safeHost,
+            "roomCode": CryptoHelper.encrypt(code) ?? "",
+            "hostUID": safeHost, // Host UID is hashed so this doesn't expose PII,
             "iconName": action.iconName,
             "topicImage": action.topicImage,
             "timeImage": action.timeImage,
@@ -344,7 +344,7 @@ class FirebaseManager {
         
         // 3. Save to Participants' nodes so they can observe it (by name)
         for participant in action.participantNames {
-            let safeParticipant = sanitizeKey(participant.trimmingCharacters(in: .whitespacesAndNewlines))
+            let safeParticipant = CryptoHelper.hashIdentifier(participant.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
             if !safeParticipant.isEmpty {
                 databaseRef.child("shared_quick_actions").child(safeParticipant).child(safeCode).setValue(metadata)
             }
@@ -355,7 +355,7 @@ class FirebaseManager {
         // Helper to perform the actual write to a discovered UID
         let syncToActionPersonalNode: (String?) -> Void = { [weak self] uid in
             guard let self = self, let discoveredUID = uid else { return }
-            let safeParticipantUID = self.sanitizeKey(discoveredUID)
+            let safeParticipantUID = CryptoHelper.hashIdentifier(discoveredUID)
             self.databaseRef.child("users").child(safeParticipantUID).child("quick_actions").child(safeCode).setValue(metadata)
         }
         
@@ -379,14 +379,16 @@ class FirebaseManager {
     
     // Observes Quick Actions assigned specifically to the user (by checking their name against the shared node).
     func observeSharedQuickActions(forUserName userName: String, onAddedOrChanged: @escaping ([String: Any]) -> Void, onRemoved: @escaping (String) -> Void) {
-        let safeName = sanitizeKey(userName.trimmingCharacters(in: .whitespacesAndNewlines))
+        let safeName = CryptoHelper.hashIdentifier(userName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
         guard !safeName.isEmpty else { return }
         
         let decryptAction: ([String: Any]) -> [String: Any] = { value in
             var action = value
-            if let ct = action["categoryTitle"] as? String { action["categoryTitle"] = CryptoHelper.decrypt(ct) ?? ct }
-            if let convT = action["conversationTopic"] as? String { action["conversationTopic"] = CryptoHelper.decrypt(convT) ?? convT }
-            if let desc = action["description"] as? String { action["description"] = CryptoHelper.decrypt(desc) ?? desc }
+            if let id = action["id"] as? String { action["id"] = CryptoHelper.decrypt(id) ?? "" }
+            if let rc = action["roomCode"] as? String { action["roomCode"] = CryptoHelper.decrypt(rc) ?? "" }
+            if let ct = action["categoryTitle"] as? String { action["categoryTitle"] = CryptoHelper.decrypt(ct) ?? "" }
+            if let convT = action["conversationTopic"] as? String { action["conversationTopic"] = CryptoHelper.decrypt(convT) ?? "" }
+            if let desc = action["description"] as? String { action["description"] = CryptoHelper.decrypt(desc) ?? "" }
             if let pNames = action["participantNames"] as? [String] { action["participantNames"] = pNames.compactMap { CryptoHelper.decrypt($0) } }
             if let pEmails = action["participantEmails"] as? [String] { action["participantEmails"] = pEmails.compactMap { CryptoHelper.decrypt($0) } }
             if let pPhones = action["participantPhones"] as? [String] { action["participantPhones"] = pPhones.compactMap { CryptoHelper.decrypt($0) } }
@@ -414,26 +416,29 @@ class FirebaseManager {
     
     /// Mark a user as "online" in a Quick Action room
     func setPresence(roomCode: String, userName: String) {
-        let safeCode = sanitizeKey(roomCode)
-        let safeName = sanitizeKey(userName)
-        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeName).setValue(true)
+        let safeCode = CryptoHelper.hashIdentifier(roomCode)
+        let safeNameHash = CryptoHelper.hashIdentifier(userName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+        let encryptedName = CryptoHelper.encrypt(userName) ?? ""
+        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeNameHash).setValue(encryptedName)
     }
     
     /// Remove a user's presence when they leave the session
     func removePresence(roomCode: String, userName: String) {
-        let safeCode = sanitizeKey(roomCode)
-        let safeName = sanitizeKey(userName)
-        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeName).removeValue()
+        let safeCode = CryptoHelper.hashIdentifier(roomCode)
+        let safeNameHash = CryptoHelper.hashIdentifier(userName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+        databaseRef.child("quick_actions").child(safeCode).child("presence").child(safeNameHash).removeValue()
     }
     
-    /// Observe presence in real time — returns a Set of online sanitized user names
+    /// Observe presence in real time — returns a Set of online decrypted user names
     func observePresence(roomCode: String, completion: @escaping (Set<String>) -> Void) {
-        let safeCode = sanitizeKey(roomCode)
+        let safeCode = CryptoHelper.hashIdentifier(roomCode)
         databaseRef.child("quick_actions").child(safeCode).child("presence").observe(.value) { snapshot in
             var onlineNames = Set<String>()
             if let dict = snapshot.value as? [String: Any] {
-                for key in dict.keys {
-                    onlineNames.insert(key)
+                for (_, value) in dict {
+                    if let encryptedName = value as? String, let decryptedName = CryptoHelper.decrypt(encryptedName) {
+                        onlineNames.insert(decryptedName)
+                    }
                 }
             }
             completion(onlineNames)
@@ -442,21 +447,25 @@ class FirebaseManager {
     
     /// Stop observing presence for a room
     func stopObservingPresence(roomCode: String) {
-        let safeCode = sanitizeKey(roomCode)
+        let safeCode = CryptoHelper.hashIdentifier(roomCode)
         databaseRef.child("quick_actions").child(safeCode).child("presence").removeAllObservers()
     }
     
     // MARK: - Authentication
     func registerRoom(code: String, hostUID: String) {
-        let safeCode = sanitizeKey(code)
-        databaseRef.child("room_registry").child(safeCode).setValue(["hostUID": hostUID])
+        let safeCode = CryptoHelper.hashIdentifier(code)
+        databaseRef.child("room_registry").child(safeCode).setValue(["hostUID": CryptoHelper.encrypt(hostUID) ?? ""])
     }
     
     /// Guest calls this to find the hostUID using only the Room Code
     func findHostID(for code: String, completion: @escaping (String?) -> Void) {
-        let safeCode = sanitizeKey(code)
+        let safeCode = CryptoHelper.hashIdentifier(code)
         databaseRef.child("room_registry").child(safeCode).child("hostUID").observeSingleEvent(of: .value) { snapshot in
-            completion(snapshot.value as? String)
+            if let encryptedUID = snapshot.value as? String {
+                completion(CryptoHelper.decrypt(encryptedUID))
+            } else {
+                completion(nil)
+            }
         }
     }
     
@@ -511,14 +520,14 @@ class FirebaseManager {
                     let email = firebaseUser.email ?? ""
                     
                     let userProfile: [String: Any] = [
-                        "firstName": CryptoHelper.encrypt(firstName) ?? firstName,
-                        "lastName": CryptoHelper.encrypt(lastName) ?? lastName,
-                        "email": CryptoHelper.encrypt(email) ?? email,
+                        "firstName": CryptoHelper.encrypt(firstName) ?? "",
+                        "lastName": CryptoHelper.encrypt(lastName) ?? "",
+                        "email": CryptoHelper.encrypt(email) ?? "",
                         "phoneNumber": CryptoHelper.encrypt(firebaseUser.phoneNumber ?? "") ?? "",
                         "createdAt": ServerValue.timestamp()
                     ]
                     
-                    let safeUID = self.sanitizeKey(firebaseUser.uid)
+                    let safeUID = CryptoHelper.hashIdentifier(firebaseUser.uid)
                     let safeEmail = CryptoHelper.hashIdentifier(email.lowercased())
                     let safeFullName = CryptoHelper.hashIdentifier(fullName.lowercased())
                     let safePhone = CryptoHelper.hashIdentifier(firebaseUser.phoneNumber ?? "")
@@ -528,13 +537,13 @@ class FirebaseManager {
                     
                     // 2. Update all lookup indices
                     if !email.isEmpty {
-                        self.databaseRef.child("users_by_email").child(safeEmail).setValue(firebaseUser.uid)
+                        self.databaseRef.child("users_by_email").child(safeEmail).setValue(CryptoHelper.encrypt(firebaseUser.uid) ?? "")
                     }
                     if !fullName.isEmpty {
-                        self.databaseRef.child("users_by_fullname").child(safeFullName).setValue(firebaseUser.uid)
+                        self.databaseRef.child("users_by_fullname").child(safeFullName).setValue(CryptoHelper.encrypt(firebaseUser.uid) ?? "")
                     }
                     if !(firebaseUser.phoneNumber ?? "").isEmpty {
-                        self.databaseRef.child("users_by_phone").child(safePhone).setValue(firebaseUser.uid)
+                        self.databaseRef.child("users_by_phone").child(safePhone).setValue(CryptoHelper.encrypt(firebaseUser.uid) ?? "")
                     }
                 }
                 
@@ -566,14 +575,14 @@ class FirebaseManager {
             let phoneNumber = details["phoneNumber"] ?? ""
             
             let userProfile: [String: Any] = [
-                "firstName": CryptoHelper.encrypt(firstName) ?? firstName,
-                "lastName": CryptoHelper.encrypt(lastName) ?? lastName,
-                "email": CryptoHelper.encrypt(email) ?? email,
-                "phoneNumber": CryptoHelper.encrypt(phoneNumber) ?? phoneNumber,
+                "firstName": CryptoHelper.encrypt(firstName) ?? "",
+                "lastName": CryptoHelper.encrypt(lastName) ?? "",
+                "email": CryptoHelper.encrypt(email) ?? "",
+                "phoneNumber": CryptoHelper.encrypt(phoneNumber) ?? "",
                 "createdAt": ServerValue.timestamp()
             ]
             
-            let safeUID = self.sanitizeKey(user.uid)
+            let safeUID = CryptoHelper.hashIdentifier(user.uid)
             let safeEmail = CryptoHelper.hashIdentifier(email.lowercased())
             let safeFullName = CryptoHelper.hashIdentifier(fullName.lowercased())
             let safePhone = CryptoHelper.hashIdentifier(phoneNumber)
@@ -582,9 +591,9 @@ class FirebaseManager {
             self.databaseRef.child("users").child(safeUID).child("profile").setValue(userProfile)
             
             // 2. Update lookup indices (Email is key for Account, but we index all for sync)
-            if !email.isEmpty { self.databaseRef.child("users_by_email").child(safeEmail).setValue(user.uid) }
-            if !fullName.isEmpty { self.databaseRef.child("users_by_fullname").child(safeFullName).setValue(user.uid) }
-            if !phoneNumber.isEmpty { self.databaseRef.child("users_by_phone").child(safePhone).setValue(user.uid) }
+            if !email.isEmpty { self.databaseRef.child("users_by_email").child(safeEmail).setValue(CryptoHelper.encrypt(user.uid) ?? "") }
+            if !fullName.isEmpty { self.databaseRef.child("users_by_fullname").child(safeFullName).setValue(CryptoHelper.encrypt(user.uid) ?? "") }
+            if !phoneNumber.isEmpty { self.databaseRef.child("users_by_phone").child(safePhone).setValue(CryptoHelper.encrypt(user.uid) ?? "") }
             
             completion(.success(user))
         }
@@ -612,13 +621,13 @@ class FirebaseManager {
     
     // MARK: - User Profile Fetching
     func fetchUserProfile(uid: String, completion: @escaping ([String: Any]?) -> Void) {
-        let safeUID = sanitizeKey(uid)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
         databaseRef.child("users").child(safeUID).child("profile").observeSingleEvent(of: .value) { snapshot in
             if var profileData = snapshot.value as? [String: Any] {
-                if let f = profileData["firstName"] as? String { profileData["firstName"] = CryptoHelper.decrypt(f) ?? f }
-                if let l = profileData["lastName"] as? String { profileData["lastName"] = CryptoHelper.decrypt(l) ?? l }
-                if let e = profileData["email"] as? String { profileData["email"] = CryptoHelper.decrypt(e) ?? e }
-                if let p = profileData["phoneNumber"] as? String { profileData["phoneNumber"] = CryptoHelper.decrypt(p) ?? p }
+                if let f = profileData["firstName"] as? String { profileData["firstName"] = CryptoHelper.decrypt(f) ?? "" }
+                if let l = profileData["lastName"] as? String { profileData["lastName"] = CryptoHelper.decrypt(l) ?? "" }
+                if let e = profileData["email"] as? String { profileData["email"] = CryptoHelper.decrypt(e) ?? "" }
+                if let p = profileData["phoneNumber"] as? String { profileData["phoneNumber"] = CryptoHelper.decrypt(p) ?? "" }
                 completion(profileData)
             } else {
                 completion(nil)
@@ -628,15 +637,16 @@ class FirebaseManager {
     
     // MARK: - Conversation History Fetch (Login Restore)
     func fetchConversationHistory(uid: String, completion: @escaping ([[String: Any]]) -> Void) {
-        let safeUID = sanitizeKey(uid)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
         databaseRef.child("users").child(safeUID).child("conversations").observeSingleEvent(of: .value) { snapshot in
             var conversations: [[String: Any]] = []
             if let dict = snapshot.value as? [String: Any] {
                 for (_, value) in dict {
                     if var convo = value as? [String: Any] {
-                        if let t = convo["title"] as? String { convo["title"] = CryptoHelper.decrypt(t) ?? t }
-                        if let d = convo["details"] as? String { convo["details"] = CryptoHelper.decrypt(d) ?? d }
-                        if let c = convo["category"] as? String { convo["category"] = CryptoHelper.decrypt(c) ?? c }
+                        if let id = convo["id"] as? String { convo["id"] = CryptoHelper.decrypt(id) ?? "" }
+                        if let t = convo["title"] as? String { convo["title"] = CryptoHelper.decrypt(t) ?? "" }
+                        if let d = convo["details"] as? String { convo["details"] = CryptoHelper.decrypt(d) ?? "" }
+                        if let c = convo["category"] as? String { convo["category"] = CryptoHelper.decrypt(c) ?? "" }
                         conversations.append(convo)
                     }
                 }
@@ -647,15 +657,17 @@ class FirebaseManager {
     
     // MARK: - Quick Actions Fetch (Login Restore)
     func fetchQuickActions(uid: String, completion: @escaping ([[String: Any]]) -> Void) {
-        let safeUID = sanitizeKey(uid)
+        let safeUID = CryptoHelper.hashIdentifier(uid)
         databaseRef.child("users").child(safeUID).child("quick_actions").observeSingleEvent(of: .value) { snapshot in
             var actions: [[String: Any]] = []
             if let dict = snapshot.value as? [String: Any] {
                 for (_, value) in dict {
                     if var action = value as? [String: Any] {
-                        if let ct = action["categoryTitle"] as? String { action["categoryTitle"] = CryptoHelper.decrypt(ct) ?? ct }
-                        if let convT = action["conversationTopic"] as? String { action["conversationTopic"] = CryptoHelper.decrypt(convT) ?? convT }
-                        if let desc = action["description"] as? String { action["description"] = CryptoHelper.decrypt(desc) ?? desc }
+                        if let id = action["id"] as? String { action["id"] = CryptoHelper.decrypt(id) ?? "" }
+                        if let rc = action["roomCode"] as? String { action["roomCode"] = CryptoHelper.decrypt(rc) ?? "" }
+                        if let ct = action["categoryTitle"] as? String { action["categoryTitle"] = CryptoHelper.decrypt(ct) ?? "" }
+                        if let convT = action["conversationTopic"] as? String { action["conversationTopic"] = CryptoHelper.decrypt(convT) ?? "" }
+                        if let desc = action["description"] as? String { action["description"] = CryptoHelper.decrypt(desc) ?? "" }
                         if let pNames = action["participantNames"] as? [String] { action["participantNames"] = pNames.compactMap { CryptoHelper.decrypt($0) } }
                         if let pEmails = action["participantEmails"] as? [String] { action["participantEmails"] = pEmails.compactMap { CryptoHelper.decrypt($0) } }
                         if let pPhones = action["participantPhones"] as? [String] { action["participantPhones"] = pPhones.compactMap { CryptoHelper.decrypt($0) } }
@@ -673,21 +685,33 @@ class FirebaseManager {
     func lookupUID(byEmail email: String, completion: @escaping (String?) -> Void) {
         let safeEmail = CryptoHelper.hashIdentifier(email.lowercased().trimmingCharacters(in: .whitespacesAndNewlines))
         databaseRef.child("users_by_email").child(safeEmail).observeSingleEvent(of: .value) { snapshot in
-            completion(snapshot.value as? String)
+            if let encryptedUID = snapshot.value as? String {
+                completion(CryptoHelper.decrypt(encryptedUID))
+            } else {
+                completion(nil)
+            }
         }
     }
     
     func lookupUID(byPhone phone: String, completion: @escaping (String?) -> Void) {
         let safePhone = CryptoHelper.hashIdentifier(phone.trimmingCharacters(in: .whitespacesAndNewlines))
         databaseRef.child("users_by_phone").child(safePhone).observeSingleEvent(of: .value) { snapshot in
-            completion(snapshot.value as? String)
+            if let encryptedUID = snapshot.value as? String {
+                completion(CryptoHelper.decrypt(encryptedUID))
+            } else {
+                completion(nil)
+            }
         }
     }
     
     func lookupUID(byFullName name: String, completion: @escaping (String?) -> Void) {
         let safeName = CryptoHelper.hashIdentifier(name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines))
         databaseRef.child("users_by_fullname").child(safeName).observeSingleEvent(of: .value) { snapshot in
-            completion(snapshot.value as? String)
+            if let encryptedUID = snapshot.value as? String {
+                completion(CryptoHelper.decrypt(encryptedUID))
+            } else {
+                completion(nil)
+            }
         }
     }
     
@@ -725,13 +749,35 @@ class FirebaseManager {
 // MARK: - CryptoHelper for Client-Side Encryption (CSE)
 struct CryptoHelper {
     
-    // A 256-bit symmetric key used across the app for Firebase Payload CSE.
-    private static let symmetricKeyString = "f8a73b2a0c6495123d4e9f78ad5b22b10a9c8f6e7d4a3b2c1f9e8d7a6b5c4d3e"
-    
+    /// Returns the shared symmetric key.
+    /// It attempts to read the key from a `.env` file in the app bundle.
     private static var sharedKey: SymmetricKey {
-        let keyData = Data(hexString: symmetricKeyString)!
+        let defaultKey = "f8a73b2a0c6495123d4e9f78ad5b22b10a9c8f6e7d4a3b2c1f9e8d7a6b5c4d3e"
+        var keyString = defaultKey
+        
+        // Attempt to read from .env file
+        if let path = Bundle.main.path(forResource: ".env", ofType: nil) ?? Bundle.main.path(forResource: "env", ofType: "txt") {
+            do {
+                let content = try String(contentsOfFile: path, encoding: .utf8)
+                for line in content.components(separatedBy: .newlines) {
+                    let parts = line.split(separator: "=", maxSplits: 1).map(String.init)
+                    if parts.count == 2, parts[0].trimmingCharacters(in: .whitespaces) == "SYMMETRIC_KEY" {
+                        keyString = parts[1].trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "")
+                        break
+                    }
+                }
+            } catch {
+                print("CryptoHelper: Could not read .env file.")
+            }
+        } else {
+            print("CryptoHelper: .env file not found in bundle, using fallback key.")
+        }
+        
+        let keyData = Data(hexString: keyString)!
         return SymmetricKey(data: keyData)
     }
+    
+    // MARK: - Encryption & Decryption
     
     static func encrypt(_ plainText: String?) -> String? {
         guard let plainText = plainText, let data = plainText.data(using: .utf8) else { return nil }
@@ -752,9 +798,11 @@ struct CryptoHelper {
             return String(data: decryptedData, encoding: .utf8)
         } catch {
             print("CryptoHelper: Decryption failed - \(error.localizedDescription)")
-            return base64String
+            return nil
         }
     }
+    
+    // MARK: - Hashing (One-way)
     
     static func hashIdentifier(_ identifier: String) -> String {
         let data = Data(identifier.utf8)
