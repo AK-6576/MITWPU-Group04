@@ -2,10 +2,11 @@
 //  HomeViewController.swift
 //  ANSD_APP
 //
-//  Created by Daiwiik Harihar on 22/11/25.
+//  Created by MIT-WPU Group 4 on 15/02/26.
 //  Copyright © 2025 MIT-WPU Group 4. All rights reserved.
 //
 
+import TipKit
 import UIKit
 import UserNotifications
 import Foundation
@@ -20,6 +21,18 @@ class HomeViewController: UIViewController {
     var recentHistory: [Conversation] = []
     
     private let profileButton = UIButton(type: .custom)
+
+    // MARK: - TipKit
+    // Tip instances (one per UI feature on the Home Screen)
+    private let profileTip         = ProfileButtonTip()
+    private let quickCaptionTip    = QuickCaptioningTip()
+    private let quickActionsTip    = QuickActionsTip()
+    private let newConvoTip        = NewConversationTip()
+    private let joinConvoTip       = JoinConversationTip()
+    private let viewConvosTip      = ViewConversationsTip()
+
+    /// Flag: tips have been presented for this installation
+    private static let tipsShownKey = "home_tips_shown_v1"
     
     // MARK: - View Lifecycle
     
@@ -28,6 +41,7 @@ class HomeViewController: UIViewController {
         setupTableView()
         setupProfileButton()
         loadSavedProfileImage()
+        configureTipKit()      // ← TipKit: configure once per install
         
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
@@ -38,13 +52,29 @@ class HomeViewController: UIViewController {
         
         navigationItem.title = ""
         navigationItem.hidesBackButton = true
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         
         // RESTORED: Observers
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileImageUpdate(_:)), name: NSNotification.Name("ProfileImageUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleProfileNameUpdate(_:)), name: NSNotification.Name("ProfileNameUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ActionsUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataUpdate), name: NSNotification.Name("ConversationHistoryUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(triggerWalkthrough), name: NSNotification.Name("ReplayHomeTips"), object: nil)
+    }
+    
+    @objc private func triggerWalkthrough() {
+        presentHomeTipsIfNeeded()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // Wait for notification authorization before potentially showing tips.
+        // This ensures the tips don't appear in the background while the OS permission alert is up.
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] _, _ in
+            DispatchQueue.main.async {
+                self?.presentHomeTipsIfNeeded()
+            }
+        }
     }
     
     @objc func handleDataUpdate() {
@@ -195,6 +225,137 @@ class HomeViewController: UIViewController {
         if let data = UserDefaults.standard.data(forKey: "profileImage"), let image = UIImage(data: data) {
             profileButton.setImage(image, for: .normal)
         }
+    }
+
+    // MARK: - TipKit Configuration & Presentation
+
+    /// Call once at app launch to configure the TipKit data store.
+    private func configureTipKit() {
+        do {
+            // In production: Tips.configure()
+            // During development/testing you can use:
+            // try Tips.resetDatastore()           // ← uncomment to reset tips during QA
+            // try Tips.configure([.displayFrequency(.immediate)])  // ← show all tips immediately for testing
+            try Tips.configure()
+        } catch {
+            print("HomeTips: TipKit configuration failed — \(error)")
+        }
+    }
+
+    /// Presents the ordered tip sequence only on the user's first session after account creation.
+    private func presentHomeTipsIfNeeded() {
+        // 1. If the key doesn't exist, check if the user is already authenticated.
+        // If they are, they are an existing user (e.g. re-install or update).
+        if UserDefaults.standard.object(forKey: Self.tipsShownKey) == nil {
+            if Auth.auth().currentUser != nil {
+                UserDefaults.standard.set(true, forKey: Self.tipsShownKey)
+                return
+            }
+        }
+
+        // 2. Only show if explicitly set to false (by VoiceCalibration flow or Replay trigger)
+        guard UserDefaults.standard.bool(forKey: Self.tipsShownKey) == false else { return }
+        
+        // 3. Mark as shown immediately to prevent double-firing
+        UserDefaults.standard.set(true, forKey: Self.tipsShownKey)
+
+        // Present tips as a sequenced walk-through
+        Task { @MainActor in
+            // Step 1: Profile
+            if let barItem = navigationItem.rightBarButtonItem, let anchorView = barItem.customView {
+                let continued = await presentTipStep(profileTip, source: anchorView, tint: .systemIndigo)
+                if !continued { return }
+            }
+            
+            try? await Task.sleep(for: .seconds(0.5))
+
+            // Step 2: Quick Captioning
+            if let headerView = tableView.tableHeaderView as? GreetingViewCell,
+               let quickView = headerView.quickConvoView {
+                let continued = await presentTipStep(quickCaptionTip, source: quickView, tint: .systemBlue, duration: 4.0)
+                if !continued { return }
+            }
+
+            try? await Task.sleep(for: .seconds(0.5))
+
+            // Step 3: New Conversation
+            if let headerView = tableView.tableHeaderView as? GreetingViewCell,
+               let newView = headerView.newConvoView {
+                let continued = await presentTipStep(newConvoTip, source: newView, tint: .systemBlue)
+                if !continued { return }
+            }
+
+            try? await Task.sleep(for: .seconds(0.5))
+            
+            // Step 4: Join Conversation
+            if let headerView = tableView.tableHeaderView as? GreetingViewCell,
+               let joinView = headerView.joinConvoView {
+                let continued = await presentTipStep(joinConvoTip, source: joinView, tint: .systemIndigo)
+                if !continued { return }
+            }
+
+            try? await Task.sleep(for: .seconds(0.5))
+
+            // Step 5: Quick Actions
+            let continuedQA = await presentTipStep(quickActionsTip, source: tableView, tint: .systemOrange, isHeader: true, section: 0)
+            if !continuedQA { return }
+
+            try? await Task.sleep(for: .seconds(0.5))
+
+            // Step 6: History
+            _ = await presentTipStep(viewConvosTip, source: tableView, tint: .systemTeal, isHeader: true, section: 1)
+        }
+    }
+    
+    /// Helper to present a tip and wait for either a timeout or manual dismissal.
+    /// Returns true if the tour should continue, false if the user dismissed it.
+    private func presentTipStep(_ tip: any Tip, source: Any, tint: UIColor, duration: Double = 3.5, isHeader: Bool = false, section: Int = 0) async -> Bool {
+        let popover: TipUIPopoverViewController
+        
+        if let view = source as? UIView {
+            popover = TipUIPopoverViewController(tip, sourceItem: view)
+            if isHeader {
+                popover.popoverPresentationController?.sourceRect = tableView.rectForHeader(inSection: section)
+            }
+        } else if let item = source as? UIBarButtonItem {
+            popover = TipUIPopoverViewController(tip, sourceItem: item)
+        } else {
+            return true
+        }
+        
+        popover.view.tintColor = tint
+        
+        // Present and wait
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            present(popover, animated: true) {
+                continuation.resume()
+            }
+        }
+        
+        // Poll for dismissal or wait for duration
+        let pollCount = Int(duration * 10)
+        for _ in 0..<pollCount {
+            try? await Task.sleep(for: .milliseconds(100))
+            // If user tapped 'X' or outside, the popover will be dismissed
+            if popover.isBeingDismissed || popover.presentingViewController == nil {
+                return false // User dismissed, exit tour
+            }
+        }
+        
+        // Dismiss automatically if still showing
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            popover.dismiss(animated: true) {
+                continuation.resume()
+            }
+        }
+        
+        return true
+    }
+
+    // MARK: - (Debug / QA) Reset Tips — call from Settings screen to replay the tip tour
+    static func resetTips() {
+        UserDefaults.standard.set(false, forKey: tipsShownKey)
+        try? Tips.resetDatastore()
     }
     
 }

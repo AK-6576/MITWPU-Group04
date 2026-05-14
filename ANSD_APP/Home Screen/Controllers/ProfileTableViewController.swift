@@ -149,15 +149,32 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        tableView.deselectRow(at: indexPath, animated: true)
-        
         switch indexPath.section {
         case 2: // Vocal Profile
             if indexPath.row == 0 {
                 handleVocalProfileTap()
             }
+        case 3: // Support
+            if indexPath.row == 0 {
+                handleAppGuideTap()
+            }
         default:
             break
+        }
+    }
+    
+    private func handleAppGuideTap() {
+        // 1. Reset Tips
+        HomeViewController.resetTips()
+        
+        // 2. Navigate back to Home and trigger tips
+        if let nav = navigationController, nav.viewControllers.count > 1 {
+            nav.popViewController(animated: true)
+            NotificationCenter.default.post(name: NSNotification.Name("ReplayHomeTips"), object: nil)
+        } else {
+            dismiss(animated: true) {
+                NotificationCenter.default.post(name: NSNotification.Name("ReplayHomeTips"), object: nil)
+            }
         }
     }
     
@@ -374,6 +391,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         case 0: label.text = "User Details"
         case 1: label.text = "Preferences"
         case 2: label.text = "Vocal Profile"
+        case 3: label.text = "SUPPORT"
         default: return nil
         }
         

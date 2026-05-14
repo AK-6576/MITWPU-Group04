@@ -68,10 +68,10 @@
                                                             <integer key="value" value="20" />
                                                         </userDefinedRuntimeAttribute>
                                                         <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowOpacity">
-                                                            <real key="value" value="0.10000000000000001" />
+                                                            <real key="value" value="0.050000000000000001" />
                                                         </userDefinedRuntimeAttribute>
                                                         <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowRadius">
-                                                            <integer key="value" value="5" />
+                                                            <integer key="value" value="4" />
                                                         </userDefinedRuntimeAttribute>
                                                         <userDefinedRuntimeAttribute type="size" keyPath="layer.shadowOffset">
                                                             <size key="value" width="0.0" height="2" />
@@ -116,10 +116,10 @@
                                                             <integer key="value" value="20" />
                                                         </userDefinedRuntimeAttribute>
                                                         <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowOpacity">
-                                                            <real key="value" value="0.10000000000000001" />
+                                                            <real key="value" value="0.050000000000000001" />
                                                         </userDefinedRuntimeAttribute>
                                                         <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowRadius">
-                                                            <integer key="value" value="5" />
+                                                            <integer key="value" value="4" />
                                                         </userDefinedRuntimeAttribute>
                                                         <userDefinedRuntimeAttribute type="size" keyPath="layer.shadowOffset">
                                                             <size key="value" width="0.0" height="2" />
@@ -183,13 +183,13 @@
                                                     <integer key="value" value="20" />
                                                 </userDefinedRuntimeAttribute>
                                                 <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowOpacity">
-                                                    <real key="value" value="0.20000000000000001" />
+                                                    <real key="value" value="0.050000000000000001" />
                                                 </userDefinedRuntimeAttribute>
                                                 <userDefinedRuntimeAttribute type="number" keyPath="layer.shadowRadius">
-                                                    <integer key="value" value="12" />
+                                                    <integer key="value" value="4" />
                                                 </userDefinedRuntimeAttribute>
                                                 <userDefinedRuntimeAttribute type="size" keyPath="layer.shadowOffset">
-                                                    <size key="value" width="0.0" height="5" />
+                                                    <size key="value" width="0.0" height="2" />
                                                 </userDefinedRuntimeAttribute>
                                                 <userDefinedRuntimeAttribute type="boolean" keyPath="layer.masksToBounds" value="NO" />
                                             </userDefinedRuntimeAttributes>
@@ -211,6 +211,9 @@
                                     </constraints>
                                     <connections>
                                         <outlet property="helloLabel" destination="Owt-G6-KAH" id="W9u-pK-Wnf" />
+                                        <outlet property="joinConvoView" destination="yl2-9K-FxZ" id="tip-join-convo" />
+                                        <outlet property="newConvoView" destination="lfA-v0-jir" id="tip-new-convo" />
+                                        <outlet property="quickConvoView" destination="ylb-ee-DXl" id="tip-quick-convo" />
                                     </connections>
                                 </view>
                                 <prototypes>
@@ -854,6 +857,27 @@
                                                     <autoresizingMask key="autoresizingMask" />
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody" />
                                                     <color key="textColor" systemColor="systemGrayColor" />
+                                                    <nil key="highlightedColor" />
+                                                </label>
+                                            </subviews>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                </cells>
+                            </tableViewSection>
+                            <tableViewSection headerTitle="SUPPORT" id="support-section-id">
+                                <cells>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" reuseIdentifier="AppGuideCell" textLabel="AG-Title-ID" style="IBUITableViewCellStyleDefault" id="AG-Cell-ID">
+                                        <rect key="frame" x="0.0" y="673.33333015441895" width="393" height="51" />
+                                        <autoresizingMask key="autoresizingMask" />
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="AG-Cell-ID" id="AG-ContentView">
+                                            <rect key="frame" x="0.0" y="0.0" width="362.66666666666669" height="51" />
+                                            <autoresizingMask key="autoresizingMask" />
+                                            <subviews>
+                                                <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Feature Guide" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="AG-Title-ID">
+                                                    <rect key="frame" x="20" y="0.0" width="334.66666666666669" height="51" />
+                                                    <autoresizingMask key="autoresizingMask" />
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17" />
+                                                    <nil key="textColor" />
                                                     <nil key="highlightedColor" />
                                                 </label>
                                             </subviews>
