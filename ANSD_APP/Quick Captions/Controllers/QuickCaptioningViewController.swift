@@ -150,14 +150,28 @@ class QuickCaptioningViewController: UIViewController,
     // MARK: - Voice Enrollment
     
     private func promptForEnrollment() {
-        let longerPhrase = """
-        I am speaking to calibrate my voice profile. 
-        This will ensure accurate identification during the session.
-        """
-        let alert = UIAlertController(title: "Voice Calibration", message: "Tap 'Start Recording' and read clearly:\n\n\"\(longerPhrase)\"", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Start Recording", style: .default) { [weak self] _ in self?.runEnrollmentRecording() })
-        alert.addAction(UIAlertAction(title: "Skip", style: .cancel) { [weak self] _ in self?.hasEnrolled = true; self?.startSession() })
+        let message = "We use your voice profile to accurately transcribe your speech and differentiate it from other speakers in a conversation. It's stored securely on your device."
+        let alert = UIAlertController(title: "Voice Calibration", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Start Calibration", style: .default) { [weak self] _ in
+            self?.navigateToVoiceCalibration()
+        })
+        alert.addAction(UIAlertAction(title: "Skip", style: .cancel) { [weak self] _ in
+            self?.hasEnrolled = true
+            self?.startSession()
+        })
         present(alert, animated: true)
+    }
+
+    private func navigateToVoiceCalibration() {
+        let storyboard = UIStoryboard(name: "Onboarding", bundle: nil)
+        if let calibrationVC = storyboard.instantiateViewController(withIdentifier: "VoiceCalibrationViewController") as? VoiceCalibrationViewController {
+            if let nav = self.navigationController {
+                nav.pushViewController(calibrationVC, animated: true)
+            } else {
+                calibrationVC.modalPresentationStyle = .fullScreen
+                self.present(calibrationVC, animated: true)
+            }
+        }
     }
     
     private func runEnrollmentRecording() {

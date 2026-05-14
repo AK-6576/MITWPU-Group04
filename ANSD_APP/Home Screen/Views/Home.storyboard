@@ -653,10 +653,10 @@
         <scene sceneID="h8I-CM-OAq">
             <objects>
                 <tableViewController storyboardIdentifier="ProfileScreen" useStoryboardIdentifierAsRestorationIdentifier="YES" id="IRY-tW-tVq" customClass="ProfileTableViewController" customModule="ANSD_APP" customModuleProvider="target" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="grouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" estimatedSectionHeaderHeight="-1" sectionFooterHeight="18" estimatedSectionFooterHeight="-1" id="2Ib-O3-YJc">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="insetGrouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" estimatedSectionHeaderHeight="-1" sectionFooterHeight="18" estimatedSectionFooterHeight="-1" id="2Ib-O3-YJc">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="793" />
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES" />
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" />
+                        <color key="backgroundColor" systemColor="systemGroupedBackgroundColor" />
                         <view key="tableHeaderView" contentMode="scaleToFill" id="Z5S-gY-ao5">
                             <rect key="frame" x="0.0" y="0.0" width="393" height="200" />
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES" />
@@ -677,7 +677,7 @@
                                     </connections>
                                 </button>
                             </subviews>
-                            <color key="backgroundColor" systemColor="systemBackgroundColor" />
+                            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <constraints>
                                 <constraint firstItem="Y1u-dm-fBA" firstAttribute="centerX" secondItem="Z5S-gY-ao5" secondAttribute="centerX" id="AGB-Uz-Rev" />
                                 <constraint firstItem="Fx9-5H-8Y1" firstAttribute="centerX" secondItem="Z5S-gY-ao5" secondAttribute="centerX" id="BkV-KR-QO2" />
@@ -861,44 +861,7 @@
                                     </tableViewCell>
                                 </cells>
                             </tableViewSection>
-                            <tableViewSection headerTitle="ACCOUNT" id="account-section-id">
-                                <cells>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="ClearDataCell" id="Clear-Data-Cell-ID">
-                                        <rect key="frame" x="0.0" y="729.33333015441895" width="393" height="51" />
-                                        <autoresizingMask key="autoresizingMask" />
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Clear-Data-Cell-ID" id="Clear-Data-ContentView">
-                                            <rect key="frame" x="0.0" y="0.0" width="393" height="51" />
-                                            <autoresizingMask key="autoresizingMask" />
-                                            <subviews>
-                                                <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Clear All Data" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="Clear-Data-Label">
-                                                    <rect key="frame" x="20" y="0.0" width="313" height="44" />
-                                                    <autoresizingMask key="autoresizingMask" />
-                                                    <fontDescription key="fontDescription" style="UICTFontTextStyleBody" />
-                                                    <color key="textColor" systemColor="systemRedColor" />
-                                                    <nil key="highlightedColor" />
-                                                </label>
-                                            </subviews>
-                                        </tableViewCellContentView>
-                                    </tableViewCell>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="LogoutCell" id="LogoutCell">
-                                        <rect key="frame" x="0.0" y="780.33333015441895" width="393" height="51" />
-                                        <autoresizingMask key="autoresizingMask" />
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="LogoutCell" id="LogoutCellContent">
-                                            <rect key="frame" x="0.0" y="0.0" width="393" height="51" />
-                                            <autoresizingMask key="autoresizingMask" />
-                                            <subviews>
-                                                <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Log Out" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="LogoutTextLabel">
-                                                    <rect key="frame" x="20" y="0.0" width="313" height="44" />
-                                                    <autoresizingMask key="autoresizingMask" />
-                                                    <fontDescription key="fontDescription" style="UICTFontTextStyleBody" />
-                                                    <color key="textColor" systemColor="systemRedColor" />
-                                                    <nil key="highlightedColor" />
-                                                </label>
-                                            </subviews>
-                                        </tableViewCellContentView>
-                                    </tableViewCell>
-                                </cells>
-                            </tableViewSection>
+
                         </sections>
                         <connections>
                             <outlet property="dataSource" destination="IRY-tW-tVq" id="h0L-9f-PY8" />

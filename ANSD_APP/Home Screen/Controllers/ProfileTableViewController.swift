@@ -49,6 +49,7 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         setupGenderButton()
         setupLanguageButton()
         loadPersistentData()
+        setupFooterView()
         
         // Initial Name Setup
         if firstNameTextField.text?.isEmpty ?? true {
@@ -154,10 +155,6 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         case 2: // Vocal Profile
             if indexPath.row == 0 {
                 handleVocalProfileTap()
-            }
-        case 3: // Account
-            if indexPath.row == 1 { // Logout is Row 1
-                confirmSignOut()
             }
         default:
             break
@@ -332,21 +329,64 @@ class ProfileTableViewController: UITableViewController, UIImagePickerController
         }
     }
     
-    // MARK: - iOS Style UI Cleanup
-    
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if indexPath.section == 3 && indexPath.row == 0 {
-            // Hide the "Clear All Data" cell if it exists in the storyboard
-            return 0.01
-        }
-        return super.tableView(tableView, heightForRowAt: indexPath)
+    // MARK: - Footer Setup
+    private func setupFooterView() {
+        let footerView = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 100))
+        
+        var config = UIButton.Configuration.filled()
+        config.title = "Log Out"
+        config.baseBackgroundColor = .systemGray5
+        config.baseForegroundColor = .systemRed
+        config.cornerStyle = .large
+        
+        let logoutButton = UIButton(configuration: config)
+        logoutButton.translatesAutoresizingMaskIntoConstraints = false
+        logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
+        
+        footerView.addSubview(logoutButton)
+        
+        NSLayoutConstraint.activate([
+            logoutButton.centerXAnchor.constraint(equalTo: footerView.centerXAnchor),
+            logoutButton.centerYAnchor.constraint(equalTo: footerView.centerYAnchor),
+            logoutButton.widthAnchor.constraint(equalToConstant: 240),
+            logoutButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
+        
+        tableView.tableFooterView = footerView
     }
     
-    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        if indexPath.section == 3 && indexPath.row == 1 {
-            // Style "Logout" as a standard iOS destructive action
-            cell.textLabel?.textColor = .systemRed
-            cell.textLabel?.textAlignment = .center
+    @objc private func logoutButtonTapped() {
+        confirmSignOut()
+    }
+    
+    // MARK: - Custom Header Styling
+    
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView()
+        headerView.backgroundColor = .clear
+        
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = .systemFont(ofSize: 18, weight: .bold)
+        label.textColor = .label
+        
+        switch section {
+        case 0: label.text = "User Details"
+        case 1: label.text = "Preferences"
+        case 2: label.text = "Vocal Profile"
+        default: return nil
         }
+        
+        headerView.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: headerView.layoutMarginsGuide.leadingAnchor, constant: 0),
+            label.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -8)
+        ])
+        
+        return headerView
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 50
     }
 }

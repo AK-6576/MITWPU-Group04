@@ -16,8 +16,11 @@ class WelcomeViewController: UIViewController {
 //    @IBOutlet weak var logoImageView: UIImageView!
     @IBOutlet weak var appleSignInButton: UIButton!
     @IBOutlet weak var googleSignInButton: UIButton!
-    @IBOutlet weak var createAccountButton: UIButton!
+    @IBOutlet weak var signupLabel: UILabel!
     @IBOutlet weak var loginButton: UIButton!
+    @IBOutlet weak var emailTextField: UITextField!
+    @IBOutlet weak var passwordTextField: UITextField!
+    @IBOutlet weak var forgotPasswordButton: UIButton!
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -26,46 +29,65 @@ class WelcomeViewController: UIViewController {
     }
     
     private func setupUI() {
-        // App logo styling
-//        logoImageView.layer.cornerRadius = 20
-//        logoImageView.clipsToBounds = true
+        // Text field styling - rounded corners with subtle border
+        let textFields = [emailTextField, passwordTextField]
+        for textField in textFields {
+            textField?.layer.cornerRadius = 12
+            textField?.layer.borderWidth = 1
+            textField?.layer.borderColor = UIColor.systemGray4.cgColor
+            textField?.clipsToBounds = true
+        }
         
-        // Apple Sign In styling
-        appleSignInButton.layer.cornerRadius = 25
-        appleSignInButton.backgroundColor = .black
-        appleSignInButton.setTitleColor(.white, for: .normal)
-        
-        // Google Sign In styling (Capsule shape with border)
-        googleSignInButton.layer.cornerRadius = 25
-        googleSignInButton.layer.borderWidth = 1
-        googleSignInButton.layer.borderColor = UIColor.systemGray3.cgColor
-        googleSignInButton.backgroundColor = .white
-        
-        var googleConfig = UIButton.Configuration.plain()
+        // Ensure Google icon is sized correctly without overriding storyboard layout
         if let googleIcon = UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal) {
             let resizedIcon = googleIcon.resized(to: CGSize(width: 24, height: 24))
-            googleConfig.image = resizedIcon
-        }
-        googleConfig.imagePadding = 12
-        googleConfig.titleAlignment = .center
-        
-        var googleTitle = AttributedString("Sign in with Google")
-        googleTitle.font = .systemFont(ofSize: 17, weight: .medium)
-        googleTitle.foregroundColor = .black
-        googleConfig.attributedTitle = googleTitle
-        
-        googleSignInButton.configuration = googleConfig
-        
-        // Secondary action buttons styling
-        let secondaryButtons = [createAccountButton, loginButton]
-        for button in secondaryButtons {
-            button?.layer.cornerRadius = 25
-            button?.layer.borderWidth = 1
-            button?.layer.borderColor = UIColor.systemGray4.cgColor
+            googleSignInButton.configuration?.image = resizedIcon
         }
         
-        createAccountButton.setTitle("Sign Up", for: .normal)
+        // Sign In button styling - capsule
+        loginButton.layer.cornerRadius = 28
+        loginButton.clipsToBounds = true
+        
         loginButton.setTitle("Sign In", for: .normal)
+        
+        // Fix text field alignments and colors
+        emailTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 52))
+        emailTextField.leftViewMode = .always
+        passwordTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 52))
+        passwordTextField.leftViewMode = .always
+        
+        emailTextField.textColor = .label
+        passwordTextField.textColor = .label
+        
+        appleSignInButton.tintAdjustmentMode = .normal
+        googleSignInButton.tintAdjustmentMode = .normal
+        
+        // Signup label attributed text
+        setupSignupLabel()
+    }
+    
+    private func setupSignupLabel() {
+        let fullText = "Don't have an account yet? Create Now"
+        let attributedString = NSMutableAttributedString(string: fullText)
+        let fullRange = NSRange(location: 0, length: fullText.count)
+        
+        // Default style: black label color, system font 14
+        attributedString.addAttribute(.foregroundColor, value: UIColor.black, range: fullRange)
+        attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 14), range: fullRange)
+        
+        // "Signup Now" in blue
+        if let signupRange = fullText.range(of: "Create Now") {
+            let nsRange = NSRange(signupRange, in: fullText)
+            attributedString.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: nsRange)
+            attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 14, weight: .semibold), range: nsRange)
+        }
+        
+        signupLabel.attributedText = attributedString
+        signupLabel.textAlignment = .center
+        signupLabel.isUserInteractionEnabled = true
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(signupLabelTapped(_:)))
+        signupLabel.addGestureRecognizer(tap)
     }
 
     // MARK: - Actions
@@ -234,14 +256,238 @@ class WelcomeViewController: UIViewController {
         present(alert, animated: true)
     }
     
-    @IBAction func createAccountTapped(_ sender: UIButton) {
-        performSegue(withIdentifier: "showCreateAccount", sender: self)
+    @objc private func signupLabelTapped(_ gesture: UITapGestureRecognizer) {
+        guard let text = signupLabel.text,
+              let range = text.range(of: "Create Now") else { return }
+        
+        let nsRange = NSRange(range, in: text)
+        let tapLocation = gesture.location(in: signupLabel)
+        
+        // Use text storage to check if tap is within "Signup Now" range
+        let textStorage = NSTextStorage(attributedString: signupLabel.attributedText ?? NSAttributedString(string: text))
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(size: signupLabel.bounds.size)
+        textContainer.lineFragmentPadding = 0
+        textContainer.maximumNumberOfLines = signupLabel.numberOfLines
+        textContainer.lineBreakMode = signupLabel.lineBreakMode
+        
+        layoutManager.addTextContainer(textContainer)
+        textStorage.addLayoutManager(layoutManager)
+        
+        let characterIndex = layoutManager.characterIndex(for: tapLocation, in: textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
+        
+        if NSLocationInRange(characterIndex, nsRange) {
+            performSegue(withIdentifier: "showCreateAccount", sender: self)
+        }
     }
     
+    
+    
+  
+    
+    // MARK: - UITextFieldDelegate
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == emailTextField {
+            passwordTextField.becomeFirstResponder()
+        } else if textField == passwordTextField {
+            passwordTextField.resignFirstResponder()
+            loginTapped(loginButton)
+        }
+        return true
+    }
+
+    // MARK: - Actions
+
     @IBAction func loginTapped(_ sender: UIButton) {
-        performSegue(withIdentifier: "showLoginAccount", sender: self)
+        // Dismiss keyboard
+        view.endEditing(true)
+        
+        // Validation
+        guard let email = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !email.isEmpty else {
+            showAlert(title: "Missing Field", message: "Please enter your email address.")
+            return
+        }
+        
+        guard let password = passwordTextField.text, !password.isEmpty else {
+            showAlert(title: "Missing Field", message: "Please enter your password.")
+            return
+        }
+        
+        // Show loading state
+        loginButton.isEnabled = false
+        loginButton.configuration?.showsActivityIndicator = true
+
+        let details = ["email": email, "password": password]
+
+        // Firebase login
+        FirebaseManager.shared.loginUser(details: details) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.loginButton.isEnabled = true
+                self?.loginButton.configuration?.showsActivityIndicator = false
+                
+                switch result {
+                case .success(let user):
+                    let uid = user.uid
+                    // Fetch user profile
+                    FirebaseManager.shared.fetchUserProfile(uid: uid) { profileData in
+                        DispatchQueue.main.async {
+                            if let data = profileData {
+                                let firstName = data["firstName"] as? String ?? ""
+                                let lastName = data["lastName"] as? String ?? ""
+                                if !firstName.isEmpty {
+                                    UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                                }
+                                if !lastName.isEmpty {
+                                    UserDefaults.standard.set(lastName, forKey: "user_last_name")
+                                }
+                            } else {
+                                // Fallback to email prefix if profile data is not available
+                                let emailPrefix = email.components(separatedBy: "@").first ?? ""
+                                let firstName = emailPrefix.components(separatedBy: ".").first?.capitalized ?? emailPrefix
+                                if !firstName.isEmpty {
+                                    UserDefaults.standard.set(firstName, forKey: "user_first_name")
+                                }
+                            }
+                            
+                            // Restore conversation history
+                            FirebaseManager.shared.fetchConversationHistory(uid: uid) { conversations in
+                                DispatchQueue.main.async {
+                                    for dict in conversations {
+                                        guard let id = dict["id"] as? String,
+                                              let title = dict["title"] as? String else { continue }
+                                        
+                                        // Skip if conversation already exists locally
+                                        if DataManager.shared.fetchConversation(byId: id) != nil { continue }
+                                        
+                                        // Fetch FULL DATA (Messages + Participants)
+                                        FirebaseManager.shared.fetchFullConversation(uid: uid, conversationID: id) { fullData in
+                                            DispatchQueue.main.async {
+                                                let metadata = fullData?["metadata"] as? [String: Any] ?? dict
+                                                let participantsDict = fullData?["participants"] as? [String: [String: Any]] ?? [:]
+                                                let messagesDict = fullData?["messages"] as? [String: [String: Any]] ?? [:]
+                                                
+                                                // 1. Create Participants
+                                                var historyParticipants: [Participant] = []
+                                                for (_, pData) in participantsDict {
+                                                    let p = Participant(
+                                                        name: pData["name"] as? String ?? "Unknown",
+                                                        summary: pData["summary"] as? String ?? "",
+                                                        image: pData["image"] as? String ?? "person.circle.fill"
+                                                    )
+                                                    historyParticipants.append(p)
+                                                }
+                                                
+                                                // 2. Create Messages
+                                                var historyMessages: [Message] = []
+                                                for (_, mData) in messagesDict {
+                                                    let m = Message(
+                                                        id: UUID(),
+                                                        text: mData["text"] as? String ?? "",
+                                                        senderId: mData["senderId"] as? String ?? "",
+                                                        senderName: mData["senderName"] as? String ?? "",
+                                                        isIncoming: mData["isIncoming"] as? Bool ?? false,
+                                                        timestamp: Date(timeIntervalSince1970: mData["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970),
+                                                        isHighlighted: mData["isHighlighted"] as? Bool ?? false,
+                                                        isEdited: mData["isEdited"] as? Bool ?? false
+                                                    )
+                                                    historyMessages.append(m)
+                                                }
+                                                
+                                                // 3. Create Conversation
+                                                let convo = Conversation(
+                                                    id: id,
+                                                    title: title,
+                                                    details: metadata["details"] as? String ?? "",
+                                                    date: metadata["date"] as? String ?? "",
+                                                    startTime: metadata["startTime"] as? String ?? "",
+                                                    endTime: metadata["endTime"] as? String ?? "",
+                                                    location: metadata["location"] as? String ?? "",
+                                                    category: metadata["category"] as? String ?? "",
+                                                    icon: metadata["icon"] as? String ?? "",
+                                                    info: metadata["info"] as? Bool,
+                                                    calendarDate: Date(timeIntervalSince1970: metadata["calendarDate"] as? TimeInterval ?? Date().timeIntervalSince1970),
+                                                    notes: metadata["notes"] as? String,
+                                                    isPinned: metadata["isPinned"] as? Bool ?? false,
+                                                    ownerUID: uid,
+                                                    participants: historyParticipants,
+                                                    messages: historyMessages
+                                                )
+                                                
+                                                DataManager.shared.addConversation(convo)
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Restore Quick Actions
+                                    FirebaseManager.shared.fetchQuickActions(uid: uid) { actions in
+                                        DispatchQueue.main.async {
+                                            for dict in actions {
+                                                guard let id = dict["id"] as? String,
+                                                      let categoryTitle = dict["categoryTitle"] as? String,
+                                                      let conversationTopic = dict["conversationTopic"] as? String,
+                                                      let startTime = dict["startTime"] as? String,
+                                                      let status = dict["status"] as? String,
+                                                      let roomCode = dict["roomCode"] as? String,
+                                                      let iconName = dict["iconName"] as? String,
+                                                      let topicImage = dict["topicImage"] as? String,
+                                                      let timeImage = dict["timeImage"] as? String else { continue }
+                                                
+                                                let existing = QuickActionsRepository.shared.getAllActions()
+                                                if existing.contains(where: { $0.id == id }) { continue }
+                                                
+                                                let action = RoutineConversation(
+                                                    id: id,
+                                                    iconName: iconName,
+                                                    categoryTitle: categoryTitle,
+                                                    status: status,
+                                                    conversationTopic: conversationTopic,
+                                                    topicImage: topicImage,
+                                                    startTime: startTime,
+                                                    description: dict["description"] as? String,
+                                                    date: dict["date"] as? String,
+                                                    timeImage: timeImage,
+                                                    roomCode: roomCode,
+                                                    participantNames: dict["participantNames"] as? [String] ?? []
+                                                )
+                                                QuickActionsRepository.shared.addAction(action)
+                                            }
+                                            
+                                            DispatchQueue.main.async {
+                                                // Navigate to Home by resetting the window root for a clean state
+                                                let storyboard = UIStoryboard(name: "Home", bundle: nil)
+                                                if let homeNav = storyboard.instantiateViewController(withIdentifier: "HomeNav") as? UINavigationController {
+                                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                                       let window = windowScene.windows.first {
+                                                        window.rootViewController = homeNav
+                                                        window.makeKeyAndVisible()
+                                                        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil, completion: nil)
+                                                    } else {
+                                                        // Fallback to segue if window lookup fails
+                                                        self?.performSegue(withIdentifier: "loginToHome", sender: self)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                case .failure(let error):
+                    self?.showAlert(title: "Sign In Failed", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    @IBAction func forgotPasswordTapped(_ sender: UIButton) {
+        performSegue(withIdentifier: "showForgotPassword", sender: self)
     }
 }
+
 
 // MARK: - UIImage Extension
 extension UIImage {

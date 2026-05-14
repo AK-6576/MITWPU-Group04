@@ -76,13 +76,13 @@ class VoiceCalibrationViewController: UIViewController {
         title = "Voice Setup"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
-        
         setupCard()
         setupVisualizer()
         setupSentenceStatusIndicators()
         setupMLModel()
         requestMicrophoneAccess()
         updatePromptText(index: 0)
+        setupNavigationBar()
         phase = .ready
     }
 
@@ -97,6 +97,22 @@ class VoiceCalibrationViewController: UIViewController {
         } catch {
             print("VoiceCalibration: Failed to load VL1004 model — \(error)")
         }
+    }
+
+    // MARK: - Navigation Bar Setup
+    private func setupNavigationBar() {
+        let infoButton = UIBarButtonItem(image: UIImage(systemName: "info.circle"), style: .plain, target: self, action: #selector(infoButtonTapped))
+        navigationItem.rightBarButtonItem = infoButton
+    }
+
+    @objc private func infoButtonTapped() {
+        let alert = UIAlertController(title: "Why Voice Profile?", message: "We use your voice profile to accurately transcribe your speech and differentiate it from other speakers in a conversation. It's stored securely on your device.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Got it", style: .default, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+
+    @IBAction func skipTapped(_ sender: UIButton) {
+        navigateToHome()
     }
 
     // MARK: - UI Setup
